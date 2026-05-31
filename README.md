@@ -30,6 +30,19 @@ uvicorn bot.app:app --reload --port 8000
 curl http://127.0.0.1:8000/health
 ```
 
+## Render 部署
+
+這個 repo 已包含 `render.yaml`。在 Render Dashboard 選擇 **New +** -> **Blueprint**，連接 `dannytsao/PersonalKM`，Render 會自動帶入：
+
+```text
+Build Command: pip install -r requirements.txt
+Start Command: uvicorn bot.app:app --host 0.0.0.0 --port $PORT
+Health Check Path: /health
+Auto Deploy: false
+```
+
+`Auto Deploy` 預設關閉是刻意的：Bot 會把每個 LINE 連結寫成筆記並 push 回同一個 repo，如果開啟自動部署，每新增一篇筆記就會觸發一次 Render deploy。
+
 ## 必填環境變數
 
 `LINE_CHANNEL_SECRET`：LINE Messaging API channel secret，用來驗證 webhook 簽章。
@@ -38,9 +51,17 @@ curl http://127.0.0.1:8000/health
 
 `OPENAI_API_KEY`：用於 AI 摘要與分類。若未設定，系統會用簡易規則產生 fallback 摘要與分類。
 
-`VAULT_REPO_URL`：Bot 要 clone/push 的 Vault repo。部署到 Railway/Render 時，建議使用帶有權限的 HTTPS URL 或設定平台支援的 SSH deploy key。
+`VAULT_REPO_URL`：Bot 要 clone/push 的 Vault repo。Render 上建議使用只授權此 repo 的 GitHub fine-grained token，例如：
+
+```text
+https://你的GitHub帳號:你的Token@github.com/dannytsao/PersonalKM.git
+```
+
+這個值只能填在 Render Environment，不要 commit 到 repo。
 
 `VAULT_PATH`：部署環境中的暫存 clone 路徑，預設為 `/tmp/personal-km-vault`。
+
+`PYTHON_VERSION`：建議設為 `3.11.9`。
 
 ## LINE Webhook
 

@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: personal-km-line-bot
+    runtime: python
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn bot.app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: LINE_CHANNEL_SECRET
+        sync: false
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini
+      - key: VAULT_REPO_URL
+        sync: false
+      - key: VAULT_BRANCH
+        value: main
+      - key: VAULT_PATH
+        value: /tmp/personal-km-vault
+      - key: INBOX_DIR
+        value: Inbox
+      - key: GIT_AUTHOR_NAME
+        value: LINE Link Bot
+      - key: GIT_AUTHOR_EMAIL
+        value: line-link-bot@example.com
