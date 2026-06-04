@@ -16,6 +16,7 @@ CATEGORY_DIRS = {
     "photography": "Photography",
     "food": "Food",
     "tech": "Tech",
+    "general": "General",
 }
 
 
@@ -45,7 +46,8 @@ def note_filename(note: LinkNote) -> str:
 
 
 def note_target_dir(note: LinkNote, fallback_dir: str) -> str:
-    return CATEGORY_DIRS.get(note.category, fallback_dir)
+    category_dir = CATEGORY_DIRS.get(note.category, CATEGORY_DIRS["general"])
+    return str(Path(fallback_dir) / category_dir)
 
 
 def render_note(note: LinkNote) -> str:
