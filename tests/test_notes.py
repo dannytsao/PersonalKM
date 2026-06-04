@@ -1,6 +1,6 @@
 from datetime import date
 
-from bot.notes import LinkNote, note_filename, render_note, slugify
+from bot.notes import LinkNote, note_filename, note_target_dir, render_note, slugify
 
 
 def test_slugify_keeps_readable_chinese_title():
@@ -34,3 +34,20 @@ def test_note_filename_uses_date_and_title():
     )
 
     assert note_filename(note) == "2026-05-31-example-title.md"
+
+
+def test_note_target_dir_routes_known_categories():
+    captured_on = date(2026, 5, 31)
+
+    assert note_target_dir(
+        LinkNote("Cafe", "https://example.com", "摘要", "food", captured_on), "Inbox"
+    ) == "Food"
+    assert note_target_dir(
+        LinkNote("API", "https://example.com", "摘要", "tech", captured_on), "Inbox"
+    ) == "Tech"
+    assert note_target_dir(
+        LinkNote("Spot", "https://example.com", "摘要", "photography", captured_on), "Inbox"
+    ) == "Photography"
+    assert note_target_dir(
+        LinkNote("Unknown", "https://example.com", "摘要", "general", captured_on), "Inbox"
+    ) == "Inbox"
