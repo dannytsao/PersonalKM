@@ -1,4 +1,4 @@
-from scripts.archive_inbox import collect_archive_moves, frontmatter_status
+from scripts.archive_inbox import collect_archive_moves, collect_moves, frontmatter_status
 
 
 def test_frontmatter_status_reads_status_value():
@@ -47,3 +47,30 @@ def test_collect_archive_moves_avoids_target_name_collision(tmp_path):
     moves = collect_archive_moves(vault)
 
     assert moves[0].target == archive_general / "same-2.md"
+
+
+def test_collect_moves_sends_x_status_to_trash_as_non_markdown(tmp_path):
+    vault = tmp_path
+    inbox_food = vault / "Inbox" / "Food"
+    trash_food = vault / "Trash" / "Food"
+    inbox_food.mkdir(parents=True)
+    trash_food.mkdir(parents=True)
+
+    note = inbox_food / "bad.md"
+    note.write_text("---\nstatus: X\n---\n# Bad\n", encoding="utf-8")
+
+    moves = collect_moves(vault)
+
+    assert len(moves) == 1
+    assert moves[0].source == note
+    assert moves[0].target == trash_food / "bad.md.trash"
+
+
+def test_collect_moves_keeps_unread_in_inbox(tmp_path):
+    vault = tmp_path
+    inbox_tech = vault / "Inbox" / "Tech"
+    inbox_tech.mkdir(parents=True)
+    note = inbox_tech / "unread.md"
+    note.write_text("---\nstatus: unread\n---\n# Unread\n", encoding="utf-8")
+
+    assert collect_moves(vault) == []
