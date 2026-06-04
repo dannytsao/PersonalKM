@@ -12,6 +12,12 @@ CATEGORY_TAGS = {
     "general": "待分類",
 }
 
+CATEGORY_DIRS = {
+    "photography": "Photography",
+    "food": "Food",
+    "tech": "Tech",
+}
+
 
 @dataclass(frozen=True)
 class LinkNote:
@@ -38,6 +44,10 @@ def note_filename(note: LinkNote) -> str:
     return f"{note.captured_on.isoformat()}-{slugify(note.title)}.md"
 
 
+def note_target_dir(note: LinkNote, fallback_dir: str) -> str:
+    return CATEGORY_DIRS.get(note.category, fallback_dir)
+
+
 def render_note(note: LinkNote) -> str:
     safe_summary = note.summary.replace("\n", " ").strip()
     return (
@@ -58,7 +68,7 @@ def render_note(note: LinkNote) -> str:
 
 
 def write_note(vault_root: Path, inbox_dir: str, note: LinkNote) -> Path:
-    target_dir = vault_root / inbox_dir
+    target_dir = vault_root / note_target_dir(note, inbox_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
     target_path = target_dir / note_filename(note)
 

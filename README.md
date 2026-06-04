@@ -1,14 +1,14 @@
 # Personal KM
 
-LINE 群組連結整理到 Obsidian 的 MVP。LINE Bot 收到群組文字訊息後會偵測 URL，擷取網頁標題與內容，使用 LLM 產生 2-3 句摘要與自動分類，最後寫成 Markdown 到 `Inbox/` 並推送回這個 GitHub repo。
+LINE 群組連結整理到 Obsidian 的 MVP。LINE Bot 收到群組文字訊息後會偵測 URL，擷取網頁標題與內容，使用 LLM 產生 2-3 句摘要與自動分類，最後寫成 Markdown 並推送回這個 GitHub repo。分類明確時會自動放到對應資料夾，不確定才留在 `Inbox/`。
 
 ## Vault 結構
 
 ```text
-Inbox/          LINE Bot 自動寫入暫存區
-Photography/    攝影景點歸檔
-Food/           美食歸檔
-Tech/           技術歸檔
+Inbox/          不確定分類或待人工整理
+Photography/    攝影景點自動歸檔
+Food/           美食自動歸檔
+Tech/           技術自動歸檔
 Archive/        已讀或歸檔
 Templates/      筆記模板
 Attachments/    圖片等附件
@@ -71,7 +71,7 @@ https://你的GitHub帳號:你的Token@github.com/dannytsao/PersonalKM.git
 https://你的部署網域/webhook/line
 ```
 
-開啟 webhook 後，把 Bot 加入 LINE 群組。群組中有人貼 URL 時，Bot 會在 `Inbox/` 新增一篇筆記並推送 commit。
+開啟 webhook 後，把 Bot 加入 LINE 群組。群組中有人貼 URL 時，Bot 會依分類在 `Food/`、`Tech/`、`Photography/` 或 `Inbox/` 新增一篇筆記並推送 commit。
 
 ## Obsidian 設定
 
@@ -89,9 +89,19 @@ https://你的部署網域/webhook/line
 | `tech` | `技術` |
 | `general` | `待分類` |
 
+## 自動歸檔規則
+
+| category | target folder |
+| --- | --- |
+| `photography` | `Photography/` |
+| `food` | `Food/` |
+| `tech` | `Tech/` |
+| `general` | `Inbox/` |
+
+所有筆記仍會保留 `status: unread`，方便之後人工閱讀與整理。
+
 ## 下一步
 
 - 加入 LINE 回覆訊息，告知已建立哪一篇筆記。
 - 增加手動指定分類指令，例如 `#food https://...`。
-- 將已讀筆記自動或半自動移到對應資料夾。
 - 加入定期摘要報告推送回 LINE。
