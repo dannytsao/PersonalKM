@@ -105,6 +105,40 @@ https://你的部署網域/webhook/line
 
 所有筆記仍會保留 `status: unread`，方便之後人工閱讀與整理。看完後可手動移到 `Archive/` 底下相同分類資料夾，例如 `Inbox/Tech/` -> `Archive/Tech/`。
 
+## 歸檔已讀筆記
+
+在 Obsidian 看完筆記後，把 frontmatter 的狀態改成：
+
+```yaml
+status: archived
+```
+
+或：
+
+```yaml
+status: done
+```
+
+接著在 Vault 根目錄執行 dry-run，先確認會搬哪些檔案：
+
+```bash
+python scripts/archive_inbox.py --dry-run
+```
+
+確認無誤後執行搬移：
+
+```bash
+python scripts/archive_inbox.py
+```
+
+如果要搬移後直接 commit 並 push 到 GitHub：
+
+```bash
+python scripts/archive_inbox.py --commit
+```
+
+腳本只會搬 `Inbox/<分類>/` 裡 `status: archived` 或 `status: done` 的 Markdown 檔，目標會是對應的 `Archive/<分類>/`。`status: unread` 不會被搬走。
+
 ## YouTube 摘要
 
 YouTube 連結不會直接抓影片頁 HTML。Bot 會先辨識 `youtu.be`、`youtube.com/watch`、`shorts`、`embed` 等 URL，接著嘗試取得影片標題與字幕/逐字稿，再交給 LLM 摘要。
