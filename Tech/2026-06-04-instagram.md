@@ -1,0 +1,16 @@
+---
+tags: [技術]
+source: LINE
+date: 2026-06-04
+url: https://www.instagram.com/p/DYZePq9S_BV/?igsh=MWJkeXBzYnIwYjFvdA==
+summary: Instagram 是由 Meta 公司運營的社交媒體平台，提供用戶分享照片和影片的功能。該平台支持多種語言，並提供多種服務如登入、註冊及API接口等。
+status: unread
+---
+
+# Instagram
+
+## 摘要
+Instagram 是由 Meta 公司運營的社交媒體平台，提供用戶分享照片和影片的功能。該平台支持多種語言，並提供多種服務如登入、註冊及API接口等。
+
+## 原文連結
+https://www.instagram.com/p/DYZePq9S_BV/?igsh=MWJkeXBzYnIwYjFvdA==
