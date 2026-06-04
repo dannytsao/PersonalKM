@@ -41,13 +41,13 @@ def test_note_target_dir_routes_known_categories():
 
     assert note_target_dir(
         LinkNote("Cafe", "https://example.com", "摘要", "food", captured_on), "Inbox"
-    ) == "Food"
+    ) == "Inbox/Food"
     assert note_target_dir(
         LinkNote("API", "https://example.com", "摘要", "tech", captured_on), "Inbox"
-    ) == "Tech"
+    ) == "Inbox/Tech"
     assert note_target_dir(
         LinkNote("Spot", "https://example.com", "摘要", "photography", captured_on), "Inbox"
-    ) == "Photography"
+    ) == "Inbox/Photography"
     assert note_target_dir(
         LinkNote("Unknown", "https://example.com", "摘要", "general", captured_on), "Inbox"
-    ) == "Inbox"
+    ) == "Inbox/General"
