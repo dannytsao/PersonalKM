@@ -1,5 +1,6 @@
 import json
 from datetime import date
+from urllib.parse import urlparse
 
 import httpx
 from bs4 import BeautifulSoup
@@ -85,7 +86,21 @@ async def summarize_with_llm(settings: Settings, title: str, url: str, page_text
 
 
 async def process_url(settings: Settings, url: str) -> LinkNote:
-    title, page_text = await fetch_page(url, settings.request_timeout_seconds, settings.max_page_chars)
+    try:
+        title, page_text = await fetch_page(url, settings.request_timeout_seconds, settings.max_page_chars)
+    except httpx.HTTPStatusError as error:
+        status_code = error.response.status_code
+        domain = urlparse(url).netloc or url
+        title = domain
+        page_text = (
+            f"無法擷取網頁內容，網站回傳 HTTP {status_code}。"
+            "這通常代表網站拒絕自動化擷取，請直接開啟原文連結查看。"
+        )
+    except httpx.HTTPError as error:
+        domain = urlparse(url).netloc or url
+        title = domain
+        page_text = f"無法擷取網頁內容：{error.__class__.__name__}。請直接開啟原文連結查看。"
+
     summary, category = await summarize_with_llm(settings, title, url, page_text)
     return LinkNote(
         title=title,
