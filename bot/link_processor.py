@@ -1,6 +1,8 @@
 import json
 from datetime import date
-from urllib.parse import urlparse
+from typing import Optional
+from urllib.parse import parse_qs, urlparse
+from xml.etree import ElementTree
 
 import httpx
 from bs4 import BeautifulSoup
@@ -11,6 +13,8 @@ from bot.notes import LinkNote
 
 
 CATEGORY_VALUES = {"photography", "food", "tech", "general"}
+YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"}
+YOUTUBE_LANG_PRIORITY = ("zh-Hant", "zh-TW", "zh-Hans", "zh-CN", "zh", "en")
 
 
 async def fetch_page(url: str, timeout_seconds: float, max_chars: int) -> tuple[str, str]:
@@ -28,6 +32,113 @@ async def fetch_page(url: str, timeout_seconds: float, max_chars: int) -> tuple[
     title = soup.title.string.strip() if soup.title and soup.title.string else url
     text = " ".join(soup.get_text(" ").split())
     return title[:180], text[:max_chars]
+
+
+def youtube_video_id(url: str) -> Optional[str]:
+    parsed = urlparse(url)
+    host = parsed.netloc.lower().removeprefix("www.")
+    if host == "youtu.be":
+        video_id = parsed.path.strip("/").split("/")[0]
+        return video_id or None
+
+    if host not in YOUTUBE_HOSTS:
+        return None
+
+    if parsed.path == "/watch":
+        return parse_qs(parsed.query).get("v", [None])[0]
+
+    path_parts = [part for part in parsed.path.split("/") if part]
+    if len(path_parts) >= 2 and path_parts[0] in {"embed", "shorts", "live"}:
+        return path_parts[1]
+    return None
+
+
+async def fetch_youtube_metadata(client: httpx.AsyncClient, url: str, video_id: str) -> str:
+    try:
+        response = await client.get(
+            "https://www.youtube.com/oembed",
+            params={"url": url, "format": "json"},
+        )
+        response.raise_for_status()
+        title = response.json().get("title")
+        if title:
+            return str(title)[:180]
+    except httpx.HTTPError:
+        pass
+    return f"YouTube video {video_id}"
+
+
+def select_caption_track(tracks: list[dict[str, str]]) -> Optional[dict[str, str]]:
+    for language in YOUTUBE_LANG_PRIORITY:
+        for track in tracks:
+            if track.get("lang_code") == language:
+                return track
+    return tracks[0] if tracks else None
+
+
+def parse_caption_tracks(xml_text: str) -> list[dict[str, str]]:
+    root = ElementTree.fromstring(xml_text)
+    tracks = []
+    for track in root.findall("track"):
+        tracks.append(
+            {
+                "lang_code": track.attrib.get("lang_code", ""),
+                "name": track.attrib.get("name", ""),
+                "kind": track.attrib.get("kind", ""),
+            }
+        )
+    return tracks
+
+
+def parse_json3_transcript(payload: dict) -> str:
+    parts = []
+    for event in payload.get("events", []):
+        for segment in event.get("segs", []):
+            text = segment.get("utf8", "").replace("\n", " ").strip()
+            if text:
+                parts.append(text)
+    return " ".join(" ".join(parts).split())
+
+
+async def fetch_youtube_transcript(client: httpx.AsyncClient, video_id: str, max_chars: int) -> str:
+    list_response = await client.get(
+        "https://www.youtube.com/api/timedtext",
+        params={"type": "list", "v": video_id},
+    )
+    list_response.raise_for_status()
+    track = select_caption_track(parse_caption_tracks(list_response.text))
+    if not track:
+        return ""
+
+    params = {"fmt": "json3", "v": video_id, "lang": track["lang_code"]}
+    if track["name"]:
+        params["name"] = track["name"]
+    if track["kind"]:
+        params["kind"] = track["kind"]
+
+    transcript_response = await client.get("https://www.youtube.com/api/timedtext", params=params)
+    transcript_response.raise_for_status()
+    return parse_json3_transcript(transcript_response.json())[:max_chars]
+
+
+async def fetch_youtube_content(settings: Settings, url: str, video_id: str) -> tuple[str, str]:
+    headers = {
+        "User-Agent": "PersonalKMLineBot/0.1 (+https://github.com/dannytsao/PersonalKM)"
+    }
+    async with httpx.AsyncClient(
+        follow_redirects=True,
+        timeout=settings.request_timeout_seconds,
+        headers=headers,
+    ) as client:
+        title = await fetch_youtube_metadata(client, url, video_id)
+        try:
+            transcript = await fetch_youtube_transcript(client, video_id, settings.max_page_chars)
+        except (ElementTree.ParseError, httpx.HTTPError, json.JSONDecodeError):
+            transcript = ""
+
+    if transcript:
+        return title, f"YouTube 影片逐字稿：{transcript}"
+    return title, "無法擷取該 YouTube 影片的字幕或逐字稿。建議直接點擊連結觀看影片以獲取詳細資訊。"
 
 
 def fallback_category(title: str, page_text: str) -> str:
@@ -86,6 +197,18 @@ async def summarize_with_llm(settings: Settings, title: str, url: str, page_text
 
 
 async def process_url(settings: Settings, url: str) -> LinkNote:
+    video_id = youtube_video_id(url)
+    if video_id:
+        title, page_text = await fetch_youtube_content(settings, url, video_id)
+        summary, category = await summarize_with_llm(settings, title, url, page_text)
+        return LinkNote(
+            title=title,
+            url=url,
+            summary=summary,
+            category=category,
+            captured_on=date.today(),
+        )
+
     try:
         title, page_text = await fetch_page(url, settings.request_timeout_seconds, settings.max_page_chars)
     except httpx.HTTPStatusError as error:

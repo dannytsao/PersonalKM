@@ -1,6 +1,6 @@
 # Personal KM
 
-LINE 群組連結整理到 Obsidian 的 MVP。LINE Bot 收到群組文字訊息後會偵測 URL，擷取網頁標題與內容，使用 LLM 產生 2-3 句摘要與自動分類，最後寫成 Markdown 並推送回這個 GitHub repo。分類明確時會自動放到對應資料夾，不確定才留在 `Inbox/`。
+LINE 群組連結整理到 Obsidian 的 MVP。LINE Bot 收到群組文字訊息後會偵測 URL，擷取網頁標題與內容，使用 LLM 產生 2-3 句摘要與自動分類，最後寫成 Markdown 並推送回這個 GitHub repo。分類明確時會自動放到對應資料夾，不確定才留在 `Inbox/`。YouTube / `youtu.be` 連結會優先擷取字幕或逐字稿來摘要。
 
 ## Vault 結構
 
@@ -99,6 +99,12 @@ https://你的部署網域/webhook/line
 | `general` | `Inbox/` |
 
 所有筆記仍會保留 `status: unread`，方便之後人工閱讀與整理。
+
+## YouTube 摘要
+
+YouTube 連結不會直接抓影片頁 HTML。Bot 會先辨識 `youtu.be`、`youtube.com/watch`、`shorts`、`embed` 等 URL，接著嘗試取得影片標題與字幕/逐字稿，再交給 LLM 摘要。
+
+如果影片沒有可用字幕、字幕端點拒絕存取，或影片本身限制擷取，Bot 仍會建立筆記並保留原文連結，但摘要會標註需要直接觀看影片。
 
 ## 下一步
 
