@@ -6,11 +6,12 @@ from pathlib import Path
 
 
 ARCHIVABLE_STATUSES = {"archived", "done"}
+TRASH_STATUSES = {"x"}
 CATEGORY_DIRS = {"Food", "General", "Photography", "Tech"}
 
 
 @dataclass(frozen=True)
-class ArchiveMove:
+class PlannedMove:
     source: Path
     target: Path
 
@@ -41,10 +42,16 @@ def unique_target_path(path: Path) -> Path:
         counter += 1
 
 
-def collect_archive_moves(vault_root: Path) -> list[ArchiveMove]:
+def trash_target_path(source: Path, trash_root: Path, category: str) -> Path:
+    trashed_name = f"{source.name}.trash"
+    return trash_root / category / trashed_name
+
+
+def collect_moves(vault_root: Path) -> list[PlannedMove]:
     inbox_root = vault_root / "Inbox"
     archive_root = vault_root / "Archive"
-    moves: list[ArchiveMove] = []
+    trash_root = vault_root / "Trash"
+    moves: list[PlannedMove] = []
 
     for source in sorted(inbox_root.glob("*/*.md")):
         category = source.parent.name
@@ -52,22 +59,32 @@ def collect_archive_moves(vault_root: Path) -> list[ArchiveMove]:
             continue
 
         status = frontmatter_status(source.read_text(encoding="utf-8"))
-        if status not in ARCHIVABLE_STATUSES:
+        if status in ARCHIVABLE_STATUSES:
+            target_dir = archive_root / category
+            target_dir.mkdir(parents=True, exist_ok=True)
+            target = target_dir / source.name
+        elif status in TRASH_STATUSES:
+            target_dir = trash_root / category
+            target_dir.mkdir(parents=True, exist_ok=True)
+            target = trash_target_path(source, trash_root, category)
+        else:
             continue
 
-        target_dir = archive_root / category
-        target_dir.mkdir(parents=True, exist_ok=True)
-        moves.append(ArchiveMove(source=source, target=unique_target_path(target_dir / source.name)))
+        moves.append(PlannedMove(source=source, target=unique_target_path(target)))
 
     return moves
+
+
+def collect_archive_moves(vault_root: Path) -> list[PlannedMove]:
+    return [move for move in collect_moves(vault_root) if "Archive" in move.target.parts]
 
 
 def run_git(args: list[str], cwd: Path) -> None:
     subprocess.run(["git", *args], cwd=cwd, check=True)
 
 
-def archive(vault_root: Path, dry_run: bool) -> list[ArchiveMove]:
-    moves = collect_archive_moves(vault_root)
+def archive(vault_root: Path, dry_run: bool) -> list[PlannedMove]:
+    moves = collect_moves(vault_root)
     for move in moves:
         print(f"{move.source.relative_to(vault_root)} -> {move.target.relative_to(vault_root)}")
         if not dry_run:
@@ -76,7 +93,7 @@ def archive(vault_root: Path, dry_run: bool) -> list[ArchiveMove]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Move archived Inbox notes into matching Archive folders.")
+    parser = argparse.ArgumentParser(description="Move completed or trashed Inbox notes out of Inbox.")
     parser.add_argument("--vault", default=".", help="Vault root path. Defaults to current directory.")
     parser.add_argument("--dry-run", action="store_true", help="Show moves without changing files.")
     parser.add_argument("--commit", action="store_true", help="Commit and push moved notes.")
@@ -86,11 +103,11 @@ def main() -> None:
     moves = archive(vault_root, args.dry_run)
 
     if not moves:
-        print("No archived Inbox notes found.")
+        print("No completed or trashed Inbox notes found.")
         return
 
     if args.commit and not args.dry_run:
-        run_git(["commit", "-m", "Archive completed inbox notes"], vault_root)
+        run_git(["commit", "-m", "Process completed inbox notes"], vault_root)
         run_git(["push"], vault_root)
 
 

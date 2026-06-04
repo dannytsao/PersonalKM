@@ -15,6 +15,11 @@ Archive/        已讀或歸檔，子資料夾與 Inbox 相同
 ├── General/
 ├── Photography/
 └── Tech/
+Trash/          不要的項目，搬入後會改成非 Markdown 副檔名
+├── Food/
+├── General/
+├── Photography/
+└── Tech/
 Templates/      筆記模板
 Attachments/    圖片等附件
 ```
@@ -105,9 +110,9 @@ https://你的部署網域/webhook/line
 
 所有筆記仍會保留 `status: unread`，方便之後人工閱讀與整理。看完後可手動移到 `Archive/` 底下相同分類資料夾，例如 `Inbox/Tech/` -> `Archive/Tech/`。
 
-## 歸檔已讀筆記
+## 歸檔與丟棄筆記
 
-在 Obsidian 看完筆記後，把 frontmatter 的狀態改成：
+在 Obsidian 看完筆記後，如果要歸檔，把 frontmatter 的狀態改成：
 
 ```yaml
 status: archived
@@ -117,6 +122,12 @@ status: archived
 
 ```yaml
 status: done
+```
+
+如果確定不要這篇筆記，把狀態改成：
+
+```yaml
+status: X
 ```
 
 接著在 Vault 根目錄執行 dry-run，先確認會搬哪些檔案：
@@ -137,7 +148,16 @@ python scripts/archive_inbox.py
 python scripts/archive_inbox.py --commit
 ```
 
-腳本只會搬 `Inbox/<分類>/` 裡 `status: archived` 或 `status: done` 的 Markdown 檔，目標會是對應的 `Archive/<分類>/`。`status: unread` 不會被搬走。
+腳本只會搬 `Inbox/<分類>/` 裡符合狀態的 Markdown 檔：
+
+| status | result |
+| --- | --- |
+| `done` | move to `Archive/<分類>/` |
+| `archived` | move to `Archive/<分類>/` |
+| `X` | move to `Trash/<分類>/` and rename to `.md.trash` |
+| `unread` | stay in `Inbox/<分類>/` |
+
+`status: X` 搬到 Trash 後會變成非 Markdown 副檔名，例如 `note.md.trash`，因此 Obsidian 不會把它當作一般筆記索引。
 
 ## YouTube 摘要
 
