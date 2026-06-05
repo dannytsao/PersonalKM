@@ -66,6 +66,23 @@ def test_collect_moves_sends_x_status_to_trash_as_non_markdown(tmp_path):
     assert moves[0].target == trash_food / "bad.md.trash"
 
 
+def test_collect_moves_sends_root_inbox_x_status_to_general_trash(tmp_path):
+    vault = tmp_path
+    inbox = vault / "Inbox"
+    trash_general = vault / "Trash" / "General"
+    inbox.mkdir(parents=True)
+    trash_general.mkdir(parents=True)
+
+    note = inbox / "bad.md"
+    note.write_text("---\nstatus: x\n---\n# Bad\n", encoding="utf-8")
+
+    moves = collect_moves(vault)
+
+    assert len(moves) == 1
+    assert moves[0].source == note
+    assert moves[0].target == trash_general / "bad.md.trash"
+
+
 def test_collect_moves_keeps_unread_in_inbox(tmp_path):
     vault = tmp_path
     inbox_tech = vault / "Inbox" / "Tech"
