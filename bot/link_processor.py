@@ -1,4 +1,5 @@
 import json
+from dataclasses import dataclass
 from datetime import date
 from typing import Optional
 from urllib.parse import parse_qs, urlparse
@@ -17,9 +18,32 @@ YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtu
 YOUTUBE_LANG_PRIORITY = ("zh-Hant", "zh-TW", "zh-Hans", "zh-CN", "zh", "en")
 INSTAGRAM_HOSTS = {"instagram.com", "www.instagram.com", "m.instagram.com"}
 INSTAGRAM_CONTENT_PATHS = {"p", "reel", "reels", "tv"}
+RESTRICTED_PLATFORM_HOSTS = {
+    "instagram.com": "instagram",
+    "www.instagram.com": "instagram",
+    "m.instagram.com": "instagram",
+    "tiktok.com": "tiktok",
+    "www.tiktok.com": "tiktok",
+    "vm.tiktok.com": "tiktok",
+    "x.com": "x",
+    "www.x.com": "x",
+    "twitter.com": "x",
+    "www.twitter.com": "x",
+    "threads.net": "threads",
+    "www.threads.net": "threads",
+}
 
 
-async def fetch_page(url: str, timeout_seconds: float, max_chars: int) -> tuple[str, str]:
+@dataclass(frozen=True)
+class ExtractedContent:
+    title: str
+    text: str
+    platform: str = "web"
+    extraction_status: str = "ok"
+    needs_review: bool = False
+
+
+async def fetch_page(url: str, timeout_seconds: float, max_chars: int) -> ExtractedContent:
     headers = {
         "User-Agent": "PersonalKMLineBot/0.1 (+https://github.com/dannytsao/PersonalKM)"
     }
@@ -33,7 +57,49 @@ async def fetch_page(url: str, timeout_seconds: float, max_chars: int) -> tuple[
 
     title = soup.title.string.strip() if soup.title and soup.title.string else url
     text = " ".join(soup.get_text(" ").split())
-    return title[:180], text[:max_chars]
+    metadata = extract_page_metadata(soup)
+    content_text = metadata_text(metadata) or text
+    return ExtractedContent(
+        title=(metadata.get("title") or title)[:180],
+        text=content_text[:max_chars],
+        platform=platform_from_url(url),
+    )
+
+
+def platform_from_url(url: str) -> str:
+    host = urlparse(url).netloc.lower()
+    if host in RESTRICTED_PLATFORM_HOSTS:
+        return RESTRICTED_PLATFORM_HOSTS[host]
+    if host in YOUTUBE_HOSTS:
+        return "youtube"
+    return "web"
+
+
+def extract_page_metadata(soup: BeautifulSoup) -> dict[str, str]:
+    metadata: dict[str, str] = {}
+    for tag in soup.find_all("meta"):
+        key = tag.get("property") or tag.get("name")
+        content = tag.get("content")
+        if key and content:
+            metadata[key.lower()] = " ".join(content.split())
+
+    title = metadata.get("og:title") or metadata.get("twitter:title")
+    description = (
+        metadata.get("og:description")
+        or metadata.get("twitter:description")
+        or metadata.get("description")
+    )
+    result = {}
+    if title:
+        result["title"] = title
+    if description:
+        result["description"] = description
+    return result
+
+
+def metadata_text(metadata: dict[str, str]) -> str:
+    parts = [metadata.get("title", ""), metadata.get("description", "")]
+    return " ".join(part for part in parts if part).strip()
 
 
 def youtube_video_id(url: str) -> Optional[str]:
@@ -79,14 +145,90 @@ def is_instagram_shell_text(text: str) -> bool:
     return "instagram" in lowered and sum(marker in lowered for marker in shell_markers) >= 2
 
 
-def instagram_fallback_content(content_type: str) -> tuple[str, str]:
-    label = "Instagram Reel" if content_type in {"reel", "reels"} else "Instagram post"
-    return (
-        label,
-        (
-            f"這是一個 {label} 連結。Instagram 通常需要登入或會阻擋自動化擷取，"
+def blocked_platform_content(platform: str, content_label: str) -> ExtractedContent:
+    return ExtractedContent(
+        title=content_label,
+        text=(
+            f"這是一個 {content_label} 連結。{platform} 通常需要登入或會阻擋自動化擷取，"
             "目前無法可靠取得貼文或影片內容。請直接開啟原文連結查看。"
         ),
+        platform=platform,
+        extraction_status="blocked",
+        needs_review=True,
+    )
+
+
+def instagram_fallback_content(content_type: str) -> ExtractedContent:
+    label = "Instagram Reel" if content_type in {"reel", "reels"} else "Instagram post"
+    return blocked_platform_content("instagram", label)
+
+
+def restricted_platform_fallback(url: str) -> ExtractedContent:
+    platform = platform_from_url(url)
+    labels = {
+        "tiktok": "TikTok video",
+        "x": "X/Twitter post",
+        "threads": "Threads post",
+    }
+    return blocked_platform_content(platform, labels.get(platform, f"{platform} link"))
+
+
+def is_restricted_platform(url: str) -> bool:
+    return platform_from_url(url) in {"instagram", "tiktok", "x", "threads"}
+
+
+def is_restricted_shell_text(platform: str, text: str) -> bool:
+    lowered = text.lower()
+    if platform == "instagram":
+        return is_instagram_shell_text(text)
+
+    markers = {
+        "tiktok": ["log in", "sign up", "tiktok"],
+        "x": ["log in", "sign up", "x.com", "twitter"],
+        "threads": ["log in", "threads", "instagram"],
+    }
+    platform_markers = markers.get(platform, [])
+    return bool(platform_markers) and sum(marker in lowered for marker in platform_markers) >= 2
+
+
+def to_note(content: ExtractedContent, url: str, summary: str, category: str) -> LinkNote:
+    return LinkNote(
+        title=content.title,
+        url=url,
+        summary=summary,
+        category=category,
+        captured_on=date.today(),
+        platform=content.platform,
+        extraction_status=content.extraction_status,
+        needs_review=content.needs_review,
+    )
+
+
+def http_error_content(url: str, error: httpx.HTTPStatusError) -> ExtractedContent:
+    status_code = error.response.status_code
+    domain = urlparse(url).netloc or url
+    platform = platform_from_url(url)
+    return ExtractedContent(
+        title=domain,
+        text=(
+            f"無法擷取網頁內容，網站回傳 HTTP {status_code}。"
+            "這通常代表網站拒絕自動化擷取，請直接開啟原文連結查看。"
+        ),
+        platform=platform,
+        extraction_status="blocked" if platform != "web" else "error",
+        needs_review=platform != "web",
+    )
+
+
+def generic_http_error_content(url: str, error: httpx.HTTPError) -> ExtractedContent:
+    domain = urlparse(url).netloc or url
+    platform = platform_from_url(url)
+    return ExtractedContent(
+        title=domain,
+        text=f"無法擷取網頁內容：{error.__class__.__name__}。請直接開啟原文連結查看。",
+        platform=platform,
+        extraction_status="blocked" if platform != "web" else "error",
+        needs_review=platform != "web",
     )
 
 
@@ -158,7 +300,7 @@ async def fetch_youtube_transcript(client: httpx.AsyncClient, video_id: str, max
     return parse_json3_transcript(transcript_response.json())[:max_chars]
 
 
-async def fetch_youtube_content(settings: Settings, url: str, video_id: str) -> tuple[str, str]:
+async def fetch_youtube_content(settings: Settings, url: str, video_id: str) -> ExtractedContent:
     headers = {
         "User-Agent": "PersonalKMLineBot/0.1 (+https://github.com/dannytsao/PersonalKM)"
     }
@@ -174,8 +316,18 @@ async def fetch_youtube_content(settings: Settings, url: str, video_id: str) -> 
             transcript = ""
 
     if transcript:
-        return title, f"YouTube 影片逐字稿：{transcript}"
-    return title, "無法擷取該 YouTube 影片的字幕或逐字稿。建議直接點擊連結觀看影片以獲取詳細資訊。"
+        return ExtractedContent(
+            title=title,
+            text=f"YouTube 影片逐字稿：{transcript}",
+            platform="youtube",
+        )
+    return ExtractedContent(
+        title=title,
+        text="無法擷取該 YouTube 影片的字幕或逐字稿。建議直接點擊連結觀看影片以獲取詳細資訊。",
+        platform="youtube",
+        extraction_status="partial",
+        needs_review=True,
+    )
 
 
 def fallback_category(title: str, page_text: str) -> str:
@@ -236,54 +388,39 @@ async def summarize_with_llm(settings: Settings, title: str, url: str, page_text
 async def process_url(settings: Settings, url: str) -> LinkNote:
     video_id = youtube_video_id(url)
     if video_id:
-        title, page_text = await fetch_youtube_content(settings, url, video_id)
-        summary, category = await summarize_with_llm(settings, title, url, page_text)
-        return LinkNote(
-            title=title,
-            url=url,
-            summary=summary,
-            category=category,
-            captured_on=date.today(),
-        )
+        content = await fetch_youtube_content(settings, url, video_id)
+        summary, category = await summarize_with_llm(settings, content.title, url, content.text)
+        return to_note(content, url, summary, category)
 
     instagram_type = instagram_content_type(url)
     if instagram_type:
         try:
-            title, page_text = await fetch_page(url, settings.request_timeout_seconds, settings.max_page_chars)
-            if is_instagram_shell_text(page_text):
-                title, page_text = instagram_fallback_content(instagram_type)
+            content = await fetch_page(url, settings.request_timeout_seconds, settings.max_page_chars)
+            if is_instagram_shell_text(content.text):
+                content = instagram_fallback_content(instagram_type)
         except httpx.HTTPError:
-            title, page_text = instagram_fallback_content(instagram_type)
+            content = instagram_fallback_content(instagram_type)
 
-        summary, category = await summarize_with_llm(settings, title, url, page_text)
-        return LinkNote(
-            title=title,
-            url=url,
-            summary=summary,
-            category=category,
-            captured_on=date.today(),
-        )
+        summary, category = await summarize_with_llm(settings, content.title, url, content.text)
+        return to_note(content, url, summary, category)
+
+    if is_restricted_platform(url):
+        try:
+            content = await fetch_page(url, settings.request_timeout_seconds, settings.max_page_chars)
+            if is_restricted_shell_text(content.platform, content.text):
+                content = restricted_platform_fallback(url)
+        except httpx.HTTPError:
+            content = restricted_platform_fallback(url)
+
+        summary, category = await summarize_with_llm(settings, content.title, url, content.text)
+        return to_note(content, url, summary, category)
 
     try:
-        title, page_text = await fetch_page(url, settings.request_timeout_seconds, settings.max_page_chars)
+        content = await fetch_page(url, settings.request_timeout_seconds, settings.max_page_chars)
     except httpx.HTTPStatusError as error:
-        status_code = error.response.status_code
-        domain = urlparse(url).netloc or url
-        title = domain
-        page_text = (
-            f"無法擷取網頁內容，網站回傳 HTTP {status_code}。"
-            "這通常代表網站拒絕自動化擷取，請直接開啟原文連結查看。"
-        )
+        content = http_error_content(url, error)
     except httpx.HTTPError as error:
-        domain = urlparse(url).netloc or url
-        title = domain
-        page_text = f"無法擷取網頁內容：{error.__class__.__name__}。請直接開啟原文連結查看。"
+        content = generic_http_error_content(url, error)
 
-    summary, category = await summarize_with_llm(settings, title, url, page_text)
-    return LinkNote(
-        title=title,
-        url=url,
-        summary=summary,
-        category=category,
-        captured_on=date.today(),
-    )
+    summary, category = await summarize_with_llm(settings, content.title, url, content.text)
+    return to_note(content, url, summary, category)

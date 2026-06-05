@@ -20,8 +20,30 @@ def test_render_note_matches_obsidian_template():
 
     assert "tags: [技術]" in rendered
     assert "source: LINE" in rendered
+    assert "platform: web" in rendered
+    assert "extraction_status: ok" in rendered
+    assert "needs_review: false" in rendered
     assert "status: unread" in rendered
     assert "## 原文連結\nhttps://example.com" in rendered
+
+
+def test_render_note_includes_blocked_platform_metadata():
+    note = LinkNote(
+        title="Instagram Reel",
+        url="https://www.instagram.com/reel/abc/",
+        summary="需要直接開啟查看。",
+        category="general",
+        captured_on=date(2026, 5, 31),
+        platform="instagram",
+        extraction_status="blocked",
+        needs_review=True,
+    )
+
+    rendered = render_note(note)
+
+    assert "platform: instagram" in rendered
+    assert "extraction_status: blocked" in rendered
+    assert "needs_review: true" in rendered
 
 
 def test_note_filename_uses_date_and_title():

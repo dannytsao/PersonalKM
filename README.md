@@ -165,9 +165,38 @@ YouTube 連結不會直接抓影片頁 HTML。Bot 會先辨識 `youtu.be`、`you
 
 如果影片沒有可用字幕、字幕端點拒絕存取，或影片本身限制擷取，Bot 仍會建立筆記並保留原文連結，但摘要會標註需要直接觀看影片。
 
-## Instagram 連結
+## Universal Extractor v1
 
-Instagram Reel 或貼文經常需要登入，且會回傳平台通用頁面而不是貼文內容。Bot 會辨識 `instagram.com/reel/...`、`instagram.com/p/...` 等 URL；如果只取得登入或平台樣板內容，會建立一篇保留原文連結的筆記，摘要標註需直接開啟查看，避免產生「Instagram 是社群平台」這類不相關摘要。
+Bot 會優先擷取 OpenGraph / Twitter Card metadata，再使用正文文字摘要。對常見登入或反爬平台會標註擷取狀態，避免把平台樣板頁誤摘要成內容。
+
+目前會特別辨識：
+
+| platform | examples |
+| --- | --- |
+| `instagram` | `instagram.com/reel/...`, `instagram.com/p/...` |
+| `tiktok` | `tiktok.com/@user/video/...`, `vm.tiktok.com/...` |
+| `x` | `x.com/...`, `twitter.com/...` |
+| `threads` | `threads.net/...` |
+| `youtube` | `youtu.be/...`, `youtube.com/watch`, `shorts`, `embed` |
+
+新筆記會增加：
+
+```yaml
+platform: instagram
+extraction_status: blocked
+needs_review: true
+```
+
+`extraction_status` 常見值：
+
+| value | meaning |
+| --- | --- |
+| `ok` | 已取得可摘要內容 |
+| `partial` | 已取得部分資訊，例如標題但無字幕 |
+| `blocked` | 平台需要登入、反爬或只回傳樣板頁 |
+| `error` | 一般網頁擷取失敗 |
+
+Instagram、TikTok、X、Threads 若只取得登入頁或平台樣板內容，Bot 會建立一篇保留原文連結的筆記，摘要標註需直接開啟查看，避免產生「Instagram 是社群平台」這類不相關摘要。
 
 ## 下一步
 
