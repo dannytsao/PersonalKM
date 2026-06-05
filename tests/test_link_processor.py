@@ -1,6 +1,7 @@
 from bot.link_processor import (
     extract_page_metadata,
     fallback_category,
+    fallback_youtube_deep_note,
     instagram_content_type,
     instagram_fallback_content,
     is_instagram_shell_text,
@@ -116,3 +117,20 @@ def test_parse_json3_transcript_flattens_segments():
     }
 
     assert parse_json3_transcript(payload) == "第一句 摘要 第二句"
+
+
+def test_fallback_youtube_deep_note_has_required_sections():
+    summary, category, body = fallback_youtube_deep_note(
+        "AI 工具教學",
+        "https://youtu.be/example",
+        "這支影片介紹 AI 工具如何規劃與執行工作。",
+    )
+
+    assert summary
+    assert category == "tech"
+    assert "## 一句話重點" in body
+    assert "## 核心摘要" in body
+    assert "## 重點條列" in body
+    assert "## 可行動項目" in body
+    assert "## 關鍵概念" in body
+    assert "## 原文連結\nhttps://youtu.be/example" in body

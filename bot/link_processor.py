@@ -204,6 +204,21 @@ def to_note(content: ExtractedContent, url: str, summary: str, category: str) ->
     )
 
 
+def to_deep_note(content: ExtractedContent, url: str, summary: str, category: str, body_markdown: str) -> LinkNote:
+    note = to_note(content, url, summary, category)
+    return LinkNote(
+        title=note.title,
+        url=note.url,
+        summary=note.summary,
+        category=note.category,
+        captured_on=note.captured_on,
+        platform=note.platform,
+        extraction_status=note.extraction_status,
+        needs_review=note.needs_review,
+        body_markdown=body_markdown,
+    )
+
+
 def http_error_content(url: str, error: httpx.HTTPStatusError) -> ExtractedContent:
     status_code = error.response.status_code
     domain = urlparse(url).netloc or url
@@ -385,10 +400,84 @@ async def summarize_with_llm(settings: Settings, title: str, url: str, page_text
     return summary, category
 
 
+def fallback_youtube_deep_note(title: str, url: str, transcript_text: str) -> tuple[str, str, str]:
+    summary = fallback_summary(title, transcript_text)
+    body = (
+        "## 一句話重點\n"
+        f"{summary}\n\n"
+        "## 核心摘要\n"
+        f"{summary}\n\n"
+        "## 重點條列\n"
+        "- 逐字稿已擷取，但目前無法使用 LLM 產生深度整理。\n"
+        "- 請直接閱讀逐字稿或稍後補跑整理。\n\n"
+        "## 可行動項目\n"
+        "- 檢查這支影片是否值得深入整理。\n\n"
+        "## 關鍵概念\n"
+        "- 待補充\n\n"
+        "## 原文連結\n"
+        f"{url}"
+    )
+    return summary, fallback_category(title, transcript_text), body
+
+
+async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, transcript_text: str) -> tuple[str, str, str]:
+    if not settings.openai_api_key:
+        return fallback_youtube_deep_note(title, url, transcript_text)
+
+    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    prompt = {
+        "title": title,
+        "url": url,
+        "transcript": transcript_text,
+        "allowed_categories": sorted(CATEGORY_VALUES),
+        "required_markdown_sections": [
+            "一句話重點",
+            "核心摘要",
+            "重點條列",
+            "可行動項目",
+            "關鍵概念",
+            "值得追問的問題",
+            "原文連結",
+        ],
+    }
+    response = await client.chat.completions.create(
+        model=settings.openai_model,
+        temperature=0.2,
+        response_format={"type": "json_object"},
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "你是資深知識管理助理。請根據 YouTube 逐字稿產生繁體中文深度筆記。"
+                    "輸出 JSON，欄位為 summary, category, body_markdown。summary 是 1-2 句。"
+                    "category 只能是 photography, food, tech, general。body_markdown 必須是 Markdown，"
+                    "包含指定章節；不要編造逐字稿沒有的事實。"
+                ),
+            },
+            {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
+        ],
+    )
+    content = response.choices[0].message.content or "{}"
+    data = json.loads(content)
+    summary = str(data.get("summary") or fallback_summary(title, transcript_text)).strip()
+    category = str(data.get("category") or "general").strip()
+    if category not in CATEGORY_VALUES:
+        category = "general"
+    body_markdown = str(data.get("body_markdown") or "").strip()
+    if not body_markdown:
+        _, _, body_markdown = fallback_youtube_deep_note(title, url, transcript_text)
+    return summary, category, body_markdown
+
+
 async def process_url(settings: Settings, url: str) -> LinkNote:
     video_id = youtube_video_id(url)
     if video_id:
         content = await fetch_youtube_content(settings, url, video_id)
+        if content.extraction_status == "ok":
+            summary, category, body_markdown = await summarize_youtube_deep_note(
+                settings, content.title, url, content.text
+            )
+            return to_deep_note(content, url, summary, category, body_markdown)
         summary, category = await summarize_with_llm(settings, content.title, url, content.text)
         return to_note(content, url, summary, category)
 
