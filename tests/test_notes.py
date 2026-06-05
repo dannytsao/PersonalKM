@@ -46,6 +46,24 @@ def test_render_note_includes_blocked_platform_metadata():
     assert "needs_review: true" in rendered
 
 
+def test_render_note_uses_custom_body_markdown():
+    note = LinkNote(
+        title="YouTube",
+        url="https://youtu.be/example",
+        summary="一句話重點。",
+        category="tech",
+        captured_on=date(2026, 5, 31),
+        platform="youtube",
+        body_markdown="## 一句話重點\n一句話重點。\n\n## 核心摘要\n詳細內容。",
+    )
+
+    rendered = render_note(note)
+
+    assert "summary: 一句話重點。" in rendered
+    assert "## 一句話重點\n一句話重點。" in rendered
+    assert "## 核心摘要\n詳細內容。" in rendered
+
+
 def test_note_filename_uses_date_and_title():
     note = LinkNote(
         title="Example Title",

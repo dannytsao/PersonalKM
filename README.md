@@ -159,11 +159,25 @@ python scripts/archive_inbox.py --commit
 
 `status: X` 搬到 Trash 後會變成非 Markdown 副檔名，例如 `note.md.trash`，因此 Obsidian 不會把它當作一般筆記索引。
 
-## YouTube 摘要
+## YouTube Deep Note v1
 
-YouTube 連結不會直接抓影片頁 HTML。Bot 會先辨識 `youtu.be`、`youtube.com/watch`、`shorts`、`embed` 等 URL，接著嘗試取得影片標題與字幕/逐字稿，再交給 LLM 摘要。
+YouTube 連結不會直接抓影片頁 HTML。Bot 會先辨識 `youtu.be`、`youtube.com/watch`、`shorts`、`embed` 等 URL，接著嘗試取得影片標題與字幕/逐字稿。
 
-如果影片沒有可用字幕、字幕端點拒絕存取，或影片本身限制擷取，Bot 仍會建立筆記並保留原文連結，但摘要會標註需要直接觀看影片。
+有逐字稿時，YouTube 筆記會使用深度整理格式：
+
+```markdown
+## 一句話重點
+## 核心摘要
+## 重點條列
+## 可行動項目
+## 關鍵概念
+## 值得追問的問題
+## 原文連結
+```
+
+frontmatter 的 `summary` 仍保留 1-2 句短摘要，方便在 Obsidian 屬性與 Dataview 中快速掃描。
+
+如果影片沒有可用字幕、字幕端點拒絕存取，或影片本身限制擷取，Bot 仍會建立筆記並保留原文連結，但 `extraction_status` 會標成 `partial`，摘要會標註需要直接觀看影片。
 
 ## Universal Extractor v1
 

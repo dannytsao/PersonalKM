@@ -30,6 +30,7 @@ class LinkNote:
     platform: str = "web"
     extraction_status: str = "ok"
     needs_review: bool = False
+    body_markdown: str = ""
 
     @property
     def tag(self) -> str:
@@ -56,6 +57,14 @@ def note_target_dir(note: LinkNote, fallback_dir: str) -> str:
 def render_note(note: LinkNote) -> str:
     safe_summary = note.summary.replace("\n", " ").strip()
     needs_review = "true" if note.needs_review else "false"
+    body = note.body_markdown.strip()
+    if not body:
+        body = (
+            "## 摘要\n"
+            f"{note.summary.strip()}\n\n"
+            "## 原文連結\n"
+            f"{note.url}"
+        )
     return (
         "---\n"
         f"tags: [{note.tag}]\n"
@@ -69,10 +78,7 @@ def render_note(note: LinkNote) -> str:
         "status: unread\n"
         "---\n\n"
         f"# {note.title}\n\n"
-        "## 摘要\n"
-        f"{note.summary.strip()}\n\n"
-        "## 原文連結\n"
-        f"{note.url}\n"
+        f"{body}\n"
     )
 
 
