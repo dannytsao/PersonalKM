@@ -42,7 +42,7 @@ curl http://127.0.0.1:8000/health
 
 ## Render 部署
 
-這個 repo 已包含 `render.yaml`。在 Render Dashboard 選擇 **New +** -> **Blueprint**，連接 `dannytsao/PersonalKM`，Render 會自動帶入：
+這個 repo 已包含 `render.yaml`。在 Render Dashboard 選擇 **New +** -> **Blueprint**，連接 `dannytsao/PersonalKM`，Render 會自動帶入 LINE bot web service：
 
 ```text
 Build Command: pip install -r requirements.txt
@@ -52,6 +52,16 @@ Auto Deploy: false
 ```
 
 `Auto Deploy` 預設關閉是刻意的：Bot 會把每個 LINE 連結寫成筆記並 push 回同一個 repo，如果開啟自動部署，每新增一篇筆記就會觸發一次 Render deploy。
+
+`render.yaml` 也包含一個 Render Cron Job：
+
+```text
+Service: personal-km-housekeeping
+Schedule: 0 1 * * *   # 每天 UTC 01:00，也就是台北 09:00
+Command: python scripts/cloud_housekeeping.py
+```
+
+這個 cloud housekeeping job 會在 Render 上 clone/pull Vault repo，將 `status: done` / `status: archived` 從 `Inbox` 搬到 `Archive`，並將 `status: X` / `status: x` 搬到 `Trash` 後 commit/push。Render Cron Job 是獨立服務，通常需要付費方案或至少 Cron Job 的最低月費；不依賴本機電腦開機。
 
 ## 必填環境變數
 
@@ -68,6 +78,8 @@ https://你的GitHub帳號:你的Token@github.com/dannytsao/PersonalKM.git
 ```
 
 這個值只能填在 Render Environment，不要 commit 到 repo。
+
+`personal-km-line-bot` 和 `personal-km-housekeeping` 都需要設定 `VAULT_REPO_URL`。可以在 Render 使用 Environment Group 共用同一組值，或在兩個 service 各自填入相同值。
 
 `VAULT_PATH`：部署環境中的暫存 clone 路徑，預設為 `/tmp/personal-km-vault`。
 
