@@ -27,6 +27,9 @@ class LinkNote:
     summary: str
     category: str
     captured_on: date
+    platform: str = "web"
+    extraction_status: str = "ok"
+    needs_review: bool = False
 
     @property
     def tag(self) -> str:
@@ -52,12 +55,16 @@ def note_target_dir(note: LinkNote, fallback_dir: str) -> str:
 
 def render_note(note: LinkNote) -> str:
     safe_summary = note.summary.replace("\n", " ").strip()
+    needs_review = "true" if note.needs_review else "false"
     return (
         "---\n"
         f"tags: [{note.tag}]\n"
         "source: LINE\n"
         f"date: {note.captured_on.isoformat()}\n"
         f"url: {note.url}\n"
+        f"platform: {note.platform}\n"
+        f"extraction_status: {note.extraction_status}\n"
+        f"needs_review: {needs_review}\n"
         f"summary: {safe_summary}\n"
         "status: unread\n"
         "---\n\n"

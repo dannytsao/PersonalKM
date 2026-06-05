@@ -1,12 +1,18 @@
 from bot.link_processor import (
+    extract_page_metadata,
     fallback_category,
     instagram_content_type,
     instagram_fallback_content,
     is_instagram_shell_text,
+    is_restricted_platform,
+    metadata_text,
     parse_caption_tracks,
     parse_json3_transcript,
+    platform_from_url,
+    restricted_platform_fallback,
     youtube_video_id,
 )
+from bs4 import BeautifulSoup
 
 
 def test_fallback_category_detects_supported_topics():
@@ -37,10 +43,52 @@ def test_instagram_shell_text_detects_login_template():
 
 
 def test_instagram_fallback_content_is_not_platform_description():
-    title, content = instagram_fallback_content("reel")
+    content = instagram_fallback_content("reel")
 
-    assert title == "Instagram Reel"
-    assert "無法可靠取得貼文或影片內容" in content
+    assert content.title == "Instagram Reel"
+    assert content.platform == "instagram"
+    assert content.extraction_status == "blocked"
+    assert content.needs_review
+    assert "無法可靠取得貼文或影片內容" in content.text
+
+
+def test_platform_from_url_detects_restricted_platforms():
+    assert platform_from_url("https://www.instagram.com/reel/abc/") == "instagram"
+    assert platform_from_url("https://www.tiktok.com/@user/video/1") == "tiktok"
+    assert platform_from_url("https://x.com/user/status/1") == "x"
+    assert platform_from_url("https://www.threads.net/@user/post/1") == "threads"
+    assert platform_from_url("https://example.com/a") == "web"
+
+
+def test_restricted_platform_fallback_sets_review_metadata():
+    content = restricted_platform_fallback("https://x.com/user/status/1")
+
+    assert content.platform == "x"
+    assert content.extraction_status == "blocked"
+    assert content.needs_review
+    assert content.title == "X/Twitter post"
+
+
+def test_is_restricted_platform():
+    assert is_restricted_platform("https://www.tiktok.com/@user/video/1")
+    assert not is_restricted_platform("https://example.com/a")
+
+
+def test_extract_page_metadata_reads_open_graph_and_twitter_cards():
+    soup = BeautifulSoup(
+        """
+        <html><head>
+          <meta property="og:title" content="OG Title">
+          <meta name="twitter:description" content="Twitter description">
+        </head><body>Body text</body></html>
+        """,
+        "html.parser",
+    )
+
+    metadata = extract_page_metadata(soup)
+
+    assert metadata == {"title": "OG Title", "description": "Twitter description"}
+    assert metadata_text(metadata) == "OG Title Twitter description"
 
 
 def test_parse_caption_tracks_reads_youtube_track_list():
