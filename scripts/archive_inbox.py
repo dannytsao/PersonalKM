@@ -47,17 +47,27 @@ def trash_target_path(source: Path, trash_root: Path, category: str) -> Path:
     return trash_root / category / trashed_name
 
 
+def inbox_notes(inbox_root: Path) -> list[tuple[Path, str]]:
+    notes: list[tuple[Path, str]] = []
+
+    for source in sorted(inbox_root.glob("*.md")):
+        notes.append((source, "General"))
+
+    for source in sorted(inbox_root.glob("*/*.md")):
+        category = source.parent.name
+        if category in CATEGORY_DIRS:
+            notes.append((source, category))
+
+    return notes
+
+
 def collect_moves(vault_root: Path) -> list[PlannedMove]:
     inbox_root = vault_root / "Inbox"
     archive_root = vault_root / "Archive"
     trash_root = vault_root / "Trash"
     moves: list[PlannedMove] = []
 
-    for source in sorted(inbox_root.glob("*/*.md")):
-        category = source.parent.name
-        if category not in CATEGORY_DIRS:
-            continue
-
+    for source, category in inbox_notes(inbox_root):
         status = frontmatter_status(source.read_text(encoding="utf-8"))
         if status in ARCHIVABLE_STATUSES:
             target_dir = archive_root / category
