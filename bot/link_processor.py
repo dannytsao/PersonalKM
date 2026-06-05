@@ -15,6 +15,8 @@ from bot.notes import LinkNote
 CATEGORY_VALUES = {"photography", "food", "tech", "general"}
 YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"}
 YOUTUBE_LANG_PRIORITY = ("zh-Hant", "zh-TW", "zh-Hans", "zh-CN", "zh", "en")
+INSTAGRAM_HOSTS = {"instagram.com", "www.instagram.com", "m.instagram.com"}
+INSTAGRAM_CONTENT_PATHS = {"p", "reel", "reels", "tv"}
 
 
 async def fetch_page(url: str, timeout_seconds: float, max_chars: int) -> tuple[str, str]:
@@ -51,6 +53,41 @@ def youtube_video_id(url: str) -> Optional[str]:
     if len(path_parts) >= 2 and path_parts[0] in {"embed", "shorts", "live"}:
         return path_parts[1]
     return None
+
+
+def instagram_content_type(url: str) -> Optional[str]:
+    parsed = urlparse(url)
+    host = parsed.netloc.lower().removeprefix("www.")
+    if host not in INSTAGRAM_HOSTS:
+        return None
+
+    path_parts = [part for part in parsed.path.split("/") if part]
+    if len(path_parts) >= 2 and path_parts[0] in INSTAGRAM_CONTENT_PATHS:
+        return path_parts[0]
+    return None
+
+
+def is_instagram_shell_text(text: str) -> bool:
+    lowered = text.lower()
+    shell_markers = [
+        "instagram from meta",
+        "about blog jobs help api privacy terms",
+        "log in",
+        "sign up",
+        "meta verified",
+    ]
+    return "instagram" in lowered and sum(marker in lowered for marker in shell_markers) >= 2
+
+
+def instagram_fallback_content(content_type: str) -> tuple[str, str]:
+    label = "Instagram Reel" if content_type in {"reel", "reels"} else "Instagram post"
+    return (
+        label,
+        (
+            f"這是一個 {label} 連結。Instagram 通常需要登入或會阻擋自動化擷取，"
+            "目前無法可靠取得貼文或影片內容。請直接開啟原文連結查看。"
+        ),
+    )
 
 
 async def fetch_youtube_metadata(client: httpx.AsyncClient, url: str, video_id: str) -> str:
@@ -200,6 +237,24 @@ async def process_url(settings: Settings, url: str) -> LinkNote:
     video_id = youtube_video_id(url)
     if video_id:
         title, page_text = await fetch_youtube_content(settings, url, video_id)
+        summary, category = await summarize_with_llm(settings, title, url, page_text)
+        return LinkNote(
+            title=title,
+            url=url,
+            summary=summary,
+            category=category,
+            captured_on=date.today(),
+        )
+
+    instagram_type = instagram_content_type(url)
+    if instagram_type:
+        try:
+            title, page_text = await fetch_page(url, settings.request_timeout_seconds, settings.max_page_chars)
+            if is_instagram_shell_text(page_text):
+                title, page_text = instagram_fallback_content(instagram_type)
+        except httpx.HTTPError:
+            title, page_text = instagram_fallback_content(instagram_type)
+
         summary, category = await summarize_with_llm(settings, title, url, page_text)
         return LinkNote(
             title=title,

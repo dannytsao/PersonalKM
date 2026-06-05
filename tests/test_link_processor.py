@@ -1,4 +1,12 @@
-from bot.link_processor import fallback_category, parse_caption_tracks, parse_json3_transcript, youtube_video_id
+from bot.link_processor import (
+    fallback_category,
+    instagram_content_type,
+    instagram_fallback_content,
+    is_instagram_shell_text,
+    parse_caption_tracks,
+    parse_json3_transcript,
+    youtube_video_id,
+)
 
 
 def test_fallback_category_detects_supported_topics():
@@ -14,6 +22,25 @@ def test_youtube_video_id_supports_common_url_shapes():
     assert youtube_video_id("https://m.youtube.com/shorts/abc123") == "abc123"
     assert youtube_video_id("https://www.youtube.com/embed/abc123") == "abc123"
     assert youtube_video_id("https://example.com/watch?v=abc123") is None
+
+
+def test_instagram_content_type_supports_reels_and_posts():
+    assert instagram_content_type("https://www.instagram.com/reel/DYqdHRZSr59/?igsh=abc") == "reel"
+    assert instagram_content_type("https://instagram.com/p/abc123/") == "p"
+    assert instagram_content_type("https://example.com/reel/DYqdHRZSr59/") is None
+
+
+def test_instagram_shell_text_detects_login_template():
+    text = "Instagram from Meta Log in Sign up About Blog Jobs Help API Privacy Terms"
+
+    assert is_instagram_shell_text(text)
+
+
+def test_instagram_fallback_content_is_not_platform_description():
+    title, content = instagram_fallback_content("reel")
+
+    assert title == "Instagram Reel"
+    assert "無法可靠取得貼文或影片內容" in content
 
 
 def test_parse_caption_tracks_reads_youtube_track_list():
