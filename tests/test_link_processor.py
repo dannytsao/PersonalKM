@@ -1,6 +1,10 @@
 from bot.link_processor import (
+    ensure_food_summary_details,
+    extract_food_address,
+    extract_food_name,
     extract_page_metadata,
     fallback_category,
+    fallback_summary,
     fallback_youtube_deep_note,
     instagram_content_type,
     instagram_fallback_content,
@@ -21,6 +25,24 @@ def test_fallback_category_detects_supported_topics():
     assert fallback_category("Best cafe", "") == "food"
     assert fallback_category("Python API guide", "") == "tech"
     assert fallback_category("Random note", "") == "general"
+
+
+def test_food_summary_details_extracts_restaurant_name_and_address():
+    title = "「阿嬤家漁村料理」北海岸必吃海鮮"
+    text = "店家位於新北市金山區磺港路189號，主打新鮮海鮮與家常料理。"
+    summary = fallback_summary(title, text)
+
+    detailed = ensure_food_summary_details(title, text, summary, "food")
+
+    assert extract_food_name(title, text) == "阿嬤家漁村料理"
+    assert extract_food_address(text) == "新北市金山區磺港路189號"
+    assert detailed.startswith("店名：阿嬤家漁村料理；地址：新北市金山區磺港路189號；摘要：")
+
+
+def test_food_summary_details_marks_missing_fields_as_not_provided():
+    detailed = ensure_food_summary_details("台北美食推薦", "今天介紹一家餐廳。", "這是一篇美食摘要。", "food")
+
+    assert detailed.startswith("店名：未提供；地址：未提供；摘要：")
 
 
 def test_youtube_video_id_supports_common_url_shapes():

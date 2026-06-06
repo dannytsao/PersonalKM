@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import dataclass
 from datetime import date
 from typing import Optional
@@ -32,6 +33,10 @@ RESTRICTED_PLATFORM_HOSTS = {
     "threads.net": "threads",
     "www.threads.net": "threads",
 }
+TAIWAN_ADDRESS_PATTERN = re.compile(
+    r"((?:台北|臺北|新北|桃園|台中|臺中|台南|臺南|高雄|基隆|新竹|苗栗|彰化|南投|雲林|嘉義|屏東|宜蘭|花蓮|台東|臺東|澎湖|金門|連江)"
+    r"[縣市][^，,。；;\n]{0,35}(?:路|街|大道|巷|弄|段)[^，,。；;\n]{0,25}號?)"
+)
 
 
 @dataclass(frozen=True)
@@ -364,9 +369,43 @@ def fallback_summary(title: str, page_text: str) -> str:
     return f"此連結標題為「{title}」。擷取到的內容重點包含：{clipped}"
 
 
+def extract_food_address(text: str) -> str:
+    match = TAIWAN_ADDRESS_PATTERN.search(text)
+    return match.group(1).strip() if match else "未提供"
+
+
+def extract_food_name(title: str, page_text: str) -> str:
+    corpus = f"{title} {page_text}"
+    quoted = re.search(r"[「『](.{2,40}?)[」』]", corpus)
+    if quoted:
+        return quoted.group(1).strip()
+
+    for keyword in ["店名", "餐廳", "咖啡廳", "店家"]:
+        match = re.search(rf"{keyword}[：:]\s*([^，,。；;\n]{{2,40}})", page_text)
+        if match:
+            return match.group(1).strip()
+
+    return "未提供"
+
+
+def food_summary_prefix(title: str, page_text: str) -> str:
+    corpus = f"{title} {page_text}"
+    return f"店名：{extract_food_name(title, corpus)}；地址：{extract_food_address(corpus)}"
+
+
+def ensure_food_summary_details(title: str, page_text: str, summary: str, category: str) -> str:
+    if category != "food":
+        return summary
+    if "店名" in summary and "地址" in summary:
+        return summary
+    return f"{food_summary_prefix(title, page_text)}；摘要：{summary}"
+
+
 async def summarize_with_llm(settings: Settings, title: str, url: str, page_text: str) -> tuple[str, str]:
     if not settings.openai_api_key:
-        return fallback_summary(title, page_text), fallback_category(title, page_text)
+        category = fallback_category(title, page_text)
+        summary = fallback_summary(title, page_text)
+        return ensure_food_summary_details(title, page_text, summary, category), category
 
     client = AsyncOpenAI(api_key=settings.openai_api_key)
     prompt = {
@@ -385,7 +424,8 @@ async def summarize_with_llm(settings: Settings, title: str, url: str, page_text
                 "content": (
                     "你是個人知識管理助理。請用繁體中文輸出 JSON，欄位為 "
                     "summary 與 category。summary 為 2-3 句摘要；category 只能是 "
-                    "photography, food, tech, general。"
+                    "photography, food, tech, general。若 category 是 food，summary 必須明確包含"
+                    "「店名：...」與「地址：...」；資料中沒有店名或地址時填「未提供」，不要編造。"
                 ),
             },
             {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
@@ -397,11 +437,12 @@ async def summarize_with_llm(settings: Settings, title: str, url: str, page_text
     category = str(data.get("category") or "general").strip()
     if category not in CATEGORY_VALUES:
         category = "general"
-    return summary, category
+    return ensure_food_summary_details(title, page_text, summary, category), category
 
 
 def fallback_youtube_deep_note(title: str, url: str, transcript_text: str) -> tuple[str, str, str]:
-    summary = fallback_summary(title, transcript_text)
+    category = fallback_category(title, transcript_text)
+    summary = ensure_food_summary_details(title, transcript_text, fallback_summary(title, transcript_text), category)
     body = (
         "## 一句話重點\n"
         f"{summary}\n\n"
@@ -417,7 +458,7 @@ def fallback_youtube_deep_note(title: str, url: str, transcript_text: str) -> tu
         "## 原文連結\n"
         f"{url}"
     )
-    return summary, fallback_category(title, transcript_text), body
+    return summary, category, body
 
 
 async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, transcript_text: str) -> tuple[str, str, str]:
@@ -451,7 +492,8 @@ async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, 
                     "你是資深知識管理助理。請根據 YouTube 逐字稿產生繁體中文深度筆記。"
                     "輸出 JSON，欄位為 summary, category, body_markdown。summary 是 1-2 句。"
                     "category 只能是 photography, food, tech, general。body_markdown 必須是 Markdown，"
-                    "包含指定章節；不要編造逐字稿沒有的事實。"
+                    "包含指定章節；不要編造逐字稿沒有的事實。若 category 是 food，summary 必須明確包含"
+                    "「店名：...」與「地址：...」；逐字稿沒有店名或地址時填「未提供」。"
                 ),
             },
             {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
@@ -466,7 +508,7 @@ async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, 
     body_markdown = str(data.get("body_markdown") or "").strip()
     if not body_markdown:
         _, _, body_markdown = fallback_youtube_deep_note(title, url, transcript_text)
-    return summary, category, body_markdown
+    return ensure_food_summary_details(title, transcript_text, summary, category), category, body_markdown
 
 
 async def process_url(settings: Settings, url: str) -> LinkNote:
