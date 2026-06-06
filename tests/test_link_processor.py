@@ -39,6 +39,12 @@ def test_food_summary_details_extracts_restaurant_name_and_address():
     assert detailed.startswith("店名：阿嬤家漁村料理；地址：新北市金山區磺港路189號；摘要：")
 
 
+def test_food_summary_details_extracts_street_only_address():
+    text = "地址是中山北路六段441巷46弄3號，適合聚餐。"
+
+    assert extract_food_address(text) == "中山北路六段441巷46弄3號"
+
+
 def test_food_summary_details_marks_missing_fields_as_not_provided():
     detailed = ensure_food_summary_details("台北美食推薦", "今天介紹一家餐廳。", "這是一篇美食摘要。", "food")
 
