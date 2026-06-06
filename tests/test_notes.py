@@ -46,6 +46,21 @@ def test_render_note_includes_blocked_platform_metadata():
     assert "needs_review: true" in rendered
 
 
+def test_render_note_includes_location_city_when_present():
+    note = LinkNote(
+        title="Cafe",
+        url="https://example.com",
+        summary="店名：Cafe；地址：臺北市中山區中山北路三段181號",
+        category="food",
+        captured_on=date(2026, 5, 31),
+        location_city="臺北市",
+    )
+
+    rendered = render_note(note)
+
+    assert "location_city: 臺北市" in rendered
+
+
 def test_render_note_uses_custom_body_markdown():
     note = LinkNote(
         title="YouTube",

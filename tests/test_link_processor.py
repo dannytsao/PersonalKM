@@ -2,6 +2,7 @@ from bot.link_processor import (
     ExtractedContent,
     ensure_food_summary_details,
     extract_food_address,
+    extract_food_city,
     extract_food_name,
     extract_page_metadata,
     fallback_category,
@@ -39,6 +40,7 @@ def test_food_summary_details_extracts_restaurant_name_and_address():
 
     assert extract_food_name(title, text) == "阿嬤家漁村料理"
     assert extract_food_address(text) == "新北市金山區磺港路189號"
+    assert extract_food_city("新北市金山區磺港路189號") == "新北市"
     assert detailed.startswith("店名：阿嬤家漁村料理；地址：新北市金山區磺港路189號；摘要：")
 
 
@@ -72,8 +74,22 @@ def test_food_note_body_prefers_summary_restaurant_details():
     note = to_note(content, "https://example.com/rolling-dough", summary, "food")
 
     assert "- 店名：Rolling Dough 咖啡廳" in note.body_markdown
+    assert "- 縣市：臺北市" in note.body_markdown
     assert "- 地址：臺北市中山區圓山里中山北路三段181號 ([Google Maps](" in note.body_markdown
+    assert note.location_city == "臺北市"
     assert "中山北路三段18 邱顯傑" not in note.body_markdown
+
+
+def test_food_note_body_marks_city_missing_when_address_has_no_city():
+    content = ExtractedContent(
+        title="「五年咖啡」天母老宅咖啡",
+        text="地址是中山北路六段441巷46弄3號，適合聚餐。",
+    )
+
+    note = to_note(content, "https://example.com/food", "店名：五年咖啡；地址：中山北路六段441巷46弄3號；摘要：老宅咖啡。", "food")
+
+    assert "- 縣市：未提供" in note.body_markdown
+    assert note.location_city == ""
 
 
 def test_food_summary_details_marks_missing_fields_as_not_provided():

@@ -15,6 +15,34 @@ from bot.notes import LinkNote
 
 
 CATEGORY_VALUES = {"photography", "food", "tech", "general"}
+TAIWAN_CITIES = (
+    "台北市",
+    "臺北市",
+    "新北市",
+    "桃園市",
+    "台中市",
+    "臺中市",
+    "台南市",
+    "臺南市",
+    "高雄市",
+    "基隆市",
+    "新竹縣",
+    "新竹市",
+    "苗栗縣",
+    "彰化縣",
+    "南投縣",
+    "雲林縣",
+    "嘉義縣",
+    "嘉義市",
+    "屏東縣",
+    "宜蘭縣",
+    "花蓮縣",
+    "台東縣",
+    "臺東縣",
+    "澎湖縣",
+    "金門縣",
+    "連江縣",
+)
 YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"}
 YOUTUBE_LANG_PRIORITY = ("zh-Hant", "zh-TW", "zh-Hans", "zh-CN", "zh", "en")
 INSTAGRAM_HOSTS = {"instagram.com", "www.instagram.com", "m.instagram.com"}
@@ -203,8 +231,10 @@ def is_restricted_shell_text(platform: str, text: str) -> bool:
 
 def to_note(content: ExtractedContent, url: str, summary: str, category: str) -> LinkNote:
     body_markdown = ""
+    location_city = ""
     if category == "food":
         body_markdown = food_body_markdown(content.title, content.text, summary, url)
+        location_city = extract_food_city(extract_food_address(f"{summary} {content.title} {content.text}"))
 
     return LinkNote(
         title=content.title,
@@ -216,6 +246,7 @@ def to_note(content: ExtractedContent, url: str, summary: str, category: str) ->
         extraction_status=content.extraction_status,
         needs_review=content.needs_review,
         body_markdown=body_markdown,
+        location_city=location_city if location_city != "未提供" else "",
     )
 
 
@@ -231,6 +262,7 @@ def to_deep_note(content: ExtractedContent, url: str, summary: str, category: st
         extraction_status=note.extraction_status,
         needs_review=note.needs_review,
         body_markdown=body_markdown,
+        location_city=note.location_city,
     )
 
 
@@ -392,6 +424,13 @@ def extract_food_address(text: str) -> str:
     return match.group(1).strip() if match else "未提供"
 
 
+def extract_food_city(address: str) -> str:
+    for city in TAIWAN_CITIES:
+        if city in address:
+            return city
+    return "未提供"
+
+
 def extract_food_name(title: str, page_text: str) -> str:
     corpus = f"{title} {page_text}"
     labeled = re.search(r"店名[：:]\s*([^，,。；;\n]{2,40})", corpus)
@@ -425,12 +464,14 @@ def food_body_markdown(title: str, page_text: str, summary: str, source_url: str
     corpus = f"{summary} {title} {page_text}"
     name = extract_food_name(title, corpus)
     address = extract_food_address(corpus)
+    city = extract_food_city(address)
     maps_url = google_maps_url(address)
     address_line = address if not maps_url else f"{address} ([Google Maps]({maps_url}))"
 
     return (
         "## 店家資訊\n"
         f"- 店名：{name}\n"
+        f"- 縣市：{city}\n"
         f"- 地址：{address_line}\n\n"
         "## 摘要\n"
         f"{summary.strip()}\n\n"
