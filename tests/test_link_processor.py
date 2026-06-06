@@ -1,4 +1,5 @@
 from bot.link_processor import (
+    ExtractedContent,
     ensure_food_summary_details,
     extract_food_address,
     extract_food_name,
@@ -6,6 +7,7 @@ from bot.link_processor import (
     fallback_category,
     fallback_summary,
     fallback_youtube_deep_note,
+    google_maps_url,
     instagram_content_type,
     instagram_fallback_content,
     is_instagram_shell_text,
@@ -15,6 +17,7 @@ from bot.link_processor import (
     parse_json3_transcript,
     platform_from_url,
     restricted_platform_fallback,
+    to_note,
     youtube_video_id,
 )
 from bs4 import BeautifulSoup
@@ -43,6 +46,20 @@ def test_food_summary_details_extracts_street_only_address():
     text = "地址是中山北路六段441巷46弄3號，適合聚餐。"
 
     assert extract_food_address(text) == "中山北路六段441巷46弄3號"
+
+
+def test_food_note_body_includes_google_maps_link_for_address():
+    content = ExtractedContent(
+        title="「五年咖啡」天母老宅咖啡",
+        text="地址是中山北路六段441巷46弄3號，適合聚餐。",
+    )
+
+    note = to_note(content, "https://example.com/food", "店名：五年咖啡；地址：中山北路六段441巷46弄3號；摘要：老宅咖啡。", "food")
+
+    assert "## 店家資訊" in note.body_markdown
+    assert "- 店名：五年咖啡" in note.body_markdown
+    assert "- 地址：中山北路六段441巷46弄3號 ([Google Maps](" in note.body_markdown
+    assert google_maps_url("中山北路六段441巷46弄3號") in note.body_markdown
 
 
 def test_food_summary_details_marks_missing_fields_as_not_provided():

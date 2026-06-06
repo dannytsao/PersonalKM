@@ -3,7 +3,7 @@ import re
 from dataclasses import dataclass
 from datetime import date
 from typing import Optional
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote_plus, urlparse
 from xml.etree import ElementTree
 
 import httpx
@@ -202,6 +202,10 @@ def is_restricted_shell_text(platform: str, text: str) -> bool:
 
 
 def to_note(content: ExtractedContent, url: str, summary: str, category: str) -> LinkNote:
+    body_markdown = ""
+    if category == "food":
+        body_markdown = food_body_markdown(content.title, content.text, summary, url)
+
     return LinkNote(
         title=content.title,
         url=url,
@@ -211,6 +215,7 @@ def to_note(content: ExtractedContent, url: str, summary: str, category: str) ->
         platform=content.platform,
         extraction_status=content.extraction_status,
         needs_review=content.needs_review,
+        body_markdown=body_markdown,
     )
 
 
@@ -400,6 +405,30 @@ def extract_food_name(title: str, page_text: str) -> str:
 def food_summary_prefix(title: str, page_text: str) -> str:
     corpus = f"{title} {page_text}"
     return f"店名：{extract_food_name(title, corpus)}；地址：{extract_food_address(corpus)}"
+
+
+def google_maps_url(address: str) -> str:
+    if address == "未提供":
+        return ""
+    return f"https://www.google.com/maps/search/?api=1&query={quote_plus(address)}"
+
+
+def food_body_markdown(title: str, page_text: str, summary: str, source_url: str) -> str:
+    corpus = f"{title} {page_text}"
+    name = extract_food_name(title, corpus)
+    address = extract_food_address(corpus)
+    maps_url = google_maps_url(address)
+    address_line = address if not maps_url else f"{address} ([Google Maps]({maps_url}))"
+
+    return (
+        "## 店家資訊\n"
+        f"- 店名：{name}\n"
+        f"- 地址：{address_line}\n\n"
+        "## 摘要\n"
+        f"{summary.strip()}\n\n"
+        "## 原文連結\n"
+        f"{source_url}"
+    )
 
 
 def ensure_food_summary_details(title: str, page_text: str, summary: str, category: str) -> str:
