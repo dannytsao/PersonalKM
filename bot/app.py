@@ -6,6 +6,7 @@ from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
 
 from bot.config import get_settings
 from bot.git_store import commit_and_push, ensure_vault
+from bot.hermes_enrich import enrich_note
 from bot.line import extract_urls, text_messages_from_webhook, verify_line_signature
 from bot.link_processor import process_url
 from bot.notes import write_note
@@ -34,8 +35,9 @@ async def capture_urls(urls: list[str]) -> None:
         try:
             note = await process_url(settings, url)
             note_path = write_note(vault_path, settings.inbox_dir, note)
+            await asyncio.to_thread(enrich_note, note_path)
             await asyncio.to_thread(commit_and_push, settings, note_path)
-            logger.info("Captured LINE URL %s into %s", url, note_path.relative_to(vault_path))
+            logger.info("✅ Captured and enriched LINE URL %s into %s", url, note_path.relative_to(vault_path))
         except Exception:
             logger.exception("Failed to capture LINE URL %s", url)
 
