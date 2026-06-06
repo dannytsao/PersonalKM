@@ -62,6 +62,20 @@ def test_food_note_body_includes_google_maps_link_for_address():
     assert google_maps_url("中山北路六段441巷46弄3號") in note.body_markdown
 
 
+def test_food_note_body_prefers_summary_restaurant_details():
+    content = ExtractedContent(
+        title="台北咖啡廳推薦",
+        text="臺北市中山區圓山里中山北路三段18 邱顯傑｜台北 桃園｜旅遊 景點 空拍 咖啡廳",
+    )
+    summary = "店名：Rolling Dough 咖啡廳，地址：臺北市中山區圓山里中山北路三段181號；摘要：適合安排咖啡行程。"
+
+    note = to_note(content, "https://example.com/rolling-dough", summary, "food")
+
+    assert "- 店名：Rolling Dough 咖啡廳" in note.body_markdown
+    assert "- 地址：臺北市中山區圓山里中山北路三段181號 ([Google Maps](" in note.body_markdown
+    assert "中山北路三段18 邱顯傑" not in note.body_markdown
+
+
 def test_food_summary_details_marks_missing_fields_as_not_provided():
     detailed = ensure_food_summary_details("台北美食推薦", "今天介紹一家餐廳。", "這是一篇美食摘要。", "food")
 
