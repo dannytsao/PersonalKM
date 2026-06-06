@@ -3,6 +3,7 @@ from bot.link_processor import (
     ensure_food_summary_details,
     extract_food_address,
     extract_food_city,
+    extract_food_places,
     extract_food_name,
     extract_page_metadata,
     fallback_category,
@@ -78,6 +79,41 @@ def test_food_note_body_prefers_summary_restaurant_details():
     assert "- 地址：臺北市中山區圓山里中山北路三段181號 ([Google Maps](" in note.body_markdown
     assert note.location_city == "臺北市"
     assert "中山北路三段18 邱顯傑" not in note.body_markdown
+
+
+def test_food_note_body_includes_multiple_restaurant_locations():
+    content = ExtractedContent(
+        title="台北5間森林系咖啡廳",
+        text="一邊欣賞窗外綠意，一邊喝咖啡。",
+    )
+    summary = (
+        "店家資訊：1. 店名：咖朵咖啡 Caldo Cafe，地址：臺北市士林區至善路二段390號；"
+        "2. 店名：CE' & LIB-RARY天母店，地址：臺北市士林區中山北路七段14巷2號；"
+        "摘要：整理台北森林系咖啡廳。"
+    )
+
+    note = to_note(content, "https://example.com/forest-cafes", summary, "food")
+
+    assert "### 1. 咖朵咖啡 Caldo Cafe" in note.body_markdown
+    assert "- 地址：臺北市士林區至善路二段390號 ([Google Maps](" in note.body_markdown
+    assert "### 2. CE' & LIB-RARY天母店" in note.body_markdown
+    assert "- 地址：臺北市士林區中山北路七段14巷2號 ([Google Maps](" in note.body_markdown
+    assert note.location_city == "臺北市"
+
+
+def test_food_place_extraction_reads_instagram_pin_sections():
+    text = (
+        "📍咖朵咖啡 Caldo Cafe @caldocafe2011 時間：12:00-18:00 "
+        "地址：臺北市士林區至善路二段390號 "
+        "📍passer @passer 時間：10:00-18:00 地址：臺北市大安區瑞安街120巷10弄3號"
+    )
+
+    places = extract_food_places("台北5間森林系咖啡廳", text, "")
+
+    assert places[0].name == "咖朵咖啡 Caldo Cafe"
+    assert places[0].address == "臺北市士林區至善路二段390號"
+    assert places[1].name == "passer"
+    assert places[1].address == "臺北市大安區瑞安街120巷10弄3號"
 
 
 def test_food_note_body_marks_city_missing_when_address_has_no_city():
