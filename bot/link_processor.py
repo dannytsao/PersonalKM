@@ -37,6 +37,11 @@ TAIWAN_ADDRESS_PATTERN = re.compile(
     r"((?:台北|臺北|新北|桃園|台中|臺中|台南|臺南|高雄|基隆|新竹|苗栗|彰化|南投|雲林|嘉義|屏東|宜蘭|花蓮|台東|臺東|澎湖|金門|連江)"
     r"[縣市][^，,。；;\n]{0,35}(?:路|街|大道|巷|弄|段)[^，,。；;\n]{0,25}號?)"
 )
+STREET_ADDRESS_PATTERN = re.compile(
+    r"((?:(?!是)[\u4e00-\u9fff]){1,12}(?:路|街|大道)(?:[一二三四五六七八九十0-9]+段)?"
+    r"(?:(?:\d+|[一二三四五六七八九十]+)(?:巷|弄)){0,3}"
+    r"(?:\d+|[一二三四五六七八九十]+)號?)"
+)
 
 
 @dataclass(frozen=True)
@@ -371,6 +376,10 @@ def fallback_summary(title: str, page_text: str) -> str:
 
 def extract_food_address(text: str) -> str:
     match = TAIWAN_ADDRESS_PATTERN.search(text)
+    if match:
+        return match.group(1).strip()
+
+    match = STREET_ADDRESS_PATTERN.search(text)
     return match.group(1).strip() if match else "未提供"
 
 
