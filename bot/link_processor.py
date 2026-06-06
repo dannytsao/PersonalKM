@@ -35,12 +35,12 @@ RESTRICTED_PLATFORM_HOSTS = {
 }
 TAIWAN_ADDRESS_PATTERN = re.compile(
     r"((?:台北|臺北|新北|桃園|台中|臺中|台南|臺南|高雄|基隆|新竹|苗栗|彰化|南投|雲林|嘉義|屏東|宜蘭|花蓮|台東|臺東|澎湖|金門|連江)"
-    r"[縣市][^，,。；;\n]{0,35}(?:路|街|大道|巷|弄|段)[^，,。；;\n]{0,25}號?)"
+    r"[縣市][^，,。；;\n]{0,35}(?:路|街|大道|巷|弄|段)[^，,。；;\n]{0,25}號)"
 )
 STREET_ADDRESS_PATTERN = re.compile(
     r"((?:(?!是)[\u4e00-\u9fff]){1,12}(?:路|街|大道)(?:[一二三四五六七八九十0-9]+段)?"
     r"(?:(?:\d+|[一二三四五六七八九十]+)(?:巷|弄)){0,3}"
-    r"(?:\d+|[一二三四五六七八九十]+)號?)"
+    r"(?:\d+|[一二三四五六七八九十]+)號)"
 )
 
 
@@ -380,6 +380,10 @@ def fallback_summary(title: str, page_text: str) -> str:
 
 
 def extract_food_address(text: str) -> str:
+    labeled = re.search(r"地址[：:]\s*([^，,。；;\n]*?號)", text)
+    if labeled:
+        return labeled.group(1).strip()
+
     match = TAIWAN_ADDRESS_PATTERN.search(text)
     if match:
         return match.group(1).strip()
@@ -390,6 +394,10 @@ def extract_food_address(text: str) -> str:
 
 def extract_food_name(title: str, page_text: str) -> str:
     corpus = f"{title} {page_text}"
+    labeled = re.search(r"店名[：:]\s*([^，,。；;\n]{2,40})", corpus)
+    if labeled:
+        return labeled.group(1).strip()
+
     quoted = re.search(r"[「『](.{2,40}?)[」』]", corpus)
     if quoted:
         return quoted.group(1).strip()
@@ -414,7 +422,7 @@ def google_maps_url(address: str) -> str:
 
 
 def food_body_markdown(title: str, page_text: str, summary: str, source_url: str) -> str:
-    corpus = f"{title} {page_text}"
+    corpus = f"{summary} {title} {page_text}"
     name = extract_food_name(title, corpus)
     address = extract_food_address(corpus)
     maps_url = google_maps_url(address)
