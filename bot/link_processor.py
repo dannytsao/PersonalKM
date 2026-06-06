@@ -81,6 +81,13 @@ class ExtractedContent:
     needs_review: bool = False
 
 
+@dataclass(frozen=True)
+class FoodPlace:
+    name: str
+    address: str
+    city: str
+
+
 async def fetch_page(url: str, timeout_seconds: float, max_chars: int) -> ExtractedContent:
     headers = {
         "User-Agent": "PersonalKMLineBot/0.1 (+https://github.com/dannytsao/PersonalKM)"
@@ -233,8 +240,9 @@ def to_note(content: ExtractedContent, url: str, summary: str, category: str) ->
     body_markdown = ""
     location_city = ""
     if category == "food":
-        body_markdown = food_body_markdown(content.title, content.text, summary, url)
-        location_city = extract_food_city(extract_food_address(f"{summary} {content.title} {content.text}"))
+        food_places = extract_food_places(content.title, content.text, summary)
+        body_markdown = food_body_markdown(content.title, content.text, summary, url, food_places)
+        location_city = food_location_city(food_places)
 
     return LinkNote(
         title=content.title,
@@ -449,6 +457,77 @@ def extract_food_name(title: str, page_text: str) -> str:
     return "未提供"
 
 
+def clean_food_value(value: str) -> str:
+    cleaned = re.sub(r"^\s*(?:\d+[.、)]\s*)?", "", value)
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    return cleaned.strip(" -:：，,；;。")
+
+
+def food_place(name: str, address: str) -> FoodPlace:
+    clean_address = clean_food_value(address)
+    return FoodPlace(
+        name=clean_food_value(name) or "未提供",
+        address=clean_address or "未提供",
+        city=extract_food_city(clean_address),
+    )
+
+
+def dedupe_food_places(places: list[FoodPlace]) -> list[FoodPlace]:
+    unique: list[FoodPlace] = []
+    seen: set[tuple[str, str]] = set()
+    for place in places:
+        key = (place.name, place.address)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(place)
+    return unique
+
+
+def extract_labeled_food_places(text: str) -> list[FoodPlace]:
+    matches = re.finditer(
+        r"店名[：:]\s*([^，,；;。\n]{2,60})[，,；;]\s*地址[：:]\s*([^；;。\n]*?號(?:\([^)]{0,50}\))?)",
+        text,
+    )
+    return [food_place(match.group(1), match.group(2)) for match in matches]
+
+
+def extract_pin_food_places(text: str) -> list[FoodPlace]:
+    places: list[FoodPlace] = []
+    for section in re.split(r"📍", text):
+        if not section.strip():
+            continue
+        address = extract_food_address(section)
+        if address == "未提供":
+            continue
+        name_source = re.split(r"地址[：:]|時間[：:]|營業時間[：:]|@", section, maxsplit=1)[0]
+        name = clean_food_value(name_source)
+        if name:
+            places.append(food_place(name, address))
+    return places
+
+
+def extract_food_places(title: str, page_text: str, summary: str) -> list[FoodPlace]:
+    corpus = f"{summary} {title} {page_text}"
+    places = extract_labeled_food_places(corpus) + extract_pin_food_places(corpus)
+    places = dedupe_food_places(places)
+    if places:
+        return places
+
+    name = extract_food_name(title, corpus)
+    address = extract_food_address(corpus)
+    return [food_place(name, address)]
+
+
+def food_location_city(places: list[FoodPlace]) -> str:
+    cities: list[str] = []
+    for place in places:
+        if place.city == "未提供" or place.city in cities:
+            continue
+        cities.append(place.city)
+    return ", ".join(cities)
+
+
 def food_summary_prefix(title: str, page_text: str) -> str:
     corpus = f"{title} {page_text}"
     return f"店名：{extract_food_name(title, corpus)}；地址：{extract_food_address(corpus)}"
@@ -460,19 +539,46 @@ def google_maps_url(address: str) -> str:
     return f"https://www.google.com/maps/search/?api=1&query={quote_plus(address)}"
 
 
-def food_body_markdown(title: str, page_text: str, summary: str, source_url: str) -> str:
-    corpus = f"{summary} {title} {page_text}"
-    name = extract_food_name(title, corpus)
-    address = extract_food_address(corpus)
-    city = extract_food_city(address)
+def food_address_line(address: str) -> str:
     maps_url = google_maps_url(address)
-    address_line = address if not maps_url else f"{address} ([Google Maps]({maps_url}))"
+    return address if not maps_url else f"{address} ([Google Maps]({maps_url}))"
+
+
+def food_places_markdown(places: list[FoodPlace]) -> str:
+    if len(places) == 1:
+        place = places[0]
+        return (
+            "## 店家資訊\n"
+            f"- 店名：{place.name}\n"
+            f"- 縣市：{place.city}\n"
+            f"- 地址：{food_address_line(place.address)}"
+        )
+
+    lines = ["## 店家資訊"]
+    for index, place in enumerate(places, start=1):
+        lines.extend(
+            [
+                f"### {index}. {place.name}",
+                f"- 店名：{place.name}",
+                f"- 縣市：{place.city}",
+                f"- 地址：{food_address_line(place.address)}",
+                "",
+            ]
+        )
+    return "\n".join(lines).rstrip()
+
+
+def food_body_markdown(
+    title: str,
+    page_text: str,
+    summary: str,
+    source_url: str,
+    places: Optional[list[FoodPlace]] = None,
+) -> str:
+    food_places = places or extract_food_places(title, page_text, summary)
 
     return (
-        "## 店家資訊\n"
-        f"- 店名：{name}\n"
-        f"- 縣市：{city}\n"
-        f"- 地址：{address_line}\n\n"
+        f"{food_places_markdown(food_places)}\n\n"
         "## 摘要\n"
         f"{summary.strip()}\n\n"
         "## 原文連結\n"
@@ -511,8 +617,11 @@ async def summarize_with_llm(settings: Settings, title: str, url: str, page_text
                 "content": (
                     "你是個人知識管理助理。請用繁體中文輸出 JSON，欄位為 "
                     "summary 與 category。summary 為 2-3 句摘要；category 只能是 "
-                    "photography, food, tech, general。若 category 是 food，summary 必須明確包含"
-                    "「店名：...」與「地址：...」；資料中沒有店名或地址時填「未提供」，不要編造。"
+                    "photography, food, tech, general。若 category 是 food，summary 必須列出可辨識的"
+                    "店家資訊；若內容包含多間店，請逐一列出所有可辨識店家，格式為"
+                    "「店家資訊：1. 店名：...，地址：...；2. 店名：...，地址：...」。"
+                    "若只有一間店，summary 必須明確包含「店名：...」與「地址：...」。"
+                    "資料中沒有店名或地址時填「未提供」，不要編造。"
                 ),
             },
             {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
@@ -579,8 +688,11 @@ async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, 
                     "你是資深知識管理助理。請根據 YouTube 逐字稿產生繁體中文深度筆記。"
                     "輸出 JSON，欄位為 summary, category, body_markdown。summary 是 1-2 句。"
                     "category 只能是 photography, food, tech, general。body_markdown 必須是 Markdown，"
-                    "包含指定章節；不要編造逐字稿沒有的事實。若 category 是 food，summary 必須明確包含"
-                    "「店名：...」與「地址：...」；逐字稿沒有店名或地址時填「未提供」。"
+                    "包含指定章節；不要編造逐字稿沒有的事實。若 category 是 food，summary 必須列出可辨識的"
+                    "店家資訊；若內容包含多間店，請逐一列出所有可辨識店家，格式為"
+                    "「店家資訊：1. 店名：...，地址：...；2. 店名：...，地址：...」。"
+                    "若只有一間店，summary 必須明確包含「店名：...」與「地址：...」。"
+                    "逐字稿沒有店名或地址時填「未提供」。"
                 ),
             },
             {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
