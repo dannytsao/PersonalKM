@@ -101,6 +101,21 @@ def test_food_note_body_includes_multiple_restaurant_locations():
     assert note.location_city == "臺北市"
 
 
+def test_single_food_note_dedupes_summary_and_body_details():
+    content = ExtractedContent(
+        title="Chew The Day 嚼日子",
+        text="店名：Chew The Day 嚼日子 地址：大同區庫倫街13巷2弄2號",
+    )
+    summary = "店名：Chew The Day 嚼日子，地址：大同區庫倫街13巷2弄2號；摘要：單店家咖啡廳。"
+
+    note = to_note(content, "https://example.com/chew-the-day", summary, "food")
+
+    assert "### 1." not in note.body_markdown
+    assert note.body_markdown.count("- 店名：Chew The Day 嚼日子") == 1
+    assert note.body_markdown.count("大同區庫倫街13巷2弄2號") == 2
+    assert "店名：店名" not in note.body_markdown
+
+
 def test_food_place_extraction_reads_instagram_pin_sections():
     text = (
         "📍咖朵咖啡 Caldo Cafe @caldocafe2011 時間：12:00-18:00 "

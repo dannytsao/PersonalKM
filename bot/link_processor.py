@@ -459,6 +459,7 @@ def extract_food_name(title: str, page_text: str) -> str:
 
 def clean_food_value(value: str) -> str:
     cleaned = re.sub(r"^\s*(?:\d+[.、)]\s*)?", "", value)
+    cleaned = re.sub(r"^(?:店家資訊|店名|地址)[：:]\s*", "", cleaned)
     cleaned = re.sub(r"\s+", " ", cleaned)
     return cleaned.strip(" -:：，,；;。")
 
@@ -474,12 +475,21 @@ def food_place(name: str, address: str) -> FoodPlace:
 
 def dedupe_food_places(places: list[FoodPlace]) -> list[FoodPlace]:
     unique: list[FoodPlace] = []
-    seen: set[tuple[str, str]] = set()
     for place in places:
-        key = (place.name, place.address)
-        if key in seen:
+        duplicate_index = next(
+            (
+                index
+                for index, existing in enumerate(unique)
+                if existing.address == place.address
+                or (existing.name == place.name and existing.address == place.address)
+            ),
+            None,
+        )
+        if duplicate_index is not None:
+            existing = unique[duplicate_index]
+            if existing.name == "未提供" or len(place.name) < len(existing.name):
+                unique[duplicate_index] = place
             continue
-        seen.add(key)
         unique.append(place)
     return unique
 
@@ -494,7 +504,7 @@ def extract_labeled_food_places(text: str) -> list[FoodPlace]:
 
 def extract_pin_food_places(text: str) -> list[FoodPlace]:
     places: list[FoodPlace] = []
-    for section in re.split(r"📍", text):
+    for section in text.split("📍")[1:]:
         if not section.strip():
             continue
         address = extract_food_address(section)
