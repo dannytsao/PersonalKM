@@ -1,5 +1,6 @@
 ---
-tags: [美食]
+tags:
+  - 美食
 source: LINE
 date: 2026-06-06
 url: https://www.instagram.com/reel/DY19GD0Tgll/?utm_source=ig_web_copy_link&igsh=NTc4MTIwNjQ2YQ==
@@ -8,7 +9,7 @@ extraction_status: ok
 needs_review: false
 location_city: 屏東縣
 summary: 店名：未提供；地址：屏東縣恆春鎮城西里恆西路12-21號；摘要：樹夏飲事是一家位於屏東縣恆春鎮城西里恆西路12-21號的玻璃屋老宅咖啡廳，擁有美麗的鳳凰木花景。店內提供果汁和甜點，並計劃推出早午餐和法式吐司，營業時間為10:00至16:30。
-status: unread
+status: done
 ---
 
 # Mia 美食 旅遊 攝影 on Instagram: "最美鳳凰木玻璃屋咖啡廳✨ ————————— 來到了鳳凰花開的季節～夏天真的要來啦！！ 恆春巷弄裡的玻璃屋老宅咖啡廳～鳳凰花現正滿開😍 把握好天氣來國境之南走走吧💛 這次喝了果汁跟甜點都很不錯🥰下次還想來吃看看早午餐跟法式吐司！！ 樹夏飲事 📍屏東縣恆春鎮城西里恆西路12-21號 🈺10:00-16:3

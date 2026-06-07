@@ -1,5 +1,6 @@
 ---
-tags: [美食]
+tags:
+  - 美食
 source: LINE
 date: 2026-06-06
 url: https://www.instagram.com/reel/DZHm3_RpQWQ/?utm_source=ig_web_copy_link&igsh=NTc4MTIwNjQ2YQ==
@@ -8,7 +9,7 @@ extraction_status: ok
 needs_review: false
 location_city: 台北市
 summary: 店名：未提供；地址：台北市萬華區和平西路三段168號；摘要：店名：海天香餃，位於台北市萬華區和平西路三段168號。這家店以水餃聞名，提供高麗菜和韭菜兩種口味，鮮肉與鮮蝦可選，特別推薦鮮蝦韭菜口味，餃皮偏厚且有口感，建議趁熱食用。
-status: unread
+status: done
 ---
 
 # 鄭大更💕台北·新北·桃園·台中·台南全台美食吃透透 Cheng Pei Yi on Instagram: "沒人分享的話 走過真的會直接錯過 這間是很多萬華朋友的水餃私藏推薦❤️‍🔥❤️‍🔥 水餃內用有高麗菜跟韭菜兩種口味 有鮮肉或是鮮蝦可以選 私心很愛鮮蝦韭菜 韭菜味濃厚很好吃 餃皮是偏厚有點口感的那種 一定要趁熱吃 海天香餃 📬台北市萬華區和平西路三段1

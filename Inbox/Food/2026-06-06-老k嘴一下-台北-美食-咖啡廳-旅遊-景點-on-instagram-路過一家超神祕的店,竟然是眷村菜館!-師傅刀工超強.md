@@ -1,5 +1,6 @@
 ---
-tags: [美食]
+tags:
+  - 美食
 source: LINE
 date: 2026-06-06
 url: https://www.instagram.com/reel/DX6xXQAAZpP/?utm_source=ig_web_copy_link&igsh=NTc4MTIwNjQ2YQ==
@@ -8,7 +9,7 @@ extraction_status: ok
 needs_review: false
 location_city: 臺北市
 summary: 這是一家位於台北大安區的眷村菜館，店名為「陸光大姐」。店家地址為106臺北市大安區和平東路二段133號，營業時間為11:30-14:00及17:30-20:30，周一公休，僅收現金，距離捷運科技大樓站步行約7分鐘。
-status: unread
+status: done
 ---
 
 # 老K嘴一下｜台北 美食/咖啡廳/旅遊/景點 on Instagram: "路過一家超神祕的店，竟然是眷村菜館! 師傅刀工超強，切得又薄又細太欠吃，尬上一碗麵食，真的是太舒服!! 更多資訊，Google 搜尋「陸光大姐 老K嘴一下」 - 【陸光大姐】 ▲ 地址 : 106臺北市大安區和平東路二段133號 ▲ 營業時間: 11:30-14:00、17:30-20

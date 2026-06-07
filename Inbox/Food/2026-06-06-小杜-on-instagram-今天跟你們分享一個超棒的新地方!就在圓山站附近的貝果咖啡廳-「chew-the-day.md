@@ -1,5 +1,6 @@
 ---
-tags: [美食]
+tags:
+  - 美食
 source: LINE
 date: 2026-06-06
 url: https://www.instagram.com/reel/DYouGY_Tzte/?utm_source=ig_web_copy_link&igsh=NTc4MTIwNjQ2YQ==
@@ -7,7 +8,7 @@ platform: instagram
 extraction_status: ok
 needs_review: false
 summary: 店名：Chew The Day 嚼日子；地址：大同區庫倫街13巷2弄2號；摘要：Chew The Day 嚼日子是一家位於圓山站附近的大同區庫倫街的貝果咖啡廳，店內裝潢復古溫馨，提供貝果與冰手沖咖啡。貝果供應時間至下午兩點，星期三僅供應咖啡，適合早晨悠閒享受。營業時間為07:00至17:00，距離圓山站步行約5至8分鐘。
-status: unread
+status: done
 ---
 
 # 小杜 on Instagram: "今天跟你們分享一個超棒的新地方！就在圓山站附近的貝果咖啡廳：「Chew The Day 嚼日子」。 一踏進門，就被那份復古又溫馨的氣氛深深吸引，木質門窗，還有那復古的風扇，每一角都散發著歲月的故事。點了份他們家的貝果，搭配冰手沖，每一口都是滿足。貝果只供應到下午兩點，想嚐鮮的朋友們要趁早！星期三只有供應咖啡，如果想吃貝果的
