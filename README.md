@@ -1,235 +1,417 @@
-# Personal KM
+# Personal KM - AI-Powered Second Brain
 
-LINE 群組連結整理到 Obsidian 的 MVP。LINE Bot 收到群組文字訊息後會偵測 URL，擷取網頁標題與內容，使用 LLM 產生 2-3 句摘要與自動分類，最後寫成 Markdown 並推送回這個 GitHub repo。新筆記會依分類放到 `Inbox/` 底下的子資料夾；`Archive/` 底下維持相同子資料夾，方便看完後歸檔。YouTube / `youtu.be` 連結會優先擷取字幕或逐字稿來摘要。
+**Status:** ✅ Phase 1+4 Live (Karpathy Framework Implementation)
 
-## Vault 結構
+LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每週日自動組織筆記，月度報告追踪過時的技術知識。
 
-```text
-Inbox/          不確定分類或待人工整理
-├── Food/       美食待讀
-├── General/    待分類待讀
-├── Photography/ 攝影景點待讀
-└── Tech/       技術待讀
-Archive/        已讀或歸檔，子資料夾與 Inbox 相同
-├── Food/
-├── General/
-├── Photography/
-└── Tech/
-Trash/          不要的項目，搬入後會改成非 Markdown 副檔名
-├── Food/
-├── General/
-├── Photography/
-└── Tech/
-Templates/      筆記模板
-Attachments/    圖片等附件
+## 🎯 核心功能
+
+### 📝 自動捕獲 (Real-time)
+- LINE 群組中任何 URL 都會被自動抓取
+- 支援 YouTube、網頁、Instagram、TikTok、X 等
+- 自動提取標題、內容、逐字稿
+
+### 🤖 AI 智能富集 (Per Capture)
+- 自動生成結構化摘要與標籤
+- **YouTube 優化:** 5 點具體重點（非籠統描述）
+- 自動概念提取與分類
+- YAML frontmatter 存儲元數據
+
+### 📅 週日自動整理 (Every Sunday 9 AM)
+- `raw/` → `wiki/` 自動組織
+- AI 分析內容，按 entities/concepts 分類
+- 自動生成 `knowledge-graph.md`
+- Git 自動提交
+
+### 📊 月度衰退檢測 (Monthly Report)
+- 自動掃描 DevOps、AI 相關筆記
+- 標記 90+ 天未更新的內容
+- 生成 CRITICAL/HIGH/MEDIUM 衰退等級
+- 建議更新或歸檔
+
+### 📚 知識組織 (Three-Tier)
+```
+raw/              ← 未組織的大腦傾倒
+  ↓ (每週日)
+wiki/
+├── entities/     ← Docker, Kubernetes, Claude 等
+├── concepts/     ← 知識概念、框架
+├── sources/      ← 參考資源
+└── knowledge-graph.md
+
+outputs/          ← 自動生成的報告
+├── decay-reports/
+└── ingestion-reports/
+
+archive/          ← 已歸檔的舊筆記
 ```
 
-## 本機啟動
+---
+
+## 📦 Vault 結構
+
+```text
+raw/                    新捕獲的內容（未分類）
+│
+wiki/                   自動組織的知識庫
+├── entities/           具體工具/框架/人物
+├── concepts/           知識概念
+├── sources/            參考資源
+└── knowledge-graph.md  自動索引
+
+outputs/                自動生成的報告
+├── decay-reports/      月度衰退檢測報告
+└── ingestion-reports/  週度整理報告
+
+archive/                歷史筆記
+├── inbox-history-before-2026-06-07/  (舊 Inbox 遷移)
+├── Food/               (Obsidian 備份)
+├── Tech/               (Obsidian 備份)
+└── stale/              (衰退檢測標記的筆記)
+
+Trash/                  已刪除的項目
+Attachments/            圖片等附件
+Templates/              筆記模板
+```
+
+---
+
+## 🚀 工作流
+
+### 用戶視角
+```
+1️⃣ 你在 LINE 傳送 URL
+   ↓
+2️⃣ Bot 自動抓取內容並生成摘要
+   ↓
+3️⃣ 筆記存到 raw/ 並自動富集
+   ↓
+4️⃣ 每週日 9 AM 自動組織到 wiki/
+   ↓
+5️⃣ Obsidian 自動同步
+   ↓
+6️⃣ 每月收到衰退檢測報告
+```
+
+### 自動化時間表
+| 時間 | 操作 |
+|------|------|
+| **即時** | LINE 連結 → raw/ (AI 富集) |
+| **每週日 9 AM** | raw/ → wiki/ (自動組織) |
+| **每月** | 生成衰退檢測報告 |
+| **持續** | Git 自動提交 |
+
+---
+
+## 💻 本機啟動
+
+### 環境設定
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
+```
+
+編輯 `.env` 填入必要變數（見下方環境變數段落）
+
+### 本機測試
+
+```bash
 uvicorn bot.app:app --reload --port 8000
 ```
 
 健康檢查：
-
 ```bash
 curl http://127.0.0.1:8000/health
 ```
 
-## Render 部署
+### 手動執行自動化任務
 
-這個 repo 已包含 `render.yaml`。在 Render Dashboard 選擇 **New +** -> **Blueprint**，連接 `dannytsao/PersonalKM`，Render 會自動帶入 LINE bot web service：
+**測試週日整理邏輯：**
+```bash
+python ~/.hermes/scripts/second-brain-ingest.py
+```
 
-```text
+**手動觸發衰退檢測：**
+```bash
+python scripts/check_knowledge_decay.py
+```
+
+---
+
+## 🌐 Render 部署
+
+此 repo 包含 `render.yaml`。在 Render Dashboard 選擇 **New +** → **Blueprint**，連接 `dannytsao/PersonalKM`，Render 自動帶入配置：
+
+```yaml
 Build Command: pip install -r requirements.txt
 Start Command: uvicorn bot.app:app --host 0.0.0.0 --port $PORT
 Health Check Path: /health
-Auto Deploy: false
+Auto Deploy: true  # 已啟用 - 每次 push 自動部署
 ```
 
-`Auto Deploy` 預設關閉是刻意的：Bot 會把每個 LINE 連結寫成筆記並 push 回同一個 repo，如果開啟自動部署，每新增一篇筆記就會觸發一次 Render deploy。
-
-`render.yaml` 也包含一個 Render Cron Job：
-
-```text
-Service: personal-km-housekeeping
-Schedule: 0 1 * * *   # 每天 UTC 01:00，也就是台北 09:00
-Command: python scripts/cloud_housekeeping.py
-```
-
-這個 cloud housekeeping job 會在 Render 上 clone/pull Vault repo，將 `status: done` / `status: archived` 從 `Inbox` 搬到 `Archive`，並將 `status: X` / `status: x` 搬到 `Trash` 後 commit/push。Render Cron Job 是獨立服務，通常需要付費方案或至少 Cron Job 的最低月費；不依賴本機電腦開機。
-
-## 必填環境變數
-
-`LINE_CHANNEL_SECRET`：LINE Messaging API channel secret，用來驗證 webhook 簽章。
-
-`LINE_CHANNEL_ACCESS_TOKEN`：保留給未來回覆 LINE 訊息使用；目前 MVP 不主動回覆訊息。
-
-`OPENAI_API_KEY`：用於 AI 摘要與分類。若未設定，系統會用簡易規則產生 fallback 摘要與分類。
-
-`VAULT_REPO_URL`：Bot 要 clone/push 的 Vault repo。Render 上建議使用只授權此 repo 的 GitHub fine-grained token，例如：
-
-```text
-https://你的GitHub帳號:你的Token@github.com/dannytsao/PersonalKM.git
-```
-
-這個值只能填在 Render Environment，不要 commit 到 repo。
-
-`personal-km-line-bot` 和 `personal-km-housekeeping` 都需要設定 `VAULT_REPO_URL`。可以在 Render 使用 Environment Group 共用同一組值，或在兩個 service 各自填入相同值。
-
-`VAULT_PATH`：部署環境中的暫存 clone 路徑，預設為 `/tmp/personal-km-vault`。
-
-`PYTHON_VERSION`：建議設為 `3.11.9`。
-
-## LINE Webhook
-
-部署後，在 LINE Developers 後台把 webhook URL 設為：
-
-```text
-https://你的部署網域/webhook/line
-```
-
-開啟 webhook 後，把 Bot 加入 LINE 群組。群組中有人貼 URL 時，Bot 會依分類在 `Inbox/Food/`、`Inbox/Tech/`、`Inbox/Photography/` 或 `Inbox/General/` 新增一篇筆記並推送 commit。
-
-## Obsidian 設定
-
-1. 將這個 repo clone 成 Obsidian Vault。
-2. 安裝 Obsidian Git。
-3. 設定自動 pull，每 10-15 分鐘一次。
-4. 設定自動 save / commit，每 10-15 分鐘一次。
-5. 設定自動 push，每 10-15 分鐘一次，並保留 push 前先 pull。
-6. 建議安裝 Dataview、Tag Wrangler、Templater。
-
-Cloud housekeeping 只能讀 GitHub 上的狀態。若只在本機 Obsidian 把筆記改成 `status: done`，但 Obsidian Git 沒有 commit/push，Render 上的 housekeeping 就看不到這個狀態，也不會把筆記搬到 `Archive/`。
-
-## 目前支援的分類
-
-| category | Obsidian tag |
-| --- | --- |
-| `photography` | `攝影景點` |
-| `food` | `美食` |
-| `tech` | `技術` |
-| `general` | `待分類` |
-
-## 自動歸檔規則
-
-| category | target folder |
-| --- | --- |
-| `photography` | `Inbox/Photography/` |
-| `food` | `Inbox/Food/` |
-| `tech` | `Inbox/Tech/` |
-| `general` | `Inbox/General/` |
-
-所有筆記仍會保留 `status: unread`，方便之後人工閱讀與整理。看完後可手動移到 `Archive/` 底下相同分類資料夾，例如 `Inbox/Tech/` -> `Archive/Tech/`。
-
-## 歸檔與丟棄筆記
-
-在 Obsidian 看完筆記後，如果要歸檔，把 frontmatter 的狀態改成：
-
+**Cron Jobs:**
 ```yaml
-status: archived
+- Service: second-brain-ingest
+  Schedule: 0 9 * * 0   # 每週日 UTC 9:00
+  Command: python ~/.hermes/scripts/second-brain-ingest.py
+
+- Service: knowledge-decay-monthly
+  Schedule: 0 9 1 * *   # 每月 1 號 UTC 9:00
+  Command: python ~/.hermes/scripts/knowledge-decay-monthly.py
 ```
 
-或：
+---
 
-```yaml
-status: done
-```
+## 🔑 環境變數
 
-如果確定不要這篇筆記，把狀態改成：
+### 必填
 
-```yaml
-status: X
-```
+| 變數 | 用途 | 例子 |
+|------|------|------|
+| `LINE_CHANNEL_SECRET` | LINE webhook 驗證 | `abc123xyz...` |
+| `LINE_CHANNEL_ACCESS_TOKEN` | LINE 消息 API | `Channel access token` |
+| `OPENAI_API_KEY` | AI 摘要與分類 | `sk-...` |
+| `OPENAI_MODEL` | OpenAI 模型 | `gpt-4o-mini` |
+| `VAULT_REPO_URL` | Vault 儲存庫 | `https://token@github.com/user/PersonalKM.git` |
 
-接著在 Vault 根目錄執行 dry-run，先確認會搬哪些檔案：
+### 可選
 
-```bash
-python scripts/archive_inbox.py --dry-run
-```
+| 變數 | 默認 | 說明 |
+|------|------|------|
+| `VAULT_PATH` | `/tmp/personal-km-vault` | 本地克隆路徑 |
+| `PYTHON_VERSION` | `3.11.9` | Python 版本 |
+| `REQUEST_TIMEOUT_SECONDS` | `10` | HTTP 請求超時 |
+| `MAX_PAGE_CHARS` | `5000` | 網頁內容最大字符 |
 
-確認無誤後執行搬移：
+**Render 環境變數設定：**
+- 在 Render Dashboard 為 `personal-km-line-bot` service 設定上表變數
+- 建議使用 Environment Group 共用 `VAULT_REPO_URL`
 
-```bash
-python scripts/archive_inbox.py
-```
+---
 
-如果要搬移後直接 commit 並 push 到 GitHub：
+## 📱 LINE Webhook 設定
 
-```bash
-python scripts/archive_inbox.py --commit
-```
+1. 在 LINE Developers 後台設定 webhook URL：
+   ```
+   https://你的-render-domain.onrender.com/webhook/line
+   ```
 
-腳本只會搬 `Inbox/<分類>/` 裡符合狀態的 Markdown 檔：
+2. 啟用 webhook，將 Bot 加入 LINE 群組
 
-| status | result |
-| --- | --- |
-| `done` | move to `Archive/<分類>/` |
-| `archived` | move to `Archive/<分類>/` |
-| `X` | move to `Trash/<分類>/` and rename to `.md.trash` |
-| `unread` | stay in `Inbox/<分類>/` |
+3. 群組中任何人貼 URL，Bot 會自動：
+   - 抓取內容
+   - 生成 AI 摘要
+   - 儲存到 `raw/`
+   - 推送 Git commit
 
-`status: X` 搬到 Trash 後會變成非 Markdown 副檔名，例如 `note.md.trash`，因此 Obsidian 不會把它當作一般筆記索引。
+---
 
-## YouTube Deep Note v1
+## 🧠 Obsidian 同步設定
 
-YouTube 連結不會直接抓影片頁 HTML。Bot 會先辨識 `youtu.be`、`youtube.com/watch`、`shorts`、`embed` 等 URL，接著嘗試取得影片標題與字幕/逐字稿。
+### 推薦設置
 
-有逐字稿時，YouTube 筆記會使用深度整理格式：
+1. **Clone Vault**
+   ```bash
+   git clone https://github.com/dannytsao/PersonalKM.git ~/Documents/PersonalKM
+   ```
 
+2. **安裝插件**
+   - Obsidian Git - 自動同步
+   - Dataview - 查詢筆記
+   - Tag Wrangler - 標籤管理
+   - Templater - 模板系統
+
+3. **Obsidian Git 設定**
+   - Auto pull: 每 10 分鐘
+   - Auto commit: 每 10 分鐘
+   - Auto push: 每 10 分鐘 (pull first)
+
+### 重要提醒
+
+衰退檢測只讀 GitHub 上的狀態。若只在本機 Obsidian 修改筆記但未 commit/push，Render 的自動化看不到這些更新。
+
+---
+
+## 🎯 YouTube 摘要格式
+
+### 自動檢測
+- 系統自動偵測 YouTube/youtu.be 連結
+- 自動抓取逐字稿與 AI 分析
+
+### 摘要格式
 ```markdown
-## 一句話重點
-## 核心摘要
-## 重點條列
-## 可行動項目
-## 關鍵概念
-## 值得追問的問題
-## 原文連結
+---
+tags: 標籤1, 標籤2
+summary: "**重點摘要：**
+- 具體重點 1 (包含工具名稱/版本)
+- 具體重點 2 (包含具體步驟)
+- 具體重點 3 (包含具體結果)
+- 具體重點 4 (包含具體工具)
+- 具體重點 5 (包含具體優勢)"
+---
+
+[原始逐字稿...]
 ```
 
-frontmatter 的 `summary` 仍保留 1-2 句短摘要，方便在 Obsidian 屬性與 Dataview 中快速掃描。
+### 設計原則
+- ✅ 避免籠統描述 (「工具整合」→ 列出具體工具)
+- ✅ 避免模糊詞語 (「實作步驟」→ 具體步驟序列)
+- ✅ 包含具體名稱、版本、數字
 
-如果影片沒有可用字幕、字幕端點拒絕存取，或影片本身限制擷取，Bot 仍會建立筆記並保留原文連結，但 `extraction_status` 會標成 `partial`，摘要會標註需要直接觀看影片。
+---
 
-## Universal Extractor v1
+## 📊 衰退檢測配置
 
-Bot 會優先擷取 OpenGraph / Twitter Card metadata，再使用正文文字摘要。對常見登入或反爬平台會標註擷取狀態，避免把平台樣板頁誤摘要成內容。
+### 監控範圍
+- **DevOps 主題:** Docker, Kubernetes, Terraform, CI/CD 等
+- **AI 主題:** GPT, Claude, LLM, PyTorch 等
 
-目前會特別辨識：
+### 衰退等級
+| 等級 | 天數 | 顏色 |
+|------|------|------|
+| EVERGREEN | 0-90 | 🟢 |
+| MEDIUM | 90-120 | 🟡 |
+| HIGH | 120-180 | 🟠 |
+| CRITICAL | 180+ | 🔴 |
 
-| platform | examples |
-| --- | --- |
-| `instagram` | `instagram.com/reel/...`, `instagram.com/p/...` |
-| `tiktok` | `tiktok.com/@user/video/...`, `vm.tiktok.com/...` |
-| `x` | `x.com/...`, `twitter.com/...` |
-| `threads` | `threads.net/...` |
-| `youtube` | `youtu.be/...`, `youtube.com/watch`, `shorts`, `embed` |
+### 月度報告
+```markdown
+## 2026-06-07 知識衰退檢測報告
 
-新筆記會增加：
+### 🟢 EVERGREEN (最新，無需更新)
+- Claude 最新用法 (0 days)
 
-```yaml
-platform: instagram
-extraction_status: blocked
-needs_review: true
+### 🟡 MEDIUM (3-4 個月，建議複習)
+- Docker 多階段構建 (95 days)
+
+### 🔴 CRITICAL (6+ 個月，強烈建議更新)
+- Kubernetes 1.25 配置 (210 days)
+  → 當前版本已是 1.31
 ```
 
-`extraction_status` 常見值：
+---
 
-| value | meaning |
-| --- | --- |
-| `ok` | 已取得可摘要內容 |
-| `partial` | 已取得部分資訊，例如標題但無字幕 |
-| `blocked` | 平台需要登入、反爬或只回傳樣板頁 |
-| `error` | 一般網頁擷取失敗 |
+## 🔄 Inbox 遷移記錄
 
-Instagram、TikTok、X、Threads 若只取得登入頁或平台樣板內容，Bot 會建立一篇保留原文連結的筆記，摘要標註需直接開啟查看，避免產生「Instagram 是社群平台」這類不相關摘要。
+**2026-06-07:** 完成遷移
+- 4 個舊筆記從 `Inbox/` 移至 `archive/inbox-history-before-2026-06-07/`
+- `Inbox/` 文件夾已刪除
+- 新系統完全啟用 (raw → wiki)
 
-## 下一步
+詳見 [INBOX-MIGRATION-LOG.md](./INBOX-MIGRATION-LOG.md)
 
-- 加入 LINE 回覆訊息，告知已建立哪一篇筆記。
-- 增加手動指定分類指令，例如 `#food https://...`。
-- 加入定期摘要報告推送回 LINE。
+---
+
+## 📅 Phase 進度
+
+### ✅ Phase 1+4: 完成 (2026-06-07)
+- [x] 三層架構 (raw/wiki/outputs)
+- [x] 週日自動整理
+- [x] AI 富集 (標籤、摘要、概念)
+- [x] YouTube 5 點摘要
+- [x] 衰退檢測系統
+
+### ⏰ Phase 2+3: 評估中 (2026-09-07 決定)
+- [ ] 知識圖譜 (entity relationships)
+- [ ] 查詢界面 (search/filter/timeline)
+- [ ] 決策點：運行 1 個月後決定
+
+詳見 [ENHANCEMENT-DECISION.md](./ENHANCEMENT-DECISION.md)
+
+---
+
+## 🛠️ 自定義與擴展
+
+### 調整 YouTube 摘要
+編輯 `bot/hermes_enrich.py`：
+```python
+# 修改重點數量
+"key_points": [...]
+
+# 修改分析溫度 (0.5=保守, 0.7=創意)
+temperature=0.5
+
+# 修改最大 token
+max_tokens=600
+```
+
+### 調整衰退檢測
+編輯 `bot/knowledge_decay.py`：
+```python
+# 修改監控主題
+DEVOPS_KEYWORDS = [...]
+AI_KEYWORDS = [...]
+
+# 修改衰退天數閾值
+FRESHNESS_LEVELS = {
+    "CRITICAL": 180,
+    "HIGH": 120,
+    ...
+}
+```
+
+### 添加新的自動化任務
+1. 在 `~/.hermes/scripts/` 創建新 Python 腳本
+2. 在 `render.yaml` 添加 Cron Job
+3. 推送並自動部署
+
+---
+
+## 📚 文檔導覽
+
+| 文檔 | 內容 |
+|------|------|
+| [PHASE-1-4-ROADMAP.md](./PHASE-1-4-ROADMAP.md) | Phase 1+4 詳細計畫 |
+| [YOUTUBE-SUMMARY-ENHANCEMENT.md](./YOUTUBE-SUMMARY-ENHANCEMENT.md) | YouTube 摘要改進說明 |
+| [ARCHIVE-STRATEGY.md](./ARCHIVE-STRATEGY.md) | Archive 文件夾策略 |
+| [WHY-RAW-NOT-INBOX.md](./WHY-RAW-NOT-INBOX.md) | 為什麼需要 raw/ 文件夾 |
+| [INBOX-MIGRATION-LOG.md](./INBOX-MIGRATION-LOG.md) | Inbox 遷移記錄 |
+| [IMPLEMENTATION-DELIVERY.md](./IMPLEMENTATION-DELIVERY.md) | 交付文檔 |
+
+---
+
+## 🎊 核心工作流快速參考
+
+### 日常使用
+```bash
+# 1. 在 LINE 傳送 URL
+#    ↓ (即時)
+# 2. 筆記自動進入 raw/ (已富集)
+#    ↓ (每週日 9 AM)
+# 3. 自動組織到 wiki/
+#    ↓ (自動同步)
+# 4. Obsidian 顯示更新
+#    ↓ (每月自動)
+# 5. 收到衰退檢測報告
+```
+
+### 月度維護
+```bash
+# 1. 檢查衰退報告
+# 2. 更新過時筆記或標記歸檔
+# 3. 查看 wiki/ 的新組織
+# 4. 決定是否升級到 Phase 2+3
+```
+
+---
+
+## 📞 支援與貢獻
+
+- **議題追蹤:** [GitHub Issues](https://github.com/dannytsao/PersonalKM/issues)
+- **文件:** 詳見各個 `.md` 文檔
+- **反饋:** 通過 LINE 或 GitHub
+
+---
+
+## 📜 許可證
+
+個人項目
+
+---
+
+**上次更新:** 2026-06-07  
+**系統狀態:** ✅ 完全運行 (Phase 1+4)  
+**下次評審:** 2026-07-07
