@@ -1,0 +1,64 @@
+
+============================================================
+📋 PersonalKM 健康检查报告
+============================================================
+扫描时间: 2026-06-07 17:18:00
+总笔记数: 6
+健康笔记: 1 ✅
+有问题笔记: 5 ⚠️
+
+问题分布:
+  - partial_extraction: 5
+  - generic_summary: 5
+  - youtube_no_transcript: 5
+
+可自动修复的笔记 (15):
+  - raw/Tech/2026-06-07-my-obsidian-vault-in-2026-what-i-actually-open-every-day.md
+    问题: partial_extraction
+  - raw/Tech/2026-06-07-my-obsidian-vault-in-2026-what-i-actually-open-every-day.md
+    问题: generic_summary
+  - raw/Tech/2026-06-07-my-obsidian-vault-in-2026-what-i-actually-open-every-day.md
+    问题: youtube_no_transcript
+  - raw/Tech/2026-06-07-claude-+-karpathy's-second-brain-is-insane.md
+    问题: partial_extraction
+  - raw/Tech/2026-06-07-claude-+-karpathy's-second-brain-is-insane.md
+    问题: generic_summary
+  - raw/Tech/2026-06-07-claude-+-karpathy's-second-brain-is-insane.md
+    问题: youtube_no_transcript
+  - raw/Tech/2026-06-07-i-built-an-ai-second-brain-using-obsidian-+-claude-(copy-me).md
+    问题: partial_extraction
+  - raw/Tech/2026-06-07-i-built-an-ai-second-brain-using-obsidian-+-claude-(copy-me).md
+    问题: generic_summary
+  - raw/Tech/2026-06-07-i-built-an-ai-second-brain-using-obsidian-+-claude-(copy-me).md
+    问题: youtube_no_transcript
+  - raw/Tech/2026-06-07-只用codex真实办公的一天-最好用的agent软件-codex使用技巧-提升工作效率.md
+    问题: partial_extraction
+
+详细问题列表:
+
+  📄 raw/Tech/2026-06-07-my-obsidian-vault-in-2026-what-i-actually-open-every-day.md
+    - [MEDIUM] partial_extraction
+    - [MEDIUM] generic_summary
+    - [MEDIUM] youtube_no_transcript
+
+  📄 raw/Tech/2026-06-07-claude-+-karpathy's-second-brain-is-insane.md
+    - [MEDIUM] partial_extraction
+    - [MEDIUM] generic_summary
+    - [MEDIUM] youtube_no_transcript
+
+  📄 raw/Tech/2026-06-07-i-built-an-ai-second-brain-using-obsidian-+-claude-(copy-me).md
+    - [MEDIUM] partial_extraction
+    - [MEDIUM] generic_summary
+    - [MEDIUM] youtube_no_transcript
+
+  📄 raw/Tech/2026-06-07-只用codex真实办公的一天-最好用的agent软件-codex使用技巧-提升工作效率.md
+    - [MEDIUM] partial_extraction
+    - [MEDIUM] generic_summary
+    - [MEDIUM] youtube_no_transcript
+
+  📄 raw/Tech/2026-06-07-the-3-file-ai-system-that-works-with-any-model.md
+    - [MEDIUM] partial_extraction
+    - [MEDIUM] generic_summary
+    - [MEDIUM] youtube_no_transcript
+
+============================================================
