@@ -1,5 +1,6 @@
 ---
-tags: [美食]
+tags:
+  - 美食
 source: LINE
 date: 2026-06-06
 url: https://www.instagram.com/reel/DYJ8v_jTvjB/?utm_source=ig_web_copy_link&igsh=NTc4MTIwNjQ2YQ==
@@ -7,7 +8,7 @@ platform: instagram
 extraction_status: ok
 needs_review: false
 summary: 台北療癒看飛機咖啡廳Rolling Dough，提供愜意的下午茶時光，能近距離欣賞飛機起降。咖啡廳位於純白玻璃屋空間，採光良好，非常適合午後休憩。店名：Rolling Dough 咖啡廳，地址：臺北市中山區圓山里中山北路三段181號(北美館南進門二樓)。
-status: unread
+status: done
 ---
 
 # 邱顯傑｜台北 桃園｜旅遊 景點 空拍 咖啡廳 美食 on Instagram: "台北療癒看飛機咖啡廳 坐在這一邊吃下午茶太愜意 還能近距離欣賞飛機✈️ 純白玻璃屋空間，採光非常好☀️ 很推薦午後來坐坐！ 📍Rolling Dough 咖啡廳 @rollingdough_tw 時間：9:30-17:30 (週一公休) 地址：臺北市中山區圓山里中山北路三段18
