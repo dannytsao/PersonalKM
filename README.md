@@ -100,7 +100,11 @@ https://你的部署網域/webhook/line
 1. 將這個 repo clone 成 Obsidian Vault。
 2. 安裝 Obsidian Git。
 3. 設定自動 pull，每 10-15 分鐘一次。
-4. 建議安裝 Dataview、Tag Wrangler、Templater。
+4. 設定自動 save / commit，每 10-15 分鐘一次。
+5. 設定自動 push，每 10-15 分鐘一次，並保留 push 前先 pull。
+6. 建議安裝 Dataview、Tag Wrangler、Templater。
+
+Cloud housekeeping 只能讀 GitHub 上的狀態。若只在本機 Obsidian 把筆記改成 `status: done`，但 Obsidian Git 沒有 commit/push，Render 上的 housekeeping 就看不到這個狀態，也不會把筆記搬到 `Archive/`。
 
 ## 目前支援的分類
 
