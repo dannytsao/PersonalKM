@@ -1,0 +1,275 @@
+"""
+Second Brain Weekly Ingestion System
+Processes raw/ folder and organizes into wiki/ structure
+Phase 4: Automated organization
+"""
+import json
+import logging
+import os
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+# Only import OpenAI if needed
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+
+logger = logging.getLogger(__name__)
+
+# Initialize OpenAI with API key from environment
+if OpenAI:
+    api_key = os.getenv("OPENAI_API_KEY")
+    client = OpenAI(api_key=api_key) if api_key else None
+else:
+    client = None
+
+MODEL = "gpt-4o-mini"
+
+# Configuration
+DEVOPS_KEYWORDS = [
+    "docker", "kubernetes", "k8s", "container", "helm",
+    "terraform", "cloudformation", "ansible", "vagrant",
+    "github actions", "gitlab ci", "jenkins", "circleci",
+    "prometheus", "grafana", "elk", "datadog", "newrelic",
+    "aws", "gcp", "azure", "digitalocean", "heroku",
+    "nginx", "apache", "load balancer", "cdn", "vpc",
+    "ci/cd", "devops", "infrastructure", "deployment",
+]
+
+AI_KEYWORDS = [
+    "gpt", "claude", "llm", "large language model",
+    "transformer", "bert", "rag", "retrieval",
+    "pytorch", "tensorflow", "keras", "huggingface",
+    "openai", "anthropic", "mistral", "llama",
+    "fine-tune", "quantization", "qlora", "lora",
+    "embeddings", "vector", "semantic search",
+    "prompt", "chain of thought", "reasoning",
+    "agent", "tool use", "function calling",
+]
+
+
+def categorize_note(content: str) -> tuple[str, list[str]]:
+    """Determine if note is DevOps/AI and return category."""
+    content_lower = content.lower()
+    
+    is_devops = any(kw in content_lower for kw in DEVOPS_KEYWORDS)
+    is_ai = any(kw in content_lower for kw in AI_KEYWORDS)
+    
+    categories = []
+    if is_devops:
+        categories.append("devops")
+    if is_ai:
+        categories.append("ai")
+    
+    if not categories:
+        categories.append("general")
+    
+    return "concepts" if categories == ["general"] else "entities", categories
+
+
+def extract_entities_ai(content: str, categories: list[str]) -> dict:
+    """Use AI to extract entities from note."""
+    if not client:
+        logger.warning("OpenAI client not available, using basic extraction")
+        return {"entities": [], "relationships": [], "wiki_path": "concepts/general"}
+    
+    try:
+        prompt = f"""Extract key entities from this {', '.join(categories)} note.
+
+Return JSON with:
+- entities: [list of frameworks, tools, versions, concepts]
+- relationships: [list of related concepts]
+- summary: brief summary (one line)
+- wiki_path: suggested path like "entities/docker" or "entities/kubernetes"
+
+Content:
+{content[:1000]}
+
+Respond ONLY with JSON:"""
+        
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=300,
+        )
+        
+        output = response.choices[0].message.content.strip()
+        start = output.find('{')
+        end = output.rfind('}') + 1
+        
+        if start < 0 or end <= start:
+            return {"entities": [], "relationships": [], "wiki_path": "concepts/general"}
+        
+        return json.loads(output[start:end])
+    except Exception as e:
+        logger.error(f"AI extraction failed: {e}")
+        return {"entities": [], "relationships": [], "wiki_path": "concepts/general"}
+
+
+def organize_note_to_wiki(raw_path: Path, wiki_path: Path) -> bool:
+    """Move note from raw/ to wiki/ with organization."""
+    try:
+        content = raw_path.read_text()
+        
+        # Categorize
+        subfolder, categories = categorize_note(content)
+        
+        # Extract entities (optional but useful)
+        entities = extract_entities_ai(content, categories)
+        
+        # Determine destination
+        wiki_category_path = wiki_path / subfolder
+        wiki_category_path.mkdir(parents=True, exist_ok=True)
+        
+        # Create destination filename
+        source_name = raw_path.stem
+        dest_name = f"{source_name}.md"
+        dest_path = wiki_category_path / dest_name
+        
+        # Add metadata to top of file if not already present
+        if not content.startswith("---"):
+            metadata = f"""---
+captured_date: {datetime.now().isoformat()}
+categories: {json.dumps(categories)}
+entities: {json.dumps(entities.get('entities', []))}
+wiki_path: {entities.get('wiki_path', subfolder)}
+---
+
+"""
+            content = metadata + content
+        
+        # Write to wiki
+        dest_path.write_text(content)
+        
+        # Remove from raw
+        raw_path.unlink()
+        
+        logger.info(f"✅ Organized {raw_path.name} → {dest_path.relative_to(wiki_path.parent)}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to organize {raw_path}: {e}")
+        return False
+
+
+def build_knowledge_graph(wiki_path: Path) -> str:
+    """Generate knowledge graph markdown."""
+    try:
+        graph_md = """# 📊 Knowledge Graph
+
+Generated: {}\n\n""".format(datetime.now().strftime("%Y-%m-%d %H:%M"))
+        
+        # Index entities
+        entities_path = wiki_path / "entities"
+        if entities_path.exists():
+            files = list(entities_path.glob("*.md"))
+            
+            graph_md += f"""## 🔗 Entities ({len(files)} files)
+
+"""
+            for f in sorted(files):
+                name = f.stem
+                graph_md += f"- **{name}**\n"
+            
+            graph_md += "\n"
+        
+        # Index concepts
+        concepts_path = wiki_path / "concepts"
+        if concepts_path.exists():
+            files = list(concepts_path.glob("*.md"))
+            
+            graph_md += f"""## 💡 Concepts ({len(files)} files)
+
+"""
+            for f in sorted(files):
+                name = f.stem
+                graph_md += f"- {name}\n"
+            
+            graph_md += "\n"
+        
+        graph_md += """---
+Last updated: {}
+""".format(datetime.now().isoformat())
+        
+        return graph_md
+        
+    except Exception as e:
+        logger.error(f"Graph generation failed: {e}")
+        return "# Knowledge Graph\n\n(generation failed)"
+
+
+def ingest_raw_to_wiki(vault_path: Path) -> dict:
+    """Main ingestion: process raw/ and organize to wiki/."""
+    try:
+        raw_path = vault_path / "raw"
+        wiki_path = vault_path / "wiki"
+        
+        if not raw_path.exists():
+            logger.warning("raw/ folder does not exist")
+            return {"status": "error", "message": "raw/ folder not found", "processed": 0}
+        
+        # Process all files in raw/
+        raw_files = list(raw_path.glob("*.md"))
+        processed = 0
+        failed = 0
+        
+        logger.info(f"Starting ingestion: {len(raw_files)} files in raw/")
+        
+        for note_file in raw_files:
+            if organize_note_to_wiki(note_file, wiki_path):
+                processed += 1
+            else:
+                failed += 1
+        
+        # Build knowledge graph
+        graph_content = build_knowledge_graph(wiki_path)
+        graph_path = wiki_path / "knowledge-graph.md"
+        graph_path.write_text(graph_content)
+        
+        result = {
+            "status": "success",
+            "processed": processed,
+            "failed": failed,
+            "total": len(raw_files),
+            "timestamp": datetime.now().isoformat(),
+            "graph_updated": True,
+        }
+        
+        logger.info(f"✅ Ingestion complete: {processed} processed, {failed} failed")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Ingestion failed: {e}")
+        return {"status": "error", "message": str(e), "processed": 0}
+
+
+def generate_ingestion_report(vault_path: Path, result: dict) -> str:
+    """Generate markdown report of ingestion."""
+    report = f"""# Weekly Ingestion Report
+Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}
+
+## Summary
+- Status: {result.get('status', 'unknown')}
+- Processed: {result.get('processed', 0)}
+- Failed: {result.get('failed', 0)}
+- Total: {result.get('total', 0)}
+
+## Details
+```json
+{json.dumps(result, indent=2)}
+```
+
+## What Happened
+1. Scanned raw/ folder
+2. Extracted entities from each note
+3. Categorized and moved to wiki/
+4. Built knowledge-graph.md
+5. Committed changes
+
+Next ingestion: 1 week
+
+"""
+    return report
