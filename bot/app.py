@@ -11,7 +11,7 @@ from bot.config import get_settings
 from bot.git_store import commit_and_push, ensure_vault
 from bot.hermes_enrich import enrich_note
 from bot.knowledge_decay import analyze_on_capture
-from bot.line import extract_urls, text_messages_from_webhook, verify_line_signature
+from bot.line import LineTextEvent, extract_urls, mark_message_as_read, text_message_events_from_webhook, verify_line_signature
 from bot.link_processor import parse_line_message_part, process_line_message_context, process_url, should_capture_line_message_context
 from bot.notes import write_note
 
@@ -77,9 +77,18 @@ def collect_line_message_part(vault_path: Path, text: str) -> Optional[str]:
     return merged
 
 
-async def capture_line_messages(messages: list[str]) -> None:
+async def mark_line_event_as_read(settings, event: LineTextEvent) -> None:
+    try:
+        marked = await mark_message_as_read(settings.line_channel_access_token, event.mark_as_read_token)
+        if marked:
+            logger.info("Marked LINE message as read")
+    except Exception:
+        logger.exception("Failed to mark LINE message as read")
+
+
+async def capture_line_messages(events: list[LineTextEvent]) -> None:
     settings = get_settings()
-    logger.info("Processing %s LINE message(s)", len(messages))
+    logger.info("Processing %s LINE message(s)", len(events))
 
     try:
         vault_path = await asyncio.to_thread(ensure_vault, settings)
@@ -87,16 +96,19 @@ async def capture_line_messages(messages: list[str]) -> None:
         logger.exception("Failed to prepare vault repo")
         return
 
-    for text in messages:
+    for event in events:
+        text = event.text
         text = collect_line_message_part(vault_path, text)
         if text is None:
             continue
 
+        saved_any_note = False
         urls = extract_urls(text)
         if should_capture_line_message_context(text, settings.max_page_chars):
             try:
                 note = await process_line_message_context(settings, text, urls)
                 await save_note(settings, vault_path, note)
+                saved_any_note = True
             except Exception:
                 logger.exception("Failed to capture LINE pasted message")
 
@@ -104,9 +116,13 @@ async def capture_line_messages(messages: list[str]) -> None:
             try:
                 note = await process_url(settings, url, text)
                 await save_note(settings, vault_path, note)
+                saved_any_note = True
                 logger.info("✅ Captured LINE URL %s", url)
             except Exception:
                 logger.exception("Failed to capture LINE URL %s", url)
+
+        if saved_any_note:
+            await mark_line_event_as_read(settings, event)
 
 
 async def capture_urls(urls: list[tuple[str, str]]) -> None:
@@ -141,17 +157,17 @@ async def line_webhook(
         raise HTTPException(status_code=401, detail="Invalid LINE signature")
 
     payload = await request.json()
-    messages = text_messages_from_webhook(payload)
-    urls = [(url, text) for text in messages for url in extract_urls(text)]
+    events = text_message_events_from_webhook(payload)
+    urls = [(url, event.text) for event in events for url in extract_urls(event.text)]
     has_capturable_text = any(
-        parse_line_message_part(text) or should_capture_line_message_context(text, settings.max_page_chars)
-        for text in messages
+        parse_line_message_part(event.text) or should_capture_line_message_context(event.text, settings.max_page_chars)
+        for event in events
     )
 
     if not urls and not has_capturable_text:
         logger.info("LINE webhook received no capturable text or URLs")
         return {"ok": True, "accepted": 0}
 
-    background_tasks.add_task(capture_line_messages, messages)
-    logger.info("Accepted %s LINE message(s) for background processing", len(messages))
-    return {"ok": True, "accepted": len(messages)}
+    background_tasks.add_task(capture_line_messages, events)
+    logger.info("Accepted %s LINE message(s) for background processing", len(events))
+    return {"ok": True, "accepted": len(events)}
