@@ -32,6 +32,7 @@ class LinkNote:
     needs_review: bool = False
     body_markdown: str = ""
     location_city: str = ""
+    log_id: str = ""
 
     @property
     def tag(self) -> str:
@@ -47,7 +48,8 @@ def slugify(value: str, max_length: int = 60) -> str:
 
 
 def note_filename(note: LinkNote) -> str:
-    return f"{note.captured_on.isoformat()}-{slugify(note.title)}.md"
+    log_part = f"{note.log_id}-" if note.log_id else ""
+    return f"{note.captured_on.isoformat()}-{log_part}{slugify(note.title)}.md"
 
 
 def note_target_dir(note: LinkNote, fallback_dir: str) -> str:
@@ -59,6 +61,8 @@ def render_note(note: LinkNote) -> str:
     safe_summary = note.summary.replace("\n", " ").strip()
     needs_review = "true" if note.needs_review else "false"
     location_city_line = f"location_city: {note.location_city}\n" if note.location_city else ""
+    log_id_line = f"log_id: {note.log_id}\n" if note.log_id else ""
+    log_id_section = f"## Log ID\n{note.log_id}\n\n" if note.log_id else ""
     body = note.body_markdown.strip()
     if not body:
         body = (
@@ -72,6 +76,7 @@ def render_note(note: LinkNote) -> str:
         f"tags: [{note.tag}]\n"
         "source: LINE\n"
         f"date: {note.captured_on.isoformat()}\n"
+        f"{log_id_line}"
         f"url: {note.url}\n"
         f"platform: {note.platform}\n"
         f"extraction_status: {note.extraction_status}\n"
@@ -81,6 +86,7 @@ def render_note(note: LinkNote) -> str:
         "status: unread\n"
         "---\n\n"
         f"# {note.title}\n\n"
+        f"{log_id_section}"
         f"{body}\n"
     )
 
