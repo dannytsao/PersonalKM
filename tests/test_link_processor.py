@@ -10,8 +10,10 @@ from bot.link_processor import (
     fallback_summary,
     fallback_youtube_deep_note,
     google_maps_url,
+    google_ai_mode_share_content,
     instagram_content_type,
     instagram_fallback_content,
+    is_google_ai_mode_share,
     is_instagram_shell_text,
     is_restricted_platform,
     metadata_text,
@@ -184,6 +186,7 @@ def test_platform_from_url_detects_restricted_platforms():
     assert platform_from_url("https://www.tiktok.com/@user/video/1") == "tiktok"
     assert platform_from_url("https://x.com/user/status/1") == "x"
     assert platform_from_url("https://www.threads.net/@user/post/1") == "threads"
+    assert platform_from_url("https://share.google/aimode/8uyYWVgle7A2ZDGFx") == "google-ai-mode"
     assert platform_from_url("https://example.com/a") == "web"
 
 
@@ -199,6 +202,20 @@ def test_restricted_platform_fallback_sets_review_metadata():
 def test_is_restricted_platform():
     assert is_restricted_platform("https://www.tiktok.com/@user/video/1")
     assert not is_restricted_platform("https://example.com/a")
+
+
+def test_google_ai_mode_share_detection_and_fallback_content():
+    content = google_ai_mode_share_content("https://share.google/aimode/8uyYWVgle7A2ZDGFx")
+
+    assert is_google_ai_mode_share("https://share.google/aimode/8uyYWVgle7A2ZDGFx")
+    assert is_google_ai_mode_share("https://www.share.google/aimode/8uyYWVgle7A2ZDGFx")
+    assert not is_google_ai_mode_share("https://share.google/example")
+    assert content.title == "Google AI Mode share"
+    assert content.platform == "google-ai-mode"
+    assert content.extraction_status == "blocked"
+    assert content.needs_review
+    assert "HTTP 429" in content.text
+    assert "把 AI Mode 回答內容貼到 LINE" in content.text
 
 
 def test_extract_page_metadata_reads_open_graph_and_twitter_cards():

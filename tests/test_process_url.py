@@ -20,3 +20,21 @@ async def test_process_url_writes_note_when_fetch_is_forbidden(monkeypatch):
     assert note.url == "https://openai.com/"
     assert "HTTP 403" in note.summary
     assert note.category == "tech"
+
+
+@pytest.mark.anyio
+async def test_process_url_handles_google_ai_mode_share_without_fetching(monkeypatch):
+    async def fake_fetch_page(url, timeout_seconds, max_chars):
+        raise AssertionError("Google AI Mode share links should not be fetched")
+
+    monkeypatch.setattr("bot.link_processor.fetch_page", fake_fetch_page)
+
+    note = await process_url(Settings(), "https://share.google/aimode/8uyYWVgle7A2ZDGFx")
+
+    assert note.title == "Google AI Mode share"
+    assert note.url == "https://share.google/aimode/8uyYWVgle7A2ZDGFx"
+    assert note.platform == "google-ai-mode"
+    assert note.extraction_status == "blocked"
+    assert note.needs_review
+    assert "HTTP 429" in note.summary
+    assert note.category == "tech"
