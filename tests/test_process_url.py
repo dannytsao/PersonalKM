@@ -38,3 +38,23 @@ async def test_process_url_handles_google_ai_mode_share_without_fetching(monkeyp
     assert note.needs_review
     assert "HTTP 429" in note.summary
     assert note.category == "tech"
+
+
+@pytest.mark.anyio
+async def test_process_url_summarizes_google_ai_mode_pasted_answer(monkeypatch):
+    async def fake_fetch_page(url, timeout_seconds, max_chars):
+        raise AssertionError("Google AI Mode pasted answers should not fetch the share page")
+
+    monkeypatch.setattr("bot.link_processor.fetch_page", fake_fetch_page)
+
+    url = "https://share.google/aimode/YyTssJIr44VpGTZWt"
+    message = f"{url}\nAI Mode 回答：這篇內容整理 AI agent workflow、自動化與知識管理實作。"
+
+    note = await process_url(Settings(), url, message)
+
+    assert note.title == "Google AI Mode pasted answer"
+    assert note.platform == "google-ai-mode"
+    assert note.extraction_status == "ok"
+    assert not note.needs_review
+    assert "AI agent workflow" in note.summary
+    assert note.category == "tech"
