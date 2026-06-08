@@ -17,11 +17,14 @@ from bot.link_processor import (
     is_google_ai_mode_share,
     is_instagram_shell_text,
     is_restricted_platform,
+    line_message_context_text,
+    line_message_title,
     metadata_text,
     parse_caption_tracks,
     parse_json3_transcript,
     platform_from_url,
     restricted_platform_fallback,
+    should_capture_line_message_context,
     to_note,
     youtube_video_id,
 )
@@ -224,6 +227,22 @@ def test_google_ai_mode_context_text_removes_share_url():
     text = f"{url}\nAI Mode 回答：這篇內容整理 agent workflow 與自動化。"
 
     assert google_ai_mode_context_text(url, text, 200) == "AI Mode 回答：這篇內容整理 agent workflow 與自動化。"
+
+
+def test_line_message_context_helpers_preserve_pasted_article_text():
+    text = (
+        "這是一篇很長的 LINE 貼文，介紹 Codex 如何搭配 ComfyUI 使用，並整理多個實作案例。"
+        "內容包含工作流、節點相容性、批量出圖，以及學習心得。"
+        "https://example.com/article"
+    )
+
+    assert "https://example.com/article" not in line_message_context_text(text, 500)
+    assert should_capture_line_message_context(text, 500)
+    assert line_message_title(text).startswith("這是一篇很長的 LINE 貼文")
+
+
+def test_line_message_context_ignores_short_link_only_messages():
+    assert not should_capture_line_message_context("看這個 https://example.com", 500)
 
 
 def test_extract_page_metadata_reads_open_graph_and_twitter_cards():

@@ -643,6 +643,45 @@ def ensure_food_summary_details(title: str, page_text: str, summary: str, catego
     return f"{food_summary_prefix(title, page_text)}；摘要：{summary}"
 
 
+def line_message_context_text(text: str, max_chars: int) -> str:
+    without_urls = re.sub(r"https?://[^\s<>()\"'，。！？、；：「」『』]+", " ", text)
+    return " ".join(without_urls.split())[:max_chars]
+
+
+def should_capture_line_message_context(text: str, max_chars: int) -> bool:
+    return len(line_message_context_text(text, max_chars)) >= 40
+
+
+def line_message_title(text: str) -> str:
+    context = line_message_context_text(text, 180)
+    if not context:
+        return "LINE pasted message"
+    return context[:80].rstrip("，,。；;：:") or "LINE pasted message"
+
+
+def line_message_body_markdown(text: str, urls: list[str]) -> str:
+    url_lines = "\n".join(f"- {url}" for url in urls) if urls else "- 未提供"
+    return (
+        "## 原始貼文\n"
+        f"{text.strip()}\n\n"
+        "## 內含連結\n"
+        f"{url_lines}"
+    )
+
+
+async def process_line_message_context(settings: Settings, text: str, urls: list[str]) -> LinkNote:
+    context = line_message_context_text(text, settings.max_page_chars)
+    title = line_message_title(text)
+    source_url = urls[0] if urls else "line://message"
+    content = ExtractedContent(
+        title=title,
+        text=f"使用者貼到 LINE 的完整文字內容：{context}",
+        platform="line-message",
+    )
+    summary, category = await summarize_with_llm(settings, content.title, source_url, content.text)
+    return to_deep_note(content, source_url, summary, category, line_message_body_markdown(text, urls))
+
+
 async def summarize_with_llm(settings: Settings, title: str, url: str, page_text: str) -> tuple[str, str]:
     if not settings.openai_api_key:
         category = fallback_category(title, page_text)
