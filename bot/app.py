@@ -1,5 +1,8 @@
 import asyncio
+import json
 import logging
+import time
+from pathlib import Path
 from typing import Optional
 
 from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
@@ -9,12 +12,13 @@ from bot.git_store import commit_and_push, ensure_vault
 from bot.hermes_enrich import enrich_note
 from bot.knowledge_decay import analyze_on_capture
 from bot.line import extract_urls, text_messages_from_webhook, verify_line_signature
-from bot.link_processor import process_line_message_context, process_url, should_capture_line_message_context
+from bot.link_processor import parse_line_message_part, process_line_message_context, process_url, should_capture_line_message_context
 from bot.notes import write_note
 
 
 app = FastAPI(title="Personal KM LINE Link Bot")
 logger = logging.getLogger(__name__)
+LINE_PARTS_FILE = ".line-message-parts.json"
 
 
 @app.get("/health")
@@ -30,6 +34,49 @@ async def save_note(settings, vault_path, note) -> None:
     logger.info("✅ Captured and enriched LINE note into raw/ → %s", note_path.relative_to(vault_path))
 
 
+def line_parts_path(vault_path: Path) -> Path:
+    return vault_path / LINE_PARTS_FILE
+
+
+def load_line_parts(vault_path: Path) -> dict:
+    path = line_parts_path(vault_path)
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        logger.warning("Ignoring unreadable LINE parts cache at %s", path)
+        return {}
+
+
+def save_line_parts(vault_path: Path, cache: dict) -> None:
+    line_parts_path(vault_path).write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def collect_line_message_part(vault_path: Path, text: str) -> Optional[str]:
+    part = parse_line_message_part(text)
+    if not part:
+        return text
+
+    cache = load_line_parts(vault_path)
+    key = f"{part.label}:{part.total}"
+    entry = cache.setdefault(key, {"total": part.total, "parts": {}, "updated_at": time.time()})
+    entry["parts"][str(part.index)] = text
+    entry["updated_at"] = time.time()
+
+    expected = {str(index) for index in range(1, part.total + 1)}
+    if set(entry["parts"]) != expected:
+        save_line_parts(vault_path, cache)
+        logger.info("Stored LINE message part %s/%s for %s", part.index, part.total, part.label)
+        return None
+
+    merged = "\n\n".join(entry["parts"][str(index)] for index in range(1, part.total + 1))
+    cache.pop(key, None)
+    save_line_parts(vault_path, cache)
+    logger.info("Merged %s LINE message parts for %s", part.total, part.label)
+    return merged
+
+
 async def capture_line_messages(messages: list[str]) -> None:
     settings = get_settings()
     logger.info("Processing %s LINE message(s)", len(messages))
@@ -41,6 +88,10 @@ async def capture_line_messages(messages: list[str]) -> None:
         return
 
     for text in messages:
+        text = collect_line_message_part(vault_path, text)
+        if text is None:
+            continue
+
         urls = extract_urls(text)
         if should_capture_line_message_context(text, settings.max_page_chars):
             try:
@@ -92,11 +143,15 @@ async def line_webhook(
     payload = await request.json()
     messages = text_messages_from_webhook(payload)
     urls = [(url, text) for text in messages for url in extract_urls(text)]
+    has_capturable_text = any(
+        parse_line_message_part(text) or should_capture_line_message_context(text, settings.max_page_chars)
+        for text in messages
+    )
 
-    if not urls:
-        logger.info("LINE webhook received no URLs")
+    if not urls and not has_capturable_text:
+        logger.info("LINE webhook received no capturable text or URLs")
         return {"ok": True, "accepted": 0}
 
     background_tasks.add_task(capture_line_messages, messages)
-    logger.info("Accepted %s LINE URL(s) for background processing", len(urls))
-    return {"ok": True, "accepted": len(urls)}
+    logger.info("Accepted %s LINE message(s) for background processing", len(messages))
+    return {"ok": True, "accepted": len(messages)}

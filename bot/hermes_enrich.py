@@ -8,8 +8,11 @@ import re
 
 logger = logging.getLogger(__name__)
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+
+def openai_client() -> OpenAI:
+    return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 async def enrich_note(note_path: Path) -> bool:
@@ -65,7 +68,7 @@ async def _enrich_youtube(content: str) -> dict:
         
         transcript = match.group(1).strip()[:3000]  # First 3000 chars
         
-        response = client.chat.completions.create(
+        response = openai_client().chat.completions.create(
             model=MODEL,
             messages=[
                 {
@@ -127,7 +130,7 @@ JSON 格式：
 async def _enrich_regular(content: str) -> dict:
     """Extract summary from regular web content."""
     try:
-        response = client.chat.completions.create(
+        response = openai_client().chat.completions.create(
             model=MODEL,
             messages=[
                 {

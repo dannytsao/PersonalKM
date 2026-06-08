@@ -22,6 +22,7 @@ from bot.link_processor import (
     metadata_text,
     parse_caption_tracks,
     parse_json3_transcript,
+    parse_line_message_part,
     platform_from_url,
     restricted_platform_fallback,
     should_capture_line_message_context,
@@ -243,6 +244,17 @@ def test_line_message_context_helpers_preserve_pasted_article_text():
 
 def test_line_message_context_ignores_short_link_only_messages():
     assert not should_capture_line_message_context("看這個 https://example.com", 500)
+
+
+def test_parse_line_message_part_reads_article_markers():
+    part = parse_line_message_part("[文章 2/3]\n第二段內容")
+
+    assert part
+    assert part.label == "文章"
+    assert part.index == 2
+    assert part.total == 3
+    assert parse_line_message_part("普通訊息") is None
+    assert parse_line_message_part("[文章 4/3]") is None
 
 
 def test_extract_page_metadata_reads_open_graph_and_twitter_cards():
