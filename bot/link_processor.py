@@ -47,6 +47,7 @@ YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtu
 YOUTUBE_LANG_PRIORITY = ("zh-Hant", "zh-TW", "zh-Hans", "zh-CN", "zh", "en")
 INSTAGRAM_HOSTS = {"instagram.com", "www.instagram.com", "m.instagram.com"}
 INSTAGRAM_CONTENT_PATHS = {"p", "reel", "reels", "tv"}
+GOOGLE_SHARE_HOSTS = {"share.google", "www.share.google"}
 RESTRICTED_PLATFORM_HOSTS = {
     "instagram.com": "instagram",
     "www.instagram.com": "instagram",
@@ -113,11 +114,20 @@ async def fetch_page(url: str, timeout_seconds: float, max_chars: int) -> Extrac
 
 def platform_from_url(url: str) -> str:
     host = urlparse(url).netloc.lower()
+    if is_google_ai_mode_share(url):
+        return "google-ai-mode"
     if host in RESTRICTED_PLATFORM_HOSTS:
         return RESTRICTED_PLATFORM_HOSTS[host]
     if host in YOUTUBE_HOSTS:
         return "youtube"
     return "web"
+
+
+def is_google_ai_mode_share(url: str) -> bool:
+    parsed = urlparse(url)
+    host = parsed.netloc.lower()
+    path_parts = [part for part in parsed.path.split("/") if part]
+    return host in GOOGLE_SHARE_HOSTS and len(path_parts) >= 2 and path_parts[0] == "aimode"
 
 
 def extract_page_metadata(soup: BeautifulSoup) -> dict[str, str]:
@@ -216,6 +226,20 @@ def restricted_platform_fallback(url: str) -> ExtractedContent:
         "threads": "Threads post",
     }
     return blocked_platform_content(platform, labels.get(platform, f"{platform} link"))
+
+
+def google_ai_mode_share_content(url: str) -> ExtractedContent:
+    return ExtractedContent(
+        title="Google AI Mode share",
+        text=(
+            "這是一個 Google AI Mode 分享連結。share.google/aimode 頁面常會對自動化擷取回傳 "
+            "HTTP 429，因此系統不直接抓取該頁面。請在瀏覽器開啟分享連結後，複製頁面中的原始來源、"
+            "可公開網址，或把 AI Mode 回答內容貼到 LINE；系統即可整理真正的內容。"
+        ),
+        platform="google-ai-mode",
+        extraction_status="blocked",
+        needs_review=True,
+    )
 
 
 def is_restricted_platform(url: str) -> bool:
@@ -721,6 +745,11 @@ async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, 
 
 
 async def process_url(settings: Settings, url: str) -> LinkNote:
+    if is_google_ai_mode_share(url):
+        content = google_ai_mode_share_content(url)
+        summary, category = await summarize_with_llm(settings, content.title, url, content.text)
+        return to_note(content, url, summary, category)
+
     video_id = youtube_video_id(url)
     if video_id:
         content = await fetch_youtube_content(settings, url, video_id)
