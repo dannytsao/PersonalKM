@@ -12,8 +12,11 @@ from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
-client = OpenAI()
 MODEL = "gpt-4o-mini"
+
+
+def openai_client() -> OpenAI:
+    return OpenAI()
 
 # Configuration
 CURRENT_THRESHOLD_DAYS = 90  # 3 months = current
@@ -163,7 +166,7 @@ Respond ONLY with JSON (no other text):
     "related_topics": ["topic1", "topic2"]
 }}"""
         
-        response = client.chat.completions.create(
+        response = openai_client().chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.5,

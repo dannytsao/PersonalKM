@@ -15,6 +15,12 @@ from bot.notes import LinkNote
 
 
 CATEGORY_VALUES = {"photography", "food", "tech", "general"}
+LINE_PART_PATTERN = re.compile(
+    r"^\s*[\[【(（]?\s*"
+    r"(?:(?P<label>[\w\u4e00-\u9fff][\w\u4e00-\u9fff ._-]{0,40}?)\s+)?"
+    r"(?P<index>\d{1,3})\s*/\s*(?P<total>\d{1,3})"
+    r"\s*[\]】)）]?"
+)
 TAIWAN_CITIES = (
     "台北市",
     "臺北市",
@@ -87,6 +93,13 @@ class FoodPlace:
     name: str
     address: str
     city: str
+
+
+@dataclass(frozen=True)
+class LineMessagePart:
+    label: str
+    index: int
+    total: int
 
 
 async def fetch_page(url: str, timeout_seconds: float, max_chars: int) -> ExtractedContent:
@@ -644,7 +657,8 @@ def ensure_food_summary_details(title: str, page_text: str, summary: str, catego
 
 
 def line_message_context_text(text: str, max_chars: int) -> str:
-    without_urls = re.sub(r"https?://[^\s<>()\"'，。！？、；：「」『』]+", " ", text)
+    without_part_marker = strip_line_part_marker(text)
+    without_urls = re.sub(r"https?://[^\s<>()\"'，。！？、；：「」『』]+", " ", without_part_marker)
     return " ".join(without_urls.split())[:max_chars]
 
 
@@ -667,6 +681,24 @@ def line_message_body_markdown(text: str, urls: list[str]) -> str:
         "## 內含連結\n"
         f"{url_lines}"
     )
+
+
+def parse_line_message_part(text: str) -> Optional[LineMessagePart]:
+    match = LINE_PART_PATTERN.match(text)
+    if not match:
+        return None
+
+    index = int(match.group("index"))
+    total = int(match.group("total"))
+    if total < 2 or index < 1 or index > total:
+        return None
+
+    label = (match.group("label") or "article").strip()
+    return LineMessagePart(label=label, index=index, total=total)
+
+
+def strip_line_part_marker(text: str) -> str:
+    return LINE_PART_PATTERN.sub("", text, count=1).strip()
 
 
 async def process_line_message_context(settings: Settings, text: str, urls: list[str]) -> LinkNote:
