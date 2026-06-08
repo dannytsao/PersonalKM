@@ -61,6 +61,22 @@ def test_render_note_includes_location_city_when_present():
     assert "location_city: 臺北市" in rendered
 
 
+def test_render_note_includes_log_id_metadata_and_section():
+    note = LinkNote(
+        title="Example",
+        url="https://example.com",
+        summary="摘要",
+        category="general",
+        captured_on=date(2026, 6, 8),
+        log_id="202606081147_00001",
+    )
+
+    rendered = render_note(note)
+
+    assert "log_id: 202606081147_00001" in rendered
+    assert "## Log ID\n202606081147_00001" in rendered
+
+
 def test_render_note_uses_custom_body_markdown():
     note = LinkNote(
         title="YouTube",
@@ -89,6 +105,19 @@ def test_note_filename_uses_date_and_title():
     )
 
     assert note_filename(note) == "2026-05-31-example-title.md"
+
+
+def test_note_filename_includes_log_id_when_present():
+    note = LinkNote(
+        title="Example Title",
+        url="https://example.com",
+        summary="摘要",
+        category="general",
+        captured_on=date(2026, 5, 31),
+        log_id="202606081147_00001",
+    )
+
+    assert note_filename(note) == "2026-05-31-202606081147_00001-example-title.md"
 
 
 def test_note_target_dir_routes_known_categories():

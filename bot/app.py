@@ -2,8 +2,11 @@ import asyncio
 import json
 import logging
 import time
+from dataclasses import replace
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
 
@@ -19,6 +22,8 @@ from bot.notes import write_note
 app = FastAPI(title="Personal KM LINE Link Bot")
 logger = logging.getLogger(__name__)
 LINE_PARTS_FILE = ".line-message-parts.json"
+LINE_LOG_SEQUENCE_FILE = ".line-log-sequence.json"
+LINE_LOG_TIMEZONE = ZoneInfo("Asia/Taipei")
 
 
 @app.get("/health")
@@ -26,7 +31,9 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-async def save_note(settings, vault_path, note) -> None:
+async def save_note(settings, vault_path, note, log_id: str = "") -> None:
+    if log_id:
+        note = replace(note, log_id=log_id)
     note_path = write_note(vault_path, "raw", note)
     await asyncio.to_thread(enrich_note, note_path)
     await asyncio.to_thread(analyze_on_capture, note_path)
@@ -36,6 +43,10 @@ async def save_note(settings, vault_path, note) -> None:
 
 def line_parts_path(vault_path: Path) -> Path:
     return vault_path / LINE_PARTS_FILE
+
+
+def line_log_sequence_path(vault_path: Path) -> Path:
+    return vault_path / LINE_LOG_SEQUENCE_FILE
 
 
 def load_line_parts(vault_path: Path) -> dict:
@@ -53,14 +64,47 @@ def save_line_parts(vault_path: Path, cache: dict) -> None:
     line_parts_path(vault_path).write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def collect_line_message_part(vault_path: Path, text: str) -> Optional[str]:
+def load_line_log_sequence(vault_path: Path) -> dict:
+    path = line_log_sequence_path(vault_path)
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        logger.warning("Ignoring unreadable LINE log sequence cache at %s", path)
+        return {}
+
+
+def save_line_log_sequence(vault_path: Path, cache: dict) -> None:
+    line_log_sequence_path(vault_path).write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def generate_line_log_id(vault_path: Path, now: Optional[datetime] = None) -> str:
+    now = now or datetime.now(LINE_LOG_TIMEZONE)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=LINE_LOG_TIMEZONE)
+    minute_key = now.astimezone(LINE_LOG_TIMEZONE).strftime("%Y%m%d%H%M")
+    cache = load_line_log_sequence(vault_path)
+    sequence = int(cache.get("sequence", 0)) + 1 if cache.get("minute") == minute_key else 1
+    save_line_log_sequence(vault_path, {"minute": minute_key, "sequence": sequence})
+    return f"{minute_key}_{sequence:05d}"
+
+
+def collect_line_message_part(vault_path: Path, text: str) -> Optional[tuple[str, str]]:
     part = parse_line_message_part(text)
     if not part:
-        return text
+        return text, generate_line_log_id(vault_path)
 
     cache = load_line_parts(vault_path)
     key = f"{part.label}:{part.total}"
-    entry = cache.setdefault(key, {"total": part.total, "parts": {}, "updated_at": time.time()})
+    if key not in cache:
+        cache[key] = {
+            "total": part.total,
+            "parts": {},
+            "log_id": generate_line_log_id(vault_path),
+            "updated_at": time.time(),
+        }
+    entry = cache[key]
     entry["parts"][str(part.index)] = text
     entry["updated_at"] = time.time()
 
@@ -71,10 +115,11 @@ def collect_line_message_part(vault_path: Path, text: str) -> Optional[str]:
         return None
 
     merged = "\n\n".join(entry["parts"][str(index)] for index in range(1, part.total + 1))
+    log_id = entry["log_id"]
     cache.pop(key, None)
     save_line_parts(vault_path, cache)
     logger.info("Merged %s LINE message parts for %s", part.total, part.label)
-    return merged
+    return merged, log_id
 
 
 async def mark_line_event_as_read(settings, event: LineTextEvent) -> None:
@@ -98,16 +143,17 @@ async def capture_line_messages(events: list[LineTextEvent]) -> None:
 
     for event in events:
         text = event.text
-        text = collect_line_message_part(vault_path, text)
-        if text is None:
+        collected = collect_line_message_part(vault_path, text)
+        if collected is None:
             continue
+        text, log_id = collected
 
         saved_any_note = False
         urls = extract_urls(text)
         if should_capture_line_message_context(text, settings.max_page_chars):
             try:
                 note = await process_line_message_context(settings, text, urls)
-                await save_note(settings, vault_path, note)
+                await save_note(settings, vault_path, note, log_id)
                 saved_any_note = True
             except Exception:
                 logger.exception("Failed to capture LINE pasted message")
@@ -115,7 +161,7 @@ async def capture_line_messages(events: list[LineTextEvent]) -> None:
         for url in urls:
             try:
                 note = await process_url(settings, url, text)
-                await save_note(settings, vault_path, note)
+                await save_note(settings, vault_path, note, log_id)
                 saved_any_note = True
                 logger.info("✅ Captured LINE URL %s", url)
             except Exception:
@@ -137,8 +183,9 @@ async def capture_urls(urls: list[tuple[str, str]]) -> None:
 
     for url, context_text in urls:
         try:
+            log_id = generate_line_log_id(vault_path)
             note = await process_url(settings, url, context_text)
-            await save_note(settings, vault_path, note)
+            await save_note(settings, vault_path, note, log_id)
             logger.info("✅ Captured LINE URL %s", url)
         except Exception:
             logger.exception("Failed to capture LINE URL %s", url)
