@@ -9,6 +9,7 @@ from bot.link_processor import (
     fallback_category,
     fallback_summary,
     fallback_youtube_deep_note,
+    google_ai_mode_context_text,
     google_maps_url,
     google_ai_mode_share_content,
     instagram_content_type,
@@ -216,6 +217,13 @@ def test_google_ai_mode_share_detection_and_fallback_content():
     assert content.needs_review
     assert "HTTP 429" in content.text
     assert "把 AI Mode 回答內容貼到 LINE" in content.text
+
+
+def test_google_ai_mode_context_text_removes_share_url():
+    url = "https://share.google/aimode/8uyYWVgle7A2ZDGFx"
+    text = f"{url}\nAI Mode 回答：這篇內容整理 agent workflow 與自動化。"
+
+    assert google_ai_mode_context_text(url, text, 200) == "AI Mode 回答：這篇內容整理 agent workflow 與自動化。"
 
 
 def test_extract_page_metadata_reads_open_graph_and_twitter_cards():

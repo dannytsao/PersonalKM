@@ -228,7 +228,22 @@ def restricted_platform_fallback(url: str) -> ExtractedContent:
     return blocked_platform_content(platform, labels.get(platform, f"{platform} link"))
 
 
-def google_ai_mode_share_content(url: str) -> ExtractedContent:
+def google_ai_mode_context_text(url: str, context_text: str, max_chars: int) -> str:
+    text = context_text.replace(url, " ")
+    text = re.sub(r"https?://[^\s<>()\"'，。！？、；：「」『』]+", " ", text)
+    text = " ".join(text.split())
+    return text[:max_chars]
+
+
+def google_ai_mode_share_content(url: str, context_text: str = "", max_chars: int = 8000) -> ExtractedContent:
+    pasted_answer = google_ai_mode_context_text(url, context_text, max_chars) if context_text else ""
+    if pasted_answer:
+        return ExtractedContent(
+            title="Google AI Mode pasted answer",
+            text=f"使用者貼上的 Google AI Mode 回答內容：{pasted_answer}",
+            platform="google-ai-mode",
+        )
+
     return ExtractedContent(
         title="Google AI Mode share",
         text=(
@@ -744,9 +759,9 @@ async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, 
     return ensure_food_summary_details(title, transcript_text, summary, category), category, body_markdown
 
 
-async def process_url(settings: Settings, url: str) -> LinkNote:
+async def process_url(settings: Settings, url: str, context_text: str = "") -> LinkNote:
     if is_google_ai_mode_share(url):
-        content = google_ai_mode_share_content(url)
+        content = google_ai_mode_share_content(url, context_text, settings.max_page_chars)
         summary, category = await summarize_with_llm(settings, content.title, url, content.text)
         return to_note(content, url, summary, category)
 

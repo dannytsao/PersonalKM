@@ -22,7 +22,7 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-async def capture_urls(urls: list[str]) -> None:
+async def capture_urls(urls: list[tuple[str, str]]) -> None:
     settings = get_settings()
     logger.info("Processing %s LINE URL(s)", len(urls))
 
@@ -32,9 +32,9 @@ async def capture_urls(urls: list[str]) -> None:
         logger.exception("Failed to prepare vault repo")
         return
 
-    for url in urls:
+    for url, context_text in urls:
         try:
-            note = await process_url(settings, url)
+            note = await process_url(settings, url, context_text)
             # Phase 1: Save to raw/ (Karpathy three-tier structure)
             note_path = write_note(vault_path, "raw", note)
             await asyncio.to_thread(enrich_note, note_path)
@@ -58,9 +58,9 @@ async def line_webhook(
         raise HTTPException(status_code=401, detail="Invalid LINE signature")
 
     payload = await request.json()
-    urls: list[str] = []
+    urls: list[tuple[str, str]] = []
     for text in text_messages_from_webhook(payload):
-        urls.extend(extract_urls(text))
+        urls.extend((url, text) for url in extract_urls(text))
 
     if not urls:
         logger.info("LINE webhook received no URLs")
