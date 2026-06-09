@@ -56,6 +56,9 @@ LINE message / URL / pasted text
 
 7. Add Ollama summarization adapter.
    - Use Ollama only after raw text or transcript exists.
+   - Default model: `qwen3:8b`.
+   - If Mac mini has 24 GB or 32 GB RAM, test `qwen3:14b` after the 8B path is stable.
+   - Keep `gemma3:4b` as an optional lightweight fallback model.
    - Generate summary, key points, tags/category, and canonical Markdown sections.
    - Fall back to deterministic local summary if Ollama is unavailable.
 
@@ -96,6 +99,14 @@ LINE message / URL / pasted text
 - At least one partial YouTube note can be recovered or marked with a precise failure reason.
 - Canonical Markdown remains consistent for Obsidian.
 - The workflow keeps cost low by avoiding paid transcription unless explicitly enabled later.
+
+## Ollama Model Decision
+
+- Start with `qwen3:8b` as the default model for the Mac mini worker.
+- Prefer Qwen3 because the worker needs Chinese/English mixed summarization, instruction following, and canonical Markdown generation.
+- If Mac mini memory allows, compare `qwen3:14b` for higher quality after the end-to-end worker is stable.
+- Keep `gemma3:4b` as a fast fallback only; do not make it the primary summarization model.
+- Do not start with larger models such as `qwen3:30b` or `gpt-oss:20b` until the queue, scanner, and single-note recovery flow are proven.
 
 ## Non-goals For Tomorrow
 
