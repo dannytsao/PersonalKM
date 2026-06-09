@@ -23,6 +23,7 @@ from bot.link_processor import (
     parse_caption_tracks,
     parse_json3_transcript,
     parse_line_message_part,
+    parse_watch_caption_tracks,
     platform_from_url,
     restricted_platform_fallback,
     should_capture_line_message_context,
@@ -318,6 +319,27 @@ def test_parse_caption_tracks_reads_youtube_track_list():
     assert tracks == [
         {"lang_code": "en", "name": "", "kind": ""},
         {"lang_code": "zh-Hant", "name": "繁體中文", "kind": ""},
+    ]
+
+
+def test_parse_watch_caption_tracks_reads_youtube_player_response_tracks():
+    tracks = parse_watch_caption_tracks(
+        """
+        <script>
+        var ytInitialPlayerResponse = {"captions":{"playerCaptionsTracklistRenderer":{
+          "captionTracks":[{"baseUrl":"https://www.youtube.com/api/timedtext?v=abc\\u0026lang=zh-Hans",
+          "name":{"simpleText":"中文（簡體）"},"languageCode":"zh-Hans","trackName":""}]}}};
+        </script>
+        """
+    )
+
+    assert tracks == [
+        {
+            "lang_code": "zh-Hans",
+            "name": "中文（簡體）",
+            "kind": "",
+            "base_url": "https://www.youtube.com/api/timedtext?v=abc&lang=zh-Hans",
+        }
     ]
 
 
