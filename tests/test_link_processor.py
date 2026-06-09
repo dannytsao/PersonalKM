@@ -186,6 +186,36 @@ def test_instagram_fallback_content_is_not_platform_description():
     assert "無法可靠取得貼文或影片內容" in content.text
 
 
+def test_to_note_uses_canonical_markdown_for_web_content():
+    content = ExtractedContent(
+        title="Example",
+        text="第一段內容 https://example.com/inside",
+        platform="web",
+    )
+
+    note = to_note(content, "https://example.com", "這是一段摘要。", "tech")
+
+    assert note.content_type == "webpage"
+    assert "## 摘要\n這是一段摘要。" in note.body_markdown
+    assert "## 原始內容\n第一段內容 https://example.com/inside" in note.body_markdown
+    assert "## 內含連結\n- https://example.com\n- https://example.com/inside" in note.body_markdown
+    assert "## 媒體\n- 未擷取" in note.body_markdown
+    assert "## 擷取狀態" in note.body_markdown
+
+
+def test_to_note_quotes_social_original_content():
+    content = ExtractedContent(
+        title="X/Twitter post",
+        text="短文第一行\n短文第二行",
+        platform="x",
+    )
+
+    note = to_note(content, "https://x.com/user/status/1", "社群摘要。", "tech")
+
+    assert note.content_type == "social_post"
+    assert "## 原始內容\n> 短文第一行\n> 短文第二行" in note.body_markdown
+
+
 def test_platform_from_url_detects_restricted_platforms():
     assert platform_from_url("https://www.instagram.com/reel/abc/") == "instagram"
     assert platform_from_url("https://www.tiktok.com/@user/video/1") == "tiktok"

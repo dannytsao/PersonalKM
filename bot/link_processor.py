@@ -290,8 +290,73 @@ def is_restricted_shell_text(platform: str, text: str) -> bool:
     return bool(platform_markers) and sum(marker in lowered for marker in platform_markers) >= 2
 
 
+def content_type_for_platform(platform: str) -> str:
+    if platform == "youtube":
+        return "video"
+    if platform in {"instagram", "tiktok", "x", "threads"}:
+        return "social_post"
+    if platform == "google-ai-mode":
+        return "ai_answer"
+    if platform == "line-message":
+        return "pasted_text"
+    return "webpage"
+
+
+def markdown_quote(text: str) -> str:
+    lines = text.strip().splitlines() or [text.strip()]
+    quoted = [f"> {line.strip()}" if line.strip() else ">" for line in lines]
+    return "\n".join(quoted).strip()
+
+
+def clipped_markdown_text(text: str, max_chars: int = 3500) -> str:
+    cleaned = text.strip()
+    if not cleaned:
+        return "未擷取"
+    clipped = cleaned[:max_chars].rstrip()
+    return f"{clipped}\n\n...（內容已截斷）" if len(cleaned) > max_chars else clipped
+
+
+def links_markdown(primary_url: str, text: str) -> str:
+    urls = [primary_url]
+    for match in re.findall(r"https?://[^\s<>()\"'，。！？、；：「」『』]+", text):
+        cleaned = match.rstrip(".,;:!?)]}」』，。！？")
+        if cleaned not in urls:
+            urls.append(cleaned)
+    return "\n".join(f"- {url}" for url in urls)
+
+
+def canonical_body_markdown(content: ExtractedContent, url: str, summary: str) -> str:
+    content_type = content_type_for_platform(content.platform)
+    status_line = (
+        f"- 平台：{content.platform}\n"
+        f"- 類型：{content_type}\n"
+        f"- 擷取狀態：{content.extraction_status}\n"
+        f"- 需要人工確認：{'是' if content.needs_review else '否'}"
+    )
+    source_text = clipped_markdown_text(content.text)
+    if content_type == "social_post":
+        source_text = markdown_quote(source_text)
+
+    return (
+        "## 摘要\n"
+        f"{summary.strip()}\n\n"
+        "## 重點\n"
+        f"- {summary.strip()}\n\n"
+        "## 原始內容\n"
+        f"{source_text}\n\n"
+        "## 內含連結\n"
+        f"{links_markdown(url, content.text)}\n\n"
+        "## 媒體\n"
+        "- 未擷取\n\n"
+        "## 擷取狀態\n"
+        f"{status_line}\n\n"
+        "## 原文連結\n"
+        f"{url}"
+    )
+
+
 def to_note(content: ExtractedContent, url: str, summary: str, category: str) -> LinkNote:
-    body_markdown = ""
+    body_markdown = canonical_body_markdown(content, url, summary)
     location_city = ""
     if category == "food":
         food_places = extract_food_places(content.title, content.text, summary)
@@ -309,6 +374,7 @@ def to_note(content: ExtractedContent, url: str, summary: str, category: str) ->
         needs_review=content.needs_review,
         body_markdown=body_markdown,
         location_city=location_city if location_city != "未提供" else "",
+        content_type=content_type_for_platform(content.platform),
     )
 
 
@@ -325,6 +391,7 @@ def to_deep_note(content: ExtractedContent, url: str, summary: str, category: st
         needs_review=note.needs_review,
         body_markdown=body_markdown,
         location_city=note.location_city,
+        content_type=note.content_type,
     )
 
 
@@ -675,13 +742,24 @@ def line_message_title(text: str) -> str:
     return context[:80].rstrip("，,。；;：:") or "LINE pasted message"
 
 
-def line_message_body_markdown(text: str, urls: list[str]) -> str:
+def line_message_body_markdown(text: str, urls: list[str], summary: str) -> str:
     url_lines = "\n".join(f"- {url}" for url in urls) if urls else "- 未提供"
     return (
+        "## 摘要\n"
+        f"{summary.strip()}\n\n"
+        "## 重點\n"
+        f"- {summary.strip()}\n\n"
         "## 原始貼文\n"
         f"{text.strip()}\n\n"
         "## 內含連結\n"
-        f"{url_lines}"
+        f"{url_lines}\n\n"
+        "## 媒體\n"
+        "- 未擷取\n\n"
+        "## 擷取狀態\n"
+        "- 平台：line-message\n"
+        "- 類型：pasted_text\n"
+        "- 擷取狀態：ok\n"
+        "- 需要人工確認：否"
     )
 
 
@@ -713,7 +791,7 @@ async def process_line_message_context(settings: Settings, text: str, urls: list
         platform="line-message",
     )
     summary, category = await summarize_with_llm(settings, content.title, source_url, content.text)
-    return to_deep_note(content, source_url, summary, category, line_message_body_markdown(text, urls))
+    return to_deep_note(content, source_url, summary, category, line_message_body_markdown(text, urls, summary))
 
 
 async def summarize_with_llm(settings: Settings, title: str, url: str, page_text: str) -> tuple[str, str]:
