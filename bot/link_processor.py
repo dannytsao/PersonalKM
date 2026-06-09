@@ -69,6 +69,8 @@ RESTRICTED_PLATFORM_HOSTS = {
     "www.twitter.com": "x",
     "threads.net": "threads",
     "www.threads.net": "threads",
+    "threads.com": "threads",
+    "www.threads.com": "threads",
 }
 TAIWAN_ADDRESS_PATTERN = re.compile(
     r"((?:台北|臺北|新北|桃園|台中|臺中|台南|臺南|高雄|基隆|新竹|苗栗|彰化|南投|雲林|嘉義|屏東|宜蘭|花蓮|台東|臺東|澎湖|金門|連江)"
