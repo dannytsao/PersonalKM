@@ -27,6 +27,21 @@ def test_render_note_matches_obsidian_template():
     assert "## 原文連結\nhttps://example.com" in rendered
 
 
+def test_render_note_includes_content_type_when_present():
+    note = LinkNote(
+        title="Example",
+        url="https://example.com",
+        summary="摘要",
+        category="general",
+        captured_on=date(2026, 5, 31),
+        content_type="webpage",
+    )
+
+    rendered = render_note(note)
+
+    assert "content_type: webpage" in rendered
+
+
 def test_render_note_includes_blocked_platform_metadata():
     note = LinkNote(
         title="Instagram Reel",

@@ -33,6 +33,7 @@ class LinkNote:
     body_markdown: str = ""
     location_city: str = ""
     log_id: str = ""
+    content_type: str = ""
 
     @property
     def tag(self) -> str:
@@ -62,6 +63,7 @@ def render_note(note: LinkNote) -> str:
     needs_review = "true" if note.needs_review else "false"
     location_city_line = f"location_city: {note.location_city}\n" if note.location_city else ""
     log_id_line = f"log_id: {note.log_id}\n" if note.log_id else ""
+    content_type_line = f"content_type: {note.content_type}\n" if note.content_type else ""
     log_id_section = f"## Log ID\n{note.log_id}\n\n" if note.log_id else ""
     body = note.body_markdown.strip()
     if not body:
@@ -79,6 +81,7 @@ def render_note(note: LinkNote) -> str:
         f"{log_id_line}"
         f"url: {note.url}\n"
         f"platform: {note.platform}\n"
+        f"{content_type_line}"
         f"extraction_status: {note.extraction_status}\n"
         f"needs_review: {needs_review}\n"
         f"{location_city_line}"
