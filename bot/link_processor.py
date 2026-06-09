@@ -462,6 +462,30 @@ def parse_caption_tracks(xml_text: str) -> list[dict[str, str]]:
     return tracks
 
 
+def parse_watch_caption_tracks(html_text: str) -> list[dict[str, str]]:
+    match = re.search(r'"captionTracks":(\[.*?\])', html_text, re.DOTALL)
+    if not match:
+        return []
+
+    tracks = []
+    for track in json.loads(match.group(1)):
+        lang_code = str(track.get("languageCode") or "")
+        name = track.get("name") or {}
+        if isinstance(name, dict):
+            name_text = str(name.get("simpleText") or "")
+        else:
+            name_text = str(name)
+        tracks.append(
+            {
+                "lang_code": lang_code,
+                "name": name_text,
+                "kind": str(track.get("kind") or ""),
+                "base_url": str(track.get("baseUrl") or ""),
+            }
+        )
+    return tracks
+
+
 def parse_json3_transcript(payload: dict) -> str:
     parts = []
     for event in payload.get("events", []):
@@ -480,15 +504,33 @@ async def fetch_youtube_transcript(client: httpx.AsyncClient, video_id: str, max
     list_response.raise_for_status()
     track = select_caption_track(parse_caption_tracks(list_response.text))
     if not track:
+        watch_response = await client.get(
+            "https://www.youtube.com/watch",
+            params={"v": video_id},
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36"
+                ),
+                "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8",
+            },
+        )
+        watch_response.raise_for_status()
+        track = select_caption_track(parse_watch_caption_tracks(watch_response.text))
+    if not track:
         return ""
 
-    params = {"fmt": "json3", "v": video_id, "lang": track["lang_code"]}
-    if track["name"]:
-        params["name"] = track["name"]
-    if track["kind"]:
-        params["kind"] = track["kind"]
+    if track.get("base_url"):
+        caption_url = httpx.URL(track["base_url"]).copy_add_param("fmt", "json3")
+        transcript_response = await client.get(caption_url)
+    else:
+        params = {"fmt": "json3", "v": video_id, "lang": track["lang_code"]}
+        if track["name"]:
+            params["name"] = track["name"]
+        if track["kind"]:
+            params["kind"] = track["kind"]
 
-    transcript_response = await client.get("https://www.youtube.com/api/timedtext", params=params)
+        transcript_response = await client.get("https://www.youtube.com/api/timedtext", params=params)
     transcript_response.raise_for_status()
     return parse_json3_transcript(transcript_response.json())[:max_chars]
 
