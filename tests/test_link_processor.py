@@ -221,6 +221,7 @@ def test_platform_from_url_detects_restricted_platforms():
     assert platform_from_url("https://www.tiktok.com/@user/video/1") == "tiktok"
     assert platform_from_url("https://x.com/user/status/1") == "x"
     assert platform_from_url("https://www.threads.net/@user/post/1") == "threads"
+    assert platform_from_url("https://www.threads.com/@user/post/1") == "threads"
     assert platform_from_url("https://share.google/aimode/8uyYWVgle7A2ZDGFx") == "google-ai-mode"
     assert platform_from_url("https://example.com/a") == "web"
 
