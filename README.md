@@ -4,6 +4,14 @@
 
 LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每週日自動組織筆記，月度報告追踪過時的技術知識。
 
+## 2026-06-09 今日更新
+
+- 修正 capture 時間基準為 Asia/Taipei，讓 raw note 檔名、YAML 日期與 `log_id` 日期一致，避免 Render UTC 造成「今天筆記」落在前一天。
+- `threads.com` 與 `www.threads.com` 已納入社群平台路由，未來 Threads 連結會以 `platform: threads`、`content_type: social_post` 產生 canonical Markdown。
+- 確認測試 Threads URL 已成功由 LINE bot 寫入 GitHub，並同步回本機 Obsidian repo。
+- canonical raw notes 已部署到 live：URL、社群貼文、LINE pasted text 會盡量轉成統一 Markdown 結構，維持低成本、不新增昂貴爬蟲或 headless browser 依賴。
+- `call it a day` 作為固定收尾流程：同步遠端、本機 README 補日誌、檢查、commit、push，並確認 Render `/health`。
+
 ## 2026-06-08 今日更新
 
 - Render web service 已改為 Starter plan，避免 Free plan idle spin down 造成 LINE webhook cold start 遺失。
@@ -462,6 +470,6 @@ FRESHNESS_LEVELS = {
 
 ---
 
-**上次更新:** 2026-06-08
+**上次更新:** 2026-06-09
 **系統狀態:** ✅ 完全運行 (Phase 1+4 + LINE reliability upgrades + canonical raw notes)
 **下次評審:** 2026-07-07
