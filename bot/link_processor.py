@@ -1,10 +1,11 @@
 import json
 import re
 from dataclasses import dataclass
-from datetime import date
+from datetime import datetime
 from typing import Optional
 from urllib.parse import parse_qs, quote_plus, urlparse
 from xml.etree import ElementTree
+from zoneinfo import ZoneInfo
 
 import httpx
 from bs4 import BeautifulSoup
@@ -15,6 +16,7 @@ from bot.notes import LinkNote
 
 
 CATEGORY_VALUES = {"photography", "food", "tech", "general"}
+CAPTURE_TIMEZONE = ZoneInfo("Asia/Taipei")
 LINE_PART_PATTERN = re.compile(
     r"^\s*[\[【(（]?\s*"
     r"(?:(?P<label>[\w\u4e00-\u9fff][\w\u4e00-\u9fff ._-]{0,40}?)\s+)?"
@@ -301,7 +303,7 @@ def to_note(content: ExtractedContent, url: str, summary: str, category: str) ->
         url=url,
         summary=summary,
         category=category,
-        captured_on=date.today(),
+        captured_on=datetime.now(CAPTURE_TIMEZONE).date(),
         platform=content.platform,
         extraction_status=content.extraction_status,
         needs_review=content.needs_review,
