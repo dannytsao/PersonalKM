@@ -44,6 +44,12 @@ Process one pending note without Git automation:
 python3 -m tools.omnichannel_md.worker --process-one --no-git
 ```
 
+Process a specific pending note by `log_id`:
+
+```bash
+python3 -m tools.omnichannel_md.worker --process-one --log-id 202606101106_00001 --no-git
+```
+
 Process one pending note with Git pull/rebase, commit, and push:
 
 ```bash

@@ -1,5 +1,7 @@
 from tools.omnichannel_md.frontmatter import parse_markdown, update_frontmatter
-from tools.omnichannel_md.worker import replace_body, scan_pending_notes, transcribe_with_whisper
+from pathlib import Path
+
+from tools.omnichannel_md.worker import QueueCandidate, replace_body, scan_pending_notes, select_candidate, transcribe_with_whisper
 
 
 def test_update_frontmatter_preserves_body_and_updates_worker_fields():
@@ -111,3 +113,21 @@ Old body
     updated = replace_body(markdown, "## 摘要\nNew body", "Original Title")
 
     assert "---\n# Original Title\n\n## 摘要\nNew body\n" in updated
+
+
+def test_select_candidate_can_target_log_id():
+    candidates = [
+        QueueCandidate(Path("old.md"), {"platform": "youtube", "log_id": "old"}, legacy=True),
+        QueueCandidate(Path("new.md"), {"platform": "youtube", "log_id": "target"}, legacy=False),
+    ]
+
+    assert select_candidate(candidates, "target").path == Path("new.md")
+
+
+def test_select_candidate_prefers_explicit_pending_youtube_before_legacy():
+    candidates = [
+        QueueCandidate(Path("legacy.md"), {"platform": "youtube"}, legacy=True),
+        QueueCandidate(Path("explicit.md"), {"platform": "youtube"}, legacy=False),
+    ]
+
+    assert select_candidate(candidates).path == Path("explicit.md")
