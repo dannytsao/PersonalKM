@@ -343,7 +343,16 @@ def print_candidates(repo_root: Path, candidates: list[QueueCandidate]) -> None:
         )
 
 
-def first_processable_candidate(candidates: list[QueueCandidate]) -> QueueCandidate:
+def select_candidate(candidates: list[QueueCandidate], log_id: str = "") -> QueueCandidate:
+    if log_id:
+        for candidate in candidates:
+            if str(candidate.metadata.get("log_id") or "") == log_id:
+                return candidate
+        raise ValueError(f"No pending note found for log_id {log_id}")
+
+    for candidate in candidates:
+        if not candidate.legacy and str(candidate.metadata.get("platform") or "") == "youtube":
+            return candidate
     for candidate in candidates:
         if str(candidate.metadata.get("platform") or "") == "youtube":
             return candidate
@@ -355,6 +364,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo-root", default=".", help="Path to the PersonalKM repo")
     parser.add_argument("--dry-run", action="store_true", help="List pending notes without modifying files")
     parser.add_argument("--process-one", action="store_true", help="Process only the first pending note")
+    parser.add_argument("--log-id", default="", help="Process the pending note with this log_id")
     parser.add_argument("--no-git", action="store_true", help="Do not pull, commit, or push")
     parser.add_argument("--max-chars", type=int, default=12000)
     args = parser.parse_args(argv)
@@ -368,7 +378,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run or not args.process_one or not candidates:
         return 0
 
-    candidate = first_processable_candidate(candidates)
+    try:
+        candidate = select_candidate(candidates, args.log_id)
+    except ValueError as error:
+        print(error)
+        return 1
     ok = asyncio.run(process_candidate(candidate, args.max_chars))
     print(f"Processed {candidate.path.relative_to(repo_root)}: {'ok' if ok else 'failed'}")
 
