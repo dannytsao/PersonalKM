@@ -3,7 +3,7 @@ set -euo pipefail
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
-REPO_ROOT="${PERSONALKM_REPO_ROOT:-/Users/dannytsao/Documents/GitHub/PersonalKM}"
+REPO_ROOT="${PERSONALKM_REPO_ROOT:-$HOME/.personalkm/PersonalKM-worker}"
 LOG_DIR="${PERSONALKM_WORKER_LOG_DIR:-$HOME/Library/Logs/PersonalKM}"
 LOCK_DIR="${TMPDIR:-/tmp}/personalkm-omnichannel-worker.lock"
 

@@ -8,11 +8,11 @@
 
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/dannytsao/Documents/GitHub/PersonalKM/scripts/run_mac_mini_worker.sh</string>
+    <string>/Users/dannytsao/Library/Application Support/PersonalKM/run_mac_mini_worker.sh</string>
   </array>
 
   <key>WorkingDirectory</key>
-  <string>/Users/dannytsao/Documents/GitHub/PersonalKM</string>
+  <string>/Users/dannytsao/.personalkm/PersonalKM-worker</string>
 
   <key>RunAtLoad</key>
   <true/>
@@ -31,7 +31,7 @@
     <key>PATH</key>
     <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     <key>PERSONALKM_REPO_ROOT</key>
-    <string>/Users/dannytsao/Documents/GitHub/PersonalKM</string>
+    <string>/Users/dannytsao/.personalkm/PersonalKM-worker</string>
   </dict>
 </dict>
 </plist>

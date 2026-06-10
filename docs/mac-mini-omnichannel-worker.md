@@ -106,12 +106,15 @@ The scheduled runner is intentionally conservative:
 - It uses a lock directory so overlapping runs are skipped.
 - It skips the run if the repo has local uncommitted changes.
 - It lets the worker do its normal Git pull/rebase, commit, and push flow.
+- It runs from a dedicated clone at `~/.personalkm/PersonalKM-worker`, avoiding macOS privacy restrictions on `~/Documents`.
 
 Install and start:
 
 ```bash
 scripts/install_mac_mini_worker_launchd.sh
 ```
+
+The installer copies the runner to `~/Library/Application Support/PersonalKM/`, creates or updates the worker clone at `~/.personalkm/PersonalKM-worker`, then loads the LaunchAgent.
 
 Check status:
 
