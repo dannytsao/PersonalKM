@@ -9,9 +9,12 @@ needs_review: true
 summary: 這是一個 Google AI Mode 的分享連結，提醒用戶該頁面常因自動化擷取而回傳 HTTP 429 錯誤。建議用戶在瀏覽器中開啟連結，手動複製原始內容或將回答內容貼到 LINE，以便系統整理真正的資訊。
 status: unread
 needs_local_worker: true
-worker_status: pending
+worker_status: failed
 worker_type: omnichannel_md
-worker_retry_count: 0
+worker_retry_count: 1
+worker_error: unsupported_platform:google-ai-mode
+worker_processed_at: 2026-06-10T19:15:44+08:00
+worker_name: mac-mini-omnichannel
 ---
 
 # Google AI Mode share
