@@ -4,6 +4,17 @@
 
 LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每週日自動組織筆記，月度報告追踪過時的技術知識。
 
+## 2026-06-10 今日更新
+
+- 完成 Mac mini omnichannel worker：Render 先把 partial/blocked notes 寫入 `raw/` 與 GitHub queue，Mac mini 開機時再用本機工具低成本補強。
+- Worker 已支援 YouTube local recovery：優先 `yt-dlp` 字幕，必要時用 `whisper.cpp` 轉錄音訊，再由 Ollama `qwen3:8b` 生成 Markdown 摘要。
+- 已用 `launchd` 自動化 Mac mini worker：每 15 分鐘處理 1 篇 pending note，使用專用 clone `~/.personalkm/PersonalKM-worker`，成功後自動 commit/push。
+- 已為 legacy raw notes backfill worker metadata，所有 raw notes 都有 `needs_local_worker`、`worker_status`、`worker_type`、`worker_retry_count` 控制欄位。
+- 新增 worker 文件與工具：`docs/mac-mini-omnichannel-worker.md`、`tools/omnichannel_md/backfill_worker_metadata.py`、launchd install/uninstall scripts。
+- 更新 `LINE Bot + Obsidian 連結整理系統：需求與實施結論.md`，正式記錄目前架構：Render + GitHub durable queue + Obsidian Git + Mac mini local worker。
+- Mac mini worker 已自動處理大部分歷史 YouTube pending notes；截至收尾 dry-run，剩餘 pending notes 為 5 篇，主要是 Google AI Mode / X blocked 與 1 篇新 YouTube note。
+- 收尾時已同步 LINE Bot 新增的 202606101713 批次 notes，代表 Render live ingestion、GitHub push、Obsidian repo sync 仍正常運作。
+
 ## 2026-06-09 今日更新
 
 - 修正 capture 時間基準為 Asia/Taipei，讓 raw note 檔名、YAML 日期與 `log_id` 日期一致，避免 Render UTC 造成「今天筆記」落在前一天。
