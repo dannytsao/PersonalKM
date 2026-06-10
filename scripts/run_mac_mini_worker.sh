@@ -6,6 +6,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 REPO_ROOT="${PERSONALKM_REPO_ROOT:-$HOME/.personalkm/PersonalKM-worker}"
 LOG_DIR="${PERSONALKM_WORKER_LOG_DIR:-$HOME/Library/Logs/PersonalKM}"
 LOCK_DIR="${TMPDIR:-/tmp}/personalkm-omnichannel-worker.lock"
+PYTHON_BIN="${PERSONALKM_PYTHON:-/usr/bin/python3}"
 
 mkdir -p "$LOG_DIR"
 
@@ -26,8 +27,13 @@ if ! command -v git >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! command -v python3 >/dev/null 2>&1; then
-  log "python3 is not available on PATH."
+if [ ! -x "$PYTHON_BIN" ]; then
+  log "Python is not executable: $PYTHON_BIN"
+  exit 1
+fi
+
+if ! "$PYTHON_BIN" -c "import httpx" >/dev/null 2>&1; then
+  log "Python dependency check failed: httpx is not importable with $PYTHON_BIN"
   exit 1
 fi
 
@@ -37,5 +43,5 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
 fi
 
 log "Starting PersonalKM omnichannel worker."
-python3 -m tools.omnichannel_md.worker --process-one
+"$PYTHON_BIN" -m tools.omnichannel_md.worker --process-one
 log "Finished PersonalKM omnichannel worker."
