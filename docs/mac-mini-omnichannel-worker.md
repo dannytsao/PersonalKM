@@ -38,6 +38,13 @@ From the repo root:
 python3 -m tools.omnichannel_md.worker --dry-run
 ```
 
+Backfill worker metadata into legacy raw notes:
+
+```bash
+python3 -m tools.omnichannel_md.backfill_worker_metadata
+python3 -m tools.omnichannel_md.backfill_worker_metadata --apply
+```
+
 Process one pending note without Git automation:
 
 ```bash

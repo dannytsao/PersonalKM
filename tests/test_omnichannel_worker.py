@@ -1,6 +1,7 @@
 from tools.omnichannel_md.frontmatter import parse_markdown, update_frontmatter
 from pathlib import Path
 
+from tools.omnichannel_md.backfill_worker_metadata import collect_backfill_plans, worker_metadata_for
 from tools.omnichannel_md.worker import QueueCandidate, replace_body, scan_pending_notes, select_candidate, transcribe_with_whisper
 
 
@@ -131,3 +132,37 @@ def test_select_candidate_prefers_explicit_pending_youtube_before_legacy():
     ]
 
     assert select_candidate(candidates).path == Path("explicit.md")
+
+
+def test_worker_metadata_for_marks_partial_youtube_pending():
+    metadata = worker_metadata_for({"platform": "youtube", "extraction_status": "partial"})
+
+    assert metadata["needs_local_worker"] is True
+    assert metadata["worker_status"] == "pending"
+    assert metadata["worker_type"] == "omnichannel_md"
+
+
+def test_worker_metadata_for_marks_ok_web_not_required():
+    metadata = worker_metadata_for({"platform": "web", "extraction_status": "ok"})
+
+    assert metadata["needs_local_worker"] is False
+    assert metadata["worker_status"] == "not_required"
+    assert metadata["worker_type"] == "none"
+
+
+def test_collect_backfill_plans_skips_notes_that_already_have_worker_metadata(tmp_path):
+    raw = tmp_path / "raw" / "Tech"
+    raw.mkdir(parents=True)
+    legacy = raw / "legacy.md"
+    legacy.write_text("---\nplatform: youtube\nextraction_status: partial\n---\n# Legacy\n", encoding="utf-8")
+    current = raw / "current.md"
+    current.write_text(
+        "---\nplatform: web\nextraction_status: ok\nneeds_local_worker: false\n"
+        "worker_status: not_required\nworker_type: none\nworker_retry_count: 0\n---\n# Current\n",
+        encoding="utf-8",
+    )
+
+    plans = collect_backfill_plans(tmp_path)
+
+    assert [plan.path for plan in plans] == [legacy]
+    assert plans[0].updates["worker_status"] == "pending"
