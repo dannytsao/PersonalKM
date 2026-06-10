@@ -72,6 +72,8 @@ RESTRICTED_PLATFORM_HOSTS = {
     "threads.com": "threads",
     "www.threads.com": "threads",
 }
+LOCAL_WORKER_PLATFORMS = {"youtube", "instagram", "tiktok", "x", "threads", "google-ai-mode"}
+LOCAL_WORKER_STATUSES = {"partial", "blocked"}
 TAIWAN_ADDRESS_PATTERN = re.compile(
     r"((?:台北|臺北|新北|桃園|台中|臺中|台南|臺南|高雄|基隆|新竹|苗栗|彰化|南投|雲林|嘉義|屏東|宜蘭|花蓮|台東|臺東|澎湖|金門|連江)"
     r"[縣市][^，,。；;\n]{0,35}(?:路|街|大道|巷|弄|段)[^，,。；;\n]{0,25}號)"
@@ -304,6 +306,26 @@ def content_type_for_platform(platform: str) -> str:
     return "webpage"
 
 
+def local_worker_metadata(content: ExtractedContent) -> dict[str, object]:
+    needs_local_worker = (
+        content.platform in LOCAL_WORKER_PLATFORMS
+        and (content.extraction_status in LOCAL_WORKER_STATUSES or content.needs_review)
+    )
+    if needs_local_worker:
+        return {
+            "needs_local_worker": True,
+            "worker_status": "pending",
+            "worker_type": "omnichannel_md",
+            "worker_retry_count": 0,
+        }
+    return {
+        "needs_local_worker": False,
+        "worker_status": "not_required",
+        "worker_type": "none",
+        "worker_retry_count": 0,
+    }
+
+
 def markdown_quote(text: str) -> str:
     lines = text.strip().splitlines() or [text.strip()]
     quoted = [f"> {line.strip()}" if line.strip() else ">" for line in lines]
@@ -377,6 +399,7 @@ def to_note(content: ExtractedContent, url: str, summary: str, category: str) ->
         body_markdown=body_markdown,
         location_city=location_city if location_city != "未提供" else "",
         content_type=content_type_for_platform(content.platform),
+        **local_worker_metadata(content),
     )
 
 
@@ -394,6 +417,13 @@ def to_deep_note(content: ExtractedContent, url: str, summary: str, category: st
         body_markdown=body_markdown,
         location_city=note.location_city,
         content_type=note.content_type,
+        needs_local_worker=note.needs_local_worker,
+        worker_status=note.worker_status,
+        worker_type=note.worker_type,
+        worker_retry_count=note.worker_retry_count,
+        worker_error=note.worker_error,
+        worker_processed_at=note.worker_processed_at,
+        worker_name=note.worker_name,
     )
 
 

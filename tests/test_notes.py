@@ -23,8 +23,38 @@ def test_render_note_matches_obsidian_template():
     assert "platform: web" in rendered
     assert "extraction_status: ok" in rendered
     assert "needs_review: false" in rendered
+    assert "needs_local_worker: false" in rendered
+    assert "worker_status: not_required" in rendered
+    assert "worker_type: none" in rendered
+    assert "worker_retry_count: 0" in rendered
     assert "status: unread" in rendered
     assert "## 原文連結\nhttps://example.com" in rendered
+
+
+def test_render_note_includes_pending_worker_metadata():
+    note = LinkNote(
+        title="YouTube",
+        url="https://youtu.be/example",
+        summary="需要本機補強。",
+        category="tech",
+        captured_on=date(2026, 6, 10),
+        platform="youtube",
+        extraction_status="partial",
+        needs_review=True,
+        needs_local_worker=True,
+        worker_status="pending",
+        worker_type="omnichannel_md",
+        worker_retry_count=1,
+        worker_error="yt_dlp_not_installed",
+    )
+
+    rendered = render_note(note)
+
+    assert "needs_local_worker: true" in rendered
+    assert "worker_status: pending" in rendered
+    assert "worker_type: omnichannel_md" in rendered
+    assert "worker_retry_count: 1" in rendered
+    assert "worker_error: yt_dlp_not_installed" in rendered
 
 
 def test_render_note_includes_content_type_when_present():
