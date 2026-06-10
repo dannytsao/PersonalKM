@@ -6,6 +6,7 @@ import json
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -31,6 +32,7 @@ LOCAL_WORKER_STATUSES = {"partial", "blocked"}
 WORKER_NAME = "mac-mini-omnichannel"
 WORKER_TYPE = "omnichannel_md"
 TAIPEI = ZoneInfo("Asia/Taipei")
+DEFAULT_WHISPER_MODEL = Path.home() / ".cache" / "personalkm" / "whisper" / "ggml-base.bin"
 
 
 @dataclass(frozen=True)
@@ -163,6 +165,69 @@ async def recover_with_ytdlp(url: str) -> RecoveryResult:
     return RecoveryResult(False, error="yt_dlp_no_subtitle_text")
 
 
+def transcribe_with_whisper(audio_path: Path, model_path: Path) -> RecoveryResult:
+    if not shutil.which("whisper-cli"):
+        return RecoveryResult(False, error="whisper_cli_not_installed")
+    if not model_path.exists():
+        return RecoveryResult(False, error=f"whisper_model_missing:{model_path}")
+
+    output_base = audio_path.with_suffix("")
+    command = [
+        "whisper-cli",
+        "-m",
+        str(model_path),
+        "-f",
+        str(audio_path),
+        "-l",
+        "auto",
+        "-otxt",
+        "-of",
+        str(output_base),
+        "--no-prints",
+    ]
+    try:
+        subprocess.run(command, check=True, capture_output=True, text=True, timeout=900)
+    except subprocess.SubprocessError as error:
+        return RecoveryResult(False, error=f"whisper_failed:{error.__class__.__name__}")
+
+    transcript_path = output_base.with_suffix(".txt")
+    if not transcript_path.exists():
+        return RecoveryResult(False, error="whisper_output_missing")
+
+    text = " ".join(transcript_path.read_text(encoding="utf-8", errors="replace").split())
+    return RecoveryResult(True, text=text) if text else RecoveryResult(False, error="whisper_output_empty")
+
+
+async def recover_with_whisper(url: str, model_path: Path = DEFAULT_WHISPER_MODEL) -> RecoveryResult:
+    if not shutil.which("yt-dlp"):
+        return RecoveryResult(False, error="yt_dlp_not_installed")
+    if not shutil.which("ffmpeg"):
+        return RecoveryResult(False, error="ffmpeg_not_installed")
+
+    with tempfile.TemporaryDirectory(prefix="personalkm-whisper-") as tmpdir:
+        output_template = str(Path(tmpdir) / "audio.%(ext)s")
+        command = [
+            "yt-dlp",
+            "-x",
+            "--audio-format",
+            "wav",
+            "--audio-quality",
+            "5",
+            "-o",
+            output_template,
+            url,
+        ]
+        try:
+            subprocess.run(command, check=True, capture_output=True, text=True, timeout=900)
+        except subprocess.SubprocessError as error:
+            return RecoveryResult(False, error=f"audio_download_failed:{error.__class__.__name__}")
+
+        wav_files = list(Path(tmpdir).glob("*.wav"))
+        if not wav_files:
+            return RecoveryResult(False, error="audio_download_missing_wav")
+        return transcribe_with_whisper(wav_files[0], model_path)
+
+
 async def recover_youtube(url: str, max_chars: int) -> RecoveryResult:
     video_id = youtube_video_id(url)
     if not video_id:
@@ -177,19 +242,23 @@ async def recover_youtube(url: str, max_chars: int) -> RecoveryResult:
     if ytdlp_result.ok:
         return ytdlp_result
 
-    return RecoveryResult(False, error=f"{ytdlp_result.error};whisper_transcription_not_configured")
+    whisper_result = await recover_with_whisper(url)
+    if whisper_result.ok:
+        return whisper_result
+
+    return RecoveryResult(False, error=f"{ytdlp_result.error};{whisper_result.error}")
 
 
 def build_recovered_markdown(title: str, url: str, platform: str, transcript: str) -> tuple[str, str]:
-    summary = summarize_with_ollama(title, transcript)
+    summary = "\n".join(line.rstrip() for line in summarize_with_ollama(title, transcript).splitlines()).strip()
     content = ExtractedContent(title=title, text=transcript, platform=platform)
     return summary, canonical_body_markdown(content, url, summary)
 
 
-def replace_body(markdown: str, body: str) -> str:
+def replace_body(markdown: str, body: str, title: str) -> str:
     document = parse_markdown(markdown)
     frontmatter = markdown[: markdown.find(document.body)]
-    return frontmatter + body.rstrip() + "\n"
+    return frontmatter + f"# {title}\n\n" + body.rstrip() + "\n"
 
 
 async def process_candidate(candidate: QueueCandidate, max_chars: int) -> bool:
@@ -240,7 +309,7 @@ async def process_candidate(candidate: QueueCandidate, max_chars: int) -> bool:
         return False
 
     summary, body = build_recovered_markdown(title, url, platform, result.text[:max_chars])
-    updated = replace_body(markdown, body)
+    updated = replace_body(markdown, body, title)
     updated = update_frontmatter(
         updated,
         {
