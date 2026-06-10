@@ -107,6 +107,7 @@ The scheduled runner is intentionally conservative:
 - It skips the run if the repo has local uncommitted changes.
 - It lets the worker do its normal Git pull/rebase, commit, and push flow.
 - It runs from a dedicated clone at `~/.personalkm/PersonalKM-worker`, avoiding macOS privacy restrictions on `~/Documents`.
+- It uses `/usr/bin/python3` by default because the Homebrew Python may not have this repo's dependencies installed.
 
 Install and start:
 
