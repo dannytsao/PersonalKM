@@ -202,6 +202,27 @@ def test_to_note_uses_canonical_markdown_for_web_content():
     assert "## 內含連結\n- https://example.com\n- https://example.com/inside" in note.body_markdown
     assert "## 媒體\n- 未擷取" in note.body_markdown
     assert "## 擷取狀態" in note.body_markdown
+    assert not note.needs_local_worker
+    assert note.worker_status == "not_required"
+    assert note.worker_type == "none"
+
+
+def test_to_note_marks_partial_youtube_for_local_worker():
+    content = ExtractedContent(
+        title="YouTube",
+        text="無法擷取該 YouTube 影片的字幕或逐字稿。",
+        platform="youtube",
+        extraction_status="partial",
+        needs_review=True,
+    )
+
+    note = to_note(content, "https://youtu.be/example", "需要本機補強。", "tech")
+
+    assert note.content_type == "video"
+    assert note.needs_local_worker
+    assert note.worker_status == "pending"
+    assert note.worker_type == "omnichannel_md"
+    assert note.worker_retry_count == 0
 
 
 def test_to_note_quotes_social_original_content():
