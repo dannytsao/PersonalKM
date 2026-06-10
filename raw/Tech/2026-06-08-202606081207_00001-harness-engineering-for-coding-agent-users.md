@@ -9,6 +9,10 @@ extraction_status: ok
 needs_review: false
 summary: 本文介紹了一種針對程式碼代理使用者的心智模型，透過前饋指導、反饋感測器以及迭代的工具工程，來建立對程式碼代理的信任。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # Harness engineering for coding agent users

@@ -9,6 +9,10 @@ extraction_status: ok
 needs_review: false
 summary: NxCode 提供一個無需編碼即可建構完整應用程式的 AI 應用程式生成平台，適合新創公司和創業者使用。該平台免費，支援全棧應用開發，旨在簡化開發流程。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # AI App Builder | Build Apps Without Coding 2026 | NxCode | NxCode

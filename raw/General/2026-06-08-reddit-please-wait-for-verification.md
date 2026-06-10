@@ -8,6 +8,10 @@ extraction_status: ok
 needs_review: false
 summary: 該內容為Reddit網站的提示訊息，要求用戶等待驗證。沒有提供具體的店家資訊或其他詳細內容。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # Reddit - Please wait for verification

@@ -9,6 +9,10 @@ extraction_status: ok
 needs_review: false
 summary: 本文深入解析2026年最重要的AI工程新學科——Harness Engineering，介紹了從Prompt到Context再到Harness的三代範式演進。文章涵蓋了Guides x Sensors技術框架，並分享了OpenAI、Anthropic、Stripe的實戰案例，還提供了讀者可立即動手實作的第一個Harness。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # Harness Engineering 完全解析：當 AI Agent 的護城河不再是模型，而是環境 - HackMD

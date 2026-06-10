@@ -9,6 +9,10 @@ extraction_status: ok
 needs_review: false
 summary: Harness Engineering 是 AI 領域中新興的系統工程學科，專注於為 AI Agent 設計控制環境、工具接口、約束機制與反饋迴路。它不改變模型本身權重，但決定模型的行為與安全性。此架構包含環境管理、約束規則、工具接口、反饋迴路與可觀測性等五大核心組件，已被 OpenAI 等企業用於提升 AI 自主編碼效率與穩定性。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # [Harness engineering for coding agent users]( ) [What Is Harness Engineering for

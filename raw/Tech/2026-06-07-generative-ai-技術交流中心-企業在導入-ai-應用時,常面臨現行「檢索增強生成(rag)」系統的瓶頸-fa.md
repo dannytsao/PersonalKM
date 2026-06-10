@@ -8,6 +8,10 @@ extraction_status: ok
 needs_review: false
 summary: 企業在導入 AI 應用時，常面臨現行「檢索增強生成（RAG）」系統的瓶頸，尤其是無法有效處理跨來源、多步驟查詢。傳統單一步驟 RAG 系統難以解決資料孤島問題，導致資訊檢索效率低下。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # Generative AI 技術交流中心 | 企業在導入 AI 應用時，常面臨現行「檢索增強生成（RAG）」系統的瓶頸 | Facebook

@@ -9,6 +9,10 @@ extraction_status: ok
 needs_review: false
 summary: Wikipedia 是一個自由的百科全書，提供廣泛的知識和資訊。它是一個開放編輯的平台，讓全球用戶共同貢獻內容。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # Wikipedia, the free encyclopedia

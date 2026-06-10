@@ -8,6 +8,10 @@ extraction_status: ok
 needs_review: false
 summary: Threads 是一個社交平台，使用者可以登入並分享想法、提問、發表隨想，並尋找志同道合的人。登入方式支援 Instagram 帳號。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # Threads • Log in

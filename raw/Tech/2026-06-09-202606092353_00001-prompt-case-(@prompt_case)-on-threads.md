@@ -10,6 +10,10 @@ extraction_status: ok
 needs_review: false
 summary: OpenAI 最新更新了 Codex 用例頁，提供一份跨職能自動化工作流程手冊，涵蓋生產力、網頁開發、遊戲開發等多個領域。手冊包含 12 個用例，並附有技能建議、插件、提示詞及示範輸出格式，方便用戶快速上手並提升工作效率。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # Prompt Case (@prompt_case) on Threads

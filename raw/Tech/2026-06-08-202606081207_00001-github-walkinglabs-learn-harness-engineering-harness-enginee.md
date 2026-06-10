@@ -9,6 +9,10 @@ extraction_status: ok
 needs_review: false
 summary: 這是一個 GitHub 倉庫，提供從零開始的 Harness 工程初學者教學，適合想學習 Harness 工程基礎的使用者參考。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # GitHub - walkinglabs/learn-harness-engineering: Harness engineering beginner tutorial, from 0 to 1

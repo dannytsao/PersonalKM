@@ -9,6 +9,10 @@ extraction_status: ok
 needs_review: false
 summary: 微軟宣布推出名為 Project Solara 的新系統平台，該平台不再使用 Windows，而是採用 Android 核心，專門用於運行 AI 代理，顯示微軟在 AI 技術應用上的新策略。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # 微軟公佈 Project Solara 新系統平台：不用 Windows 改用 Android 核心，專門運行 AI 代理

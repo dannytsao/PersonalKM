@@ -8,6 +8,10 @@ extraction_status: ok
 needs_review: false
 summary: Hermes Agent 桌面版應用程式正式推出，支援 macOS、Windows 及 Linux 系統。這款工具結合 Hermes Agent 與 Codex，提供進階的工作流程，受到用戶期待已久。相關連結已提供，鼓勵有興趣的用戶嘗試使用。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # Prompt Case (@prompt_case) on Threads

@@ -8,6 +8,10 @@ extraction_status: ok
 needs_review: false
 summary: 本文提供了一個網頁連結，但未包含具體內容或店家資訊，因此無法進行詳細摘要。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # https://post.m.smzdm.com/p/ak8prew9/

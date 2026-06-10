@@ -10,6 +10,10 @@ extraction_status: ok
 needs_review: false
 summary: 此專案為一個在GitHub上的開源資源，提供訓練長期搜尋代理的超級配方，目標是匹配前沿AI的搜尋能力，並使用20B模型進行訓練。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # GitHub - pat-jj/harness-1: 🚀 Ultra Recipe for Training Long-Horizon Search Agents - matching frontier AI's search capability with a 20B model

@@ -8,6 +8,10 @@ extraction_status: partial
 needs_review: true
 summary: 本影片介紹 Hermes Agent 的全新桌面應用程式，這是一款全天候自我進化的人工智慧代理工具。影片內容強調其持續學習與自我優化的特性，適合對 AI 技術感興趣的使用者觀看。
 status: unread
+needs_local_worker: true
+worker_status: pending
+worker_type: omnichannel_md
+worker_retry_count: 0
 ---
 
 # Hermes Agent NEW Desktop App - The 24/7 Self-Evolving AI Agent!

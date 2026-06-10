@@ -9,6 +9,10 @@ extraction_status: ok
 needs_review: false
 summary: 這是一個GitHub專案，名為 walkinglabs/awesome-harness-engineering，提供了關於harness工程的優秀工具和指南，適合相關領域的工程師參考使用。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # GitHub - walkinglabs/awesome-harness-engineering: 🛠️ Awesome tools & guides for harness engineering.

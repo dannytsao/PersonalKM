@@ -8,6 +8,10 @@ extraction_status: partial
 needs_review: true
 summary: 本影片介紹 Hermes 桌面應用程式的完整設置流程，強調其改變使用者工作方式的功能與優勢。由於無法取得影片字幕，建議直接觀看影片以了解詳細內容。
 status: unread
+needs_local_worker: true
+worker_status: pending
+worker_type: omnichannel_md
+worker_retry_count: 0
 ---
 
 # The Hermes Desktop App Changes Everything (Full Setup)

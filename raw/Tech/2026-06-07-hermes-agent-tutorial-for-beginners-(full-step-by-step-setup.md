@@ -8,6 +8,10 @@ extraction_status: partial
 needs_review: true
 summary: 本影片為 Hermes Agent 的初學者教學，提供完整的步驟設置指南。由於無法擷取字幕，建議直接觀看影片以獲取詳細操作資訊。
 status: unread
+needs_local_worker: true
+worker_status: pending
+worker_type: omnichannel_md
+worker_retry_count: 0
 ---
 
 # Hermes Agent Tutorial for Beginners (Full Step-by-Step Setup)

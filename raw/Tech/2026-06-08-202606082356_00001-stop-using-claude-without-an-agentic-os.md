@@ -9,6 +9,10 @@ extraction_status: partial
 needs_review: true
 summary: 本影片標題為「Stop Using Claude Without an Agentic OS」，內容無法擷取字幕或逐字稿，建議直接點擊連結觀看以獲取詳細資訊。
 status: unread
+needs_local_worker: true
+worker_status: pending
+worker_type: omnichannel_md
+worker_retry_count: 0
 ---
 
 # Stop Using Claude Without an Agentic OS

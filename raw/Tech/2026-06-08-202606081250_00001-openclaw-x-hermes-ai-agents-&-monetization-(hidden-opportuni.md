@@ -9,6 +9,10 @@ extraction_status: ok
 needs_review: false
 summary: Kilo 成為最受歡迎的開源程式碼代理平台，支援 VS Code 擴充功能、JetBrains 插件及獨立 CLI。OpenClaw 與 Hermes 合作探討 AI 代理與貨幣化的潛在機會。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # OpenClaw x Hermes: AI Agents & Monetization (Hidden Opportunities) | 🔥 Kilo just became the most popular open source coding agent | Facebook

@@ -8,6 +8,10 @@ extraction_status: partial
 needs_review: true
 summary: 本影片為 Andrej Karpathy 討論 Code Agents、AutoResearch 以及 AI 發展的循環時代，內容涉及人工智慧技術的最新趨勢與挑戰。由於無法取得影片字幕，建議直接觀看影片以獲取完整資訊。
 status: unread
+needs_local_worker: true
+worker_status: pending
+worker_type: omnichannel_md
+worker_retry_count: 0
 ---
 
 # Skill Issue: Andrej Karpathy on Code Agents, AutoResearch, and the Loopy Era of AI

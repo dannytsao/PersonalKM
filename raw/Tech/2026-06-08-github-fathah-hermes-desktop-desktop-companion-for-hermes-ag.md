@@ -8,6 +8,10 @@ extraction_status: ok
 needs_review: false
 summary: 這是一個名為 hermes-desktop 的桌面應用程式，作為 Hermes Agent 的桌面伴侶。該專案托管於 GitHub，允許用戶貢獻和開發相關功能。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # GitHub - fathah/hermes-desktop: Desktop Companion for Hermes Agent

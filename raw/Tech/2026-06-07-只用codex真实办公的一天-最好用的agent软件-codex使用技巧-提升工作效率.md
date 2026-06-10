@@ -8,6 +8,10 @@ extraction_status: partial
 needs_review: true
 summary: 本影片介紹如何使用Codex進行真實辦公，分享最佳的agent軟體及Codex使用技巧，旨在提升工作效率。由於無法取得影片字幕，建議直接觀看影片以獲取詳細內容。
 status: unread
+needs_local_worker: true
+worker_status: pending
+worker_type: omnichannel_md
+worker_retry_count: 0
 ---
 
 # 只用codex真实办公的一天|最好用的agent软件|codex使用技巧|提升工作效率

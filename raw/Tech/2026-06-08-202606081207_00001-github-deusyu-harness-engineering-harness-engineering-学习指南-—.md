@@ -9,6 +9,10 @@ extraction_status: ok
 needs_review: false
 summary: 這是一個名為 Harness Engineering 的學習指南，內容涵蓋從概念理解到獨立實踐的深度學習檔案，並托管於 GitHub 平台上，方便用戶貢獻與學習。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # GitHub - deusyu/harness-engineering: Harness Engineering 学习指南 — 从概念理解到独立实践的深度学习档案

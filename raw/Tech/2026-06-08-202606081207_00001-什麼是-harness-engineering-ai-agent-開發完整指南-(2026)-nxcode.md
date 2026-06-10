@@ -9,6 +9,10 @@ extraction_status: ok
 needs_review: false
 summary: 本文介紹了 Harness Engineering 的概念，並說明其在 2026 年 AI Agent 開發中的重要性。內容涵蓋從 prompt 設計到工具編排的完整指南，幫助建構可靠的 AI Agent 系統。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # 什麼是 Harness Engineering？AI Agent 開發完整指南 (2026) | NxCode

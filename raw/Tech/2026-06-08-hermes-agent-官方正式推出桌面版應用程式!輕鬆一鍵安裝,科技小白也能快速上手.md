@@ -8,6 +8,10 @@ extraction_status: ok
 needs_review: false
 summary: Hermes Agent 官方正式推出桌面版應用程式，提供一鍵安裝功能，讓科技小白也能輕鬆快速上手。過去需要透過 CLI 介面安裝和設定的繁瑣步驟，現在變得更加簡單方便。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # Hermes Agent 官方正式推出桌面版應用程式！輕鬆一鍵安裝，科技小白也能快速上手

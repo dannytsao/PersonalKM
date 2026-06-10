@@ -8,6 +8,10 @@ extraction_status: partial
 needs_review: true
 summary: 本影片介紹如何在ComfyUI中使用GPT會員功能生成圖片，無需API調用，幾乎免費，適合Plus會員充分利用會員權益。
 status: unread
+needs_local_worker: true
+worker_status: pending
+worker_type: omnichannel_md
+worker_retry_count: 0
 ---
 
 # 【AIGC实战课 109】榨干你的plus会员！在ComfyUI调用GPT会员生图，无需API，几乎免费！

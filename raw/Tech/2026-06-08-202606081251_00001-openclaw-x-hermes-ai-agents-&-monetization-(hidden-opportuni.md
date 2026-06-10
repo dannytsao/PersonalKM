@@ -9,6 +9,10 @@ extraction_status: ok
 needs_review: false
 summary: OpenClaw 與 Hermes 合作推出的 CAMEL 是首個先進的多代理框架，能讓 AI 代理像真實團隊一樣協同工作並溝通，重新定義 AI 團隊的能力與潛力。該框架同時探討了 AI 代理的貨幣化及隱藏機會。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # OpenClaw x Hermes: AI Agents & Monetization (Hidden Opportunities) | 🔥 This multi-agent framework is redefining what AI teams can achieve.. | Facebook

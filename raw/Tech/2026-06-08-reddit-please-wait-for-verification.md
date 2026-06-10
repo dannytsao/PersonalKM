@@ -8,6 +8,10 @@ extraction_status: ok
 needs_review: false
 summary: 本文為Reddit上的一則帖子，內容涉及使用Codex來驅動ComfyUI伺服器的相關討論。文章主要聚焦於技術應用與驗證過程，未提及具體店家資訊。
 status: unread
+needs_local_worker: false
+worker_status: not_required
+worker_type: none
+worker_retry_count: 0
 ---
 
 # Reddit - Please wait for verification
