@@ -97,7 +97,46 @@ worker_retry_count: 1
 
 ## Launchd
 
-Add `launchd` only after manual processing is stable. The worker is intentionally manual-first so it cannot rewrite many historical notes before the single-note path is proven.
+The Mac mini can run the worker automatically with `launchd`. This keeps cost at zero while preserving the repo as the durable queue when the Mac mini is offline.
+
+The scheduled runner is intentionally conservative:
+
+- It runs once at load/login and then every 15 minutes.
+- It processes only one pending note per run.
+- It uses a lock directory so overlapping runs are skipped.
+- It skips the run if the repo has local uncommitted changes.
+- It lets the worker do its normal Git pull/rebase, commit, and push flow.
+
+Install and start:
+
+```bash
+scripts/install_mac_mini_worker_launchd.sh
+```
+
+Check status:
+
+```bash
+launchctl print gui/$(id -u)/com.dannytsao.personalkm.omnichannel-worker
+```
+
+View logs:
+
+```bash
+tail -n 80 ~/Library/Logs/PersonalKM/omnichannel-worker.out.log
+tail -n 80 ~/Library/Logs/PersonalKM/omnichannel-worker.err.log
+```
+
+Run immediately:
+
+```bash
+launchctl kickstart -k gui/$(id -u)/com.dannytsao.personalkm.omnichannel-worker
+```
+
+Uninstall:
+
+```bash
+scripts/uninstall_mac_mini_worker_launchd.sh
+```
 
 ## 2026-06-10 Implementation Status
 
