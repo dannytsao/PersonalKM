@@ -1,5 +1,5 @@
 from tools.omnichannel_md.frontmatter import parse_markdown, update_frontmatter
-from tools.omnichannel_md.worker import scan_pending_notes
+from tools.omnichannel_md.worker import replace_body, scan_pending_notes, transcribe_with_whisper
 
 
 def test_update_frontmatter_preserves_body_and_updates_worker_fields():
@@ -87,3 +87,27 @@ worker_status: not_required
     )
 
     assert scan_pending_notes(tmp_path) == []
+
+
+def test_transcribe_with_whisper_reports_missing_model(tmp_path):
+    audio = tmp_path / "audio.wav"
+    audio.write_bytes(b"not real wav")
+
+    result = transcribe_with_whisper(audio, tmp_path / "missing.bin")
+
+    assert not result.ok
+    assert result.error.startswith("whisper_model_missing:")
+
+
+def test_replace_body_preserves_h1_title():
+    markdown = """---
+platform: youtube
+---
+# Original Title
+
+Old body
+"""
+
+    updated = replace_body(markdown, "## 摘要\nNew body", "Original Title")
+
+    assert "---\n# Original Title\n\n## 摘要\nNew body\n" in updated

@@ -91,14 +91,16 @@ Add `launchd` only after manual processing is stable. The worker is intentionall
 - Render-side note generation now writes worker queue metadata for new notes.
 - The repo scanner can find both new explicit pending notes and older legacy partial/blocked notes.
 - Dry-run has been verified against the current repo.
-- One real YouTube partial note was processed in `--process-one --no-git` mode.
-- That note could not be recovered yet because `yt-dlp` is not installed on the active Mac mini environment and Whisper transcription is not configured.
-- The note was updated with a precise failure reason instead of being silently ignored.
+- Whisper fallback is now wired into the worker. If YouTube subtitles fail, the worker downloads audio with `yt-dlp`, transcribes it with `whisper-cli`, then summarizes with Ollama.
+- Local Whisper model path: `~/.cache/personalkm/whisper/ggml-base.bin`.
+- One real YouTube partial note was recovered in `--process-one --no-git` mode and updated to `extraction_status: ok`.
+- One earlier YouTube note remains marked `worker_status: failed`, which verifies failures stay visible instead of being silently ignored.
 
-Next local setup step:
+Local setup commands:
 
 ```bash
 brew install ffmpeg yt-dlp
+brew install whisper-cpp
 ollama pull qwen3:8b
 ```
 
