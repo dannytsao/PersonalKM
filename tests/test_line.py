@@ -51,3 +51,27 @@ async def test_mark_message_as_read_posts_read_token(monkeypatch):
             {"markAsReadToken": "read-token"},
         )
     ]
+
+
+def test_extract_urls_removes_tracking_params():
+    text = "主文 https://example.com/a?id=1&utm_source=line&fbclid=abc#comments"
+
+    assert extract_urls(text) == ["https://example.com/a?id=1"]
+
+
+def test_extract_urls_filters_obvious_ad_and_redirect_urls():
+    text = (
+        "主文 https://example.com/article "
+        "廣告 https://googleads.g.doubleclick.net/pagead/ads?client=x "
+        "跳轉 https://l.facebook.com/l.php?u=https%3A%2F%2Fexample.com%2Fspam"
+    )
+
+    assert extract_urls(text) == ["https://example.com/article"]
+
+
+def test_extract_urls_keeps_facebook_group_permalink():
+    text = "https://www.facebook.com/groups/1782041272068262/permalink/4587135024892192/?rdid=ft64HYMHIlymEZyv#"
+
+    assert extract_urls(text) == [
+        "https://www.facebook.com/groups/1782041272068262/permalink/4587135024892192/?rdid=ft64HYMHIlymEZyv"
+    ]
