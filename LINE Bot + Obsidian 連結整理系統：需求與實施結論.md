@@ -1,6 +1,6 @@
 # LINE Bot + Obsidian 連結整理系統：需求與實施結論
 
-更新日期：2026-06-10
+更新日期：2026-06-11
 
 ## 一、專案目標
 
@@ -34,6 +34,8 @@
 | 同一則 LINE 訊息的多篇 note 共用 `log_id` | 已完成 |
 | LINE 已讀標示 | 已完成，成功寫入 repo 後呼叫 LINE mark-as-read |
 | Markdown 標準化 | 已完成，URL、社群貼文、AI Mode、貼文文字統一成 canonical Markdown |
+| Layer 1 URL hygiene | 已完成，進 raw 前移除明顯廣告、追蹤、分享跳轉 URL |
+| Layer 2 content cleaning | 待做，清理頁面正文內的廣告、推薦文、導覽與無關連結 |
 | Worker queue metadata | 已完成，新舊 raw notes 都已補上 worker 欄位 |
 | Mac mini local worker | 已完成，可自動處理 pending YouTube notes |
 | Mac mini worker 自動排程 | 已完成，launchd 每 15 分鐘跑一次 |
@@ -232,6 +234,8 @@ launchctl kickstart -k gui/$(id -u)/com.dannytsao.personalkm.omnichannel-worker
 
 ## 十一、後續擴充方向
 
+- 依 `IMPROVEMENT-BACKLOG.md` 追蹤後續改善事項。
+- 新增 Layer 2 content cleaning：在 fetch/normalize 後、寫入 raw 前，清理頁面正文裡的廣告、推薦文章、社群分享、頁尾導覽與無關外部連結。
 - 擴充 Mac mini worker 對 X、Threads、Instagram 的低成本 local recovery。
 - 增加 worker dashboard 或 Dataview query，快速查看 pending/failed notes。
 - 增加針對 `worker_status: failed` 的重試策略與人工標記流程。

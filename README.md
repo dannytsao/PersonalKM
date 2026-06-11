@@ -4,6 +4,12 @@
 
 LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每週日自動組織筆記，月度報告追踪過時的技術知識。
 
+## 2026-06-11 今日更新
+
+- 新增 URL hygiene：LINE 訊息進入 `raw/` 前，會先移除明顯廣告、追蹤、分享跳轉 URL，並清掉常見 tracking query，例如 `utm_*`、`fbclid`、`igsh`、`gclid`。
+- 新增 `IMPROVEMENT-BACKLOG.md` 作為後續改善總表，正式列入 Layer 2 content cleaning：清理頁面正文裡混入的廣告、推薦文、頁尾導覽與無關連結。
+- 目前優先改善方向：Layer 2 content cleaning、Food structured extraction、Housekeeping archive/trash report。
+
 ## 2026-06-10 今日更新
 
 - 完成 Mac mini omnichannel worker：Render 先把 partial/blocked notes 寫入 `raw/` 與 GitHub queue，Mac mini 開機時再用本機工具低成本補強。
