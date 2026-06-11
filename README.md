@@ -4,11 +4,26 @@
 
 LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每週日自動組織筆記，月度報告追踪過時的技術知識。
 
+## 文件入口
+
+目前 root 只保留仍需維護的活文件：
+
+| 文件 | 用途 |
+|------|------|
+| `LINE Bot + Obsidian 連結整理系統：需求與實施結論.md` | 系統需求、架構與目前狀態 |
+| `IMPROVEMENT-BACKLOG.md` | 後續改善事項與優先順序 |
+| `CHANGELOG.md` | 已完成事項與已移除文件摘要 |
+| `DOCS-INVENTORY.md` | 文件清單、狀態與更新節奏 |
+| `PROJECT-DOCUMENTATION-PROCESS.md` | 專案文件管理流程 |
+| `AGENTS.md` | Codex/agent 工作規則 |
+| `KNOWLEDGE-DECAY-GUIDE.md` | 知識衰退檢測操作說明 |
+
 ## 2026-06-11 今日更新
 
 - 新增 URL hygiene：LINE 訊息進入 `raw/` 前，會先移除明顯廣告、追蹤、分享跳轉 URL，並清掉常見 tracking query，例如 `utm_*`、`fbclid`、`igsh`、`gclid`。
 - 新增 `IMPROVEMENT-BACKLOG.md` 作為後續改善總表，正式列入 Layer 2 content cleaning：清理頁面正文裡混入的廣告、推薦文、頁尾導覽與無關連結。
 - 目前優先改善方向：Layer 2 content cleaning、Food structured extraction、Housekeeping archive/trash report。
+- 已完成專案文件清理：已結案 root `.md` 濃縮至 `CHANGELOG.md`，並以 `DOCS-INVENTORY.md` + `PROJECT-DOCUMENTATION-PROCESS.md` 管理後續文件生命週期。
 
 ## 2026-06-10 今日更新
 
@@ -376,7 +391,7 @@ summary: "**重點摘要：**
 - `Inbox/` 文件夾已刪除
 - 新系統完全啟用 (raw → wiki)
 
-詳見 [INBOX-MIGRATION-LOG.md](./INBOX-MIGRATION-LOG.md)
+歷史細節已整理到 `CHANGELOG.md`。
 
 ---
 
@@ -394,7 +409,7 @@ summary: "**重點摘要：**
 - [ ] 查詢界面 (search/filter/timeline)
 - [ ] 決策點：運行 1 個月後決定
 
-詳見 [ENHANCEMENT-DECISION.md](./ENHANCEMENT-DECISION.md)
+後續改善事項統一追蹤於 `IMPROVEMENT-BACKLOG.md`。
 
 ---
 
@@ -439,12 +454,12 @@ FRESHNESS_LEVELS = {
 
 | 文檔 | 內容 |
 |------|------|
-| [PHASE-1-4-ROADMAP.md](./PHASE-1-4-ROADMAP.md) | Phase 1+4 詳細計畫 |
-| [YOUTUBE-SUMMARY-ENHANCEMENT.md](./YOUTUBE-SUMMARY-ENHANCEMENT.md) | YouTube 摘要改進說明 |
-| [ARCHIVE-STRATEGY.md](./ARCHIVE-STRATEGY.md) | Archive 文件夾策略 |
-| [WHY-RAW-NOT-INBOX.md](./WHY-RAW-NOT-INBOX.md) | 為什麼需要 raw/ 文件夾 |
-| [INBOX-MIGRATION-LOG.md](./INBOX-MIGRATION-LOG.md) | Inbox 遷移記錄 |
-| [IMPLEMENTATION-DELIVERY.md](./IMPLEMENTATION-DELIVERY.md) | 交付文檔 |
+| [CHANGELOG.md](./CHANGELOG.md) | 已完成事項與已移除文件摘要 |
+| [DOCS-INVENTORY.md](./DOCS-INVENTORY.md) | 目前文件清單、狀態與更新節奏 |
+| [PROJECT-DOCUMENTATION-PROCESS.md](./PROJECT-DOCUMENTATION-PROCESS.md) | 專案文件管理流程 |
+| [IMPROVEMENT-BACKLOG.md](./IMPROVEMENT-BACKLOG.md) | 後續改善事項與優先順序 |
+| [LINE Bot + Obsidian 連結整理系統：需求與實施結論.md](./LINE%20Bot%20+%20Obsidian%20連結整理系統：需求與實施結論.md) | 系統需求、架構與目前狀態 |
+| [docs/mac-mini-omnichannel-worker.md](./docs/mac-mini-omnichannel-worker.md) | Mac mini worker 操作與排查 |
 
 ---
 
