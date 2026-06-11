@@ -4,11 +4,52 @@ import hmac
 import re
 from dataclasses import dataclass
 from typing import Optional
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import httpx
 
 
 URL_PATTERN = re.compile(r"https?://[^\s<>()\"'，。！？、；：「」『』]+", re.IGNORECASE)
+
+TRACKING_QUERY_KEYS = {
+    "fbclid",
+    "gclid",
+    "dclid",
+    "gbraid",
+    "wbraid",
+    "mc_cid",
+    "mc_eid",
+    "igsh",
+    "si",
+    "spm",
+    "ref",
+    "ref_src",
+}
+TRACKING_QUERY_PREFIXES = ("utm_",)
+
+NOISE_HOSTS = {
+    "ad.doubleclick.net",
+    "ads.google.com",
+    "googleadservices.com",
+    "l.facebook.com",
+    "lm.facebook.com",
+    "pagead2.googlesyndication.com",
+    "www.googleadservices.com",
+}
+NOISE_HOST_SUFFIXES = (
+    ".doubleclick.net",
+    ".googlesyndication.com",
+)
+NOISE_PATHS = {
+    "/l.php",
+    "/plugins/like.php",
+    "/sharer/sharer.php",
+}
+NOISE_PATH_PARTS = (
+    "/ads/",
+    "/advertising/",
+    "/privacy/consent",
+)
 
 
 @dataclass(frozen=True)
@@ -30,9 +71,49 @@ def extract_urls(text: str) -> list[str]:
     urls = []
     for match in URL_PATTERN.findall(text):
         cleaned = match.rstrip(".,;:!?)]}」』，。！？")
-        if cleaned not in urls:
+        if is_noise_url(cleaned):
+            continue
+
+        cleaned = canonicalize_url(cleaned)
+        if cleaned and cleaned not in urls:
             urls.append(cleaned)
     return urls
+
+
+def canonicalize_url(url: str) -> str:
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        return ""
+
+    query_items = []
+    for key, value in parse_qsl(parsed.query, keep_blank_values=True):
+        key_lower = key.lower()
+        if key_lower in TRACKING_QUERY_KEYS:
+            continue
+        if key_lower.startswith(TRACKING_QUERY_PREFIXES):
+            continue
+        query_items.append((key, value))
+
+    return urlunparse(
+        parsed._replace(
+            scheme=parsed.scheme.lower(),
+            netloc=parsed.netloc.lower(),
+            query=urlencode(query_items, doseq=True),
+            fragment="",
+        )
+    )
+
+
+def is_noise_url(url: str) -> bool:
+    parsed = urlparse(url)
+    host = parsed.netloc.lower()
+    path = parsed.path.lower()
+
+    if host in NOISE_HOSTS or any(host.endswith(suffix) for suffix in NOISE_HOST_SUFFIXES):
+        return True
+    if path in NOISE_PATHS or any(part in path for part in NOISE_PATH_PARTS):
+        return True
+    return False
 
 
 def text_messages_from_webhook(payload: dict) -> list[str]:
