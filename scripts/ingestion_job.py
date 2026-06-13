@@ -83,6 +83,7 @@ def main():
             logger.info("✅ INGESTION JOB COMPLETED SUCCESSFULLY")
             logger.info("=" * 80)
             logger.info(f"Processed: {result.get('processed', 0)}")
+            logger.info(f"Trashed (low-quality): {result.get('trashed', 0)}")
             logger.info(f"Failed: {result.get('failed', 0)}")
             logger.info(f"Report: {report_path}")
             return 0
