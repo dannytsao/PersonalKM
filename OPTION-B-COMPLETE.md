@@ -122,9 +122,9 @@ The deployment includes:
 1. ✅ Ingestion v2 activated as bot/ingestion.py
 2. ✅ ingestion_job.py created (handles weekly runs)
 3. ✅ render.yaml updated: personal-km-weekly-ingestion cron configured
-4. ✅ Schedule: Sunday 9:00 AM UTC (automatic)
+4. ✅ Schedule: Sunday 07:00 AM UTC+8:00 / Saturday 23:00 UTC (automatic)
 
-**Result:** Every Sunday at 9 AM, the bot automatically processes raw/ → wiki/
+**Result:** Every Sunday at 07:00 AM UTC+8:00 (Saturday 23:00 UTC), the bot automatically processes raw/ → wiki/
 
 2. **Test First:**
    - Run dry-run on test data
