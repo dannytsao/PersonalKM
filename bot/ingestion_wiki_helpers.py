@@ -8,6 +8,83 @@ import re
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Tuple, Dict
+import time
+
+logger = logging.getLogger(__name__)
+
+
+class RunningLog:
+    """Real-time ingestion progress log."""
+    
+    def __init__(self, vault_path: Path, job_type: str = "ingestion"):
+        self.vault_path = vault_path
+        self.job_type = job_type
+        self.logs_dir = vault_path / "outputs" / "ingestion-logs"
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create timestamped log file
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+        self.log_file = self.logs_dir / f"{job_type}-{timestamp}.log"
+        self.start_time = datetime.now()
+        
+        # Write header
+        self._write(f"{'='*80}")
+        self._write(f"Ingestion Log Started: {self.start_time.isoformat()}")
+        self._write(f"Job Type: {job_type}")
+        self._write(f"{'='*80}\n")
+    
+    def _write(self, message: str):
+        """Write to log file."""
+        try:
+            with open(self.log_file, 'a', encoding='utf-8') as f:
+                f.write(message + '\n')
+        except Exception as e:
+            logger.error(f"Failed to write to log: {e}")
+    
+    def step(self, step_name: str, message: str = "", status: str = "INFO"):
+        """Log a processing step."""
+        elapsed = (datetime.now() - self.start_time).total_seconds()
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        log_msg = f"[{timestamp} +{elapsed:.1f}s] [{status:7}] {step_name}"
+        if message:
+            log_msg += f" — {message}"
+        
+        self._write(log_msg)
+        logger.info(log_msg)
+    
+    def success(self, step_name: str, message: str = ""):
+        """Log successful step."""
+        self.step(step_name, message, "✅ OK")
+    
+    def warning(self, step_name: str, message: str = ""):
+        """Log warning step."""
+        self.step(step_name, message, "⚠️ WARN")
+    
+    def error(self, step_name: str, message: str = ""):
+        """Log error step."""
+        self.step(step_name, message, "❌ ERROR")
+    
+    def retry(self, step_name: str, attempt: int, wait_seconds: int):
+        """Log retry attempt."""
+        msg = f"Attempt {attempt}, retrying in {wait_seconds}s..."
+        self.warning(step_name, msg)
+    
+    def finish(self, result: dict):
+        """Log completion."""
+        self._write(f"\n{'='*80}")
+        self._write(f"Ingestion Log Finished: {datetime.now().isoformat()}")
+        self._write(f"Result: {result.get('status', 'unknown')}")
+        self._write(f"Processed: {result.get('processed', 0)}")
+        self._write(f"Trashed: {result.get('trashed', 0)}")
+        self._write(f"Failed: {result.get('failed', 0)}")
+        self._write(f"Log File: {self.log_file}")
+        self._write(f"{'='*80}\n")
+        logger.info(f"Log saved to: {self.log_file}")
+    
+    def get_path(self) -> Path:
+        """Return path to log file."""
+        return self.log_file
+
 
 logger = logging.getLogger(__name__)
 

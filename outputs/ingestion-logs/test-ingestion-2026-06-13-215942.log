@@ -1,0 +1,23 @@
+================================================================================
+Ingestion Log Started: 2026-06-13T21:59:42.441685
+Job Type: test-ingestion
+================================================================================
+
+[21:59:42 +0.0s] [INFO   ] INIT — Starting test
+[21:59:42 +0.1s] [✅ OK   ] INIT — Initialization complete
+[21:59:42 +0.1s] [INFO   ] SCAN — Scanning files
+[21:59:42 +0.3s] [✅ OK   ] SCAN — Found 284 files
+[21:59:42 +0.3s] [INFO   ] FILTER — Quality checking
+[21:59:43 +0.6s] [✅ OK   ] FILTER — Filtered 11 low-quality files
+[21:59:43 +0.6s] [INFO   ] PROCESS — Processing wiki
+[21:59:43 +0.7s] [✅ OK   ] PROCESS — 273 files processed
+
+================================================================================
+Ingestion Log Finished: 2026-06-13T21:59:43.162870
+Result: success
+Processed: 273
+Trashed: 11
+Failed: 0
+Log File: outputs/ingestion-logs/test-ingestion-2026-06-13-215942.log
+================================================================================
+
