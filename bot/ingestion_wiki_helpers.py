@@ -12,6 +12,130 @@ from typing import Optional, List, Tuple, Dict
 logger = logging.getLogger(__name__)
 
 
+class ContentQualityChecker:
+    """Check if raw content meets minimum quality thresholds."""
+    
+    # Minimum content requirements
+    MIN_BODY_LINES = 3  # At least 3 lines of actual content (not frontmatter)
+    MIN_BODY_CHARS = 100  # At least 100 characters of meaningful content
+    MIN_SUMMARY_CHARS = 30  # Summary should be meaningful (not stub placeholders)
+    
+    # Patterns that indicate low-quality stubs
+    LOW_QUALITY_PATTERNS = [
+        r'等待驗證',  # waiting for verification
+        r'please wait for verification',
+        r'正在加載',  # loading
+        r'loading',
+        r'no content',
+        r'empty page',
+        r'error loading',
+        r'page not found',
+        r'not found',
+        r'404',
+        r'access denied',
+        r'このページは',  # this page (placeholder JP)
+    ]
+    
+    LOW_QUALITY_SUMMARIES = [
+        'placeholder',
+        'stub',
+        'incomplete',
+        '沒有提供具體',  # no concrete info provided
+        '沒有具體',  # no concrete
+        '無法獲取',  # unable to fetch
+        '暫時無法',  # temporarily unable
+    ]
+    
+    @staticmethod
+    def get_body_content(file_path: Path) -> tuple:
+        """Extract body content (excluding frontmatter)."""
+        try:
+            content = file_path.read_text(encoding='utf-8')
+            
+            # Split frontmatter and body
+            lines = content.split('\n')
+            in_frontmatter = False
+            body_lines = []
+            
+            for line in lines:
+                if line.strip() == '---':
+                    in_frontmatter = not in_frontmatter
+                    continue
+                if not in_frontmatter:
+                    body_lines.append(line)
+            
+            body = '\n'.join(body_lines).strip()
+            return body, len(body)
+        except Exception as e:
+            return '', 0
+    
+    @staticmethod
+    def get_summary(file_path: Path) -> str:
+        """Extract summary field from frontmatter."""
+        try:
+            content = file_path.read_text(encoding='utf-8')
+            
+            # Parse YAML frontmatter
+            if not content.startswith('---'):
+                return ''
+            
+            lines = content.split('\n')
+            in_frontmatter = True
+            
+            for line in lines[1:]:
+                if line.strip() == '---':
+                    break
+                if line.startswith('summary:'):
+                    # Extract summary value
+                    summary = line.replace('summary:', '').strip().strip('"\'')
+                    return summary
+            
+            return ''
+        except Exception:
+            return ''
+    
+    @classmethod
+    def is_low_quality(cls, file_path: Path) -> tuple:
+        """
+        Check if file is low quality (stub/placeholder).
+        Returns: (is_low_quality: bool, reason: str)
+        """
+        try:
+            body, body_chars = cls.get_body_content(file_path)
+            
+            # Check minimum body length
+            if body_chars < cls.MIN_BODY_CHARS:
+                return True, f"Body too short ({body_chars} chars, min {cls.MIN_BODY_CHARS})"
+            
+            # Check body line count
+            body_lines = [l for l in body.split('\n') if l.strip()]
+            if len(body_lines) < cls.MIN_BODY_LINES:
+                return True, f"Body too sparse ({len(body_lines)} lines, min {cls.MIN_BODY_LINES})"
+            
+            # Check for low-quality patterns in body
+            body_lower = body.lower()
+            for pattern in cls.LOW_QUALITY_PATTERNS:
+                if re.search(pattern, body_lower):
+                    return True, f"Contains low-quality pattern: '{pattern}'"
+            
+            # Check summary
+            summary = cls.get_summary(file_path)
+            
+            if len(summary) < cls.MIN_SUMMARY_CHARS:
+                return True, f"Summary too short ({len(summary)} chars, min {cls.MIN_SUMMARY_CHARS})"
+            
+            # Check for low-quality summary patterns
+            summary_lower = summary.lower()
+            for pattern in cls.LOW_QUALITY_SUMMARIES:
+                if pattern.lower() in summary_lower:
+                    return True, f"Summary indicates stub: '{pattern}'"
+            
+            return False, ""
+        
+        except Exception as e:
+            return True, f"Error checking quality: {str(e)}"
+
+
 class WikiSchema:
     """Parse and manage wiki/SCHEMA.md tag taxonomy."""
     

@@ -13,12 +13,12 @@ from typing import Optional, Tuple, List
 try:
     from bot.ingestion_wiki_helpers import (
         WikiSchema, WikiIndex, WikiLog, WikiPage, 
-        find_related_pages, integrate_wikilinks
+        find_related_pages, integrate_wikilinks, ContentQualityChecker
     )
 except ImportError:
     from ingestion_wiki_helpers import (
         WikiSchema, WikiIndex, WikiLog, WikiPage,
-        find_related_pages, integrate_wikilinks
+        find_related_pages, integrate_wikilinks, ContentQualityChecker
     )
 
 # Only import OpenAI if needed
@@ -291,11 +291,26 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
         raw_files = list(raw_path.glob("*.md"))
         processed = 0
         failed = 0
+        trashed = 0
         created_pages = []
+        trashed_files = []
         
         logger.info(f"Starting ingestion: {len(raw_files)} files in raw/")
         
         for note_file in raw_files:
+            # Check content quality
+            is_low_quality, reason = ContentQualityChecker.is_low_quality(note_file)
+            
+            if is_low_quality:
+                logger.warning(f"Trashing low-quality note: {note_file.name} - {reason}")
+                # Move to archive instead of deleting
+                archive_path = vault_path / "archive" / note_file.name
+                archive_path.parent.mkdir(parents=True, exist_ok=True)
+                note_file.rename(archive_path)
+                trashed += 1
+                trashed_files.append(note_file.name)
+                continue
+            
             success, page_path = organize_note_to_wiki(note_file, wiki_path, schema, wiki_index, wiki_log)
             if success:
                 processed += 1
@@ -308,10 +323,20 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
         wiki_index.save()
         
         # Log batch operation
-        if created_pages:
-            wiki_log.append("ingest_batch", f"{processed} notes processed", 
-                          [f"Created: {', '.join(created_pages[:5])}" + 
-                           (f" (+{len(created_pages)-5} more)" if len(created_pages) > 5 else "")])
+        if created_pages or trashed_files:
+            msg_parts = []
+            if processed > 0:
+                msg_parts.append(f"Processed: {processed} notes")
+            if trashed > 0:
+                msg_parts.append(f"Trashed (low-quality): {trashed} notes")
+            
+            created_msg = [f"Created: {', '.join(created_pages[:5])}" + 
+                          (f" (+{len(created_pages)-5} more)" if len(created_pages) > 5 else "")]
+            
+            trashed_msg = [f"Trashed: {', '.join(trashed_files[:10])}" + 
+                          (f" (+{len(trashed_files)-10} more)" if len(trashed_files) > 10 else "")] if trashed_files else []
+            
+            wiki_log.append("ingest_batch", "; ".join(msg_parts), created_msg + trashed_msg)
         
         # Build knowledge graph (backward compatible)
         graph_content = build_knowledge_graph(wiki_path)
@@ -322,15 +347,17 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
             "status": "success",
             "processed": processed,
             "failed": failed,
+            "trashed": trashed,
             "total": len(raw_files),
             "created_pages": created_pages,
+            "trashed_files": trashed_files,
             "timestamp": datetime.now().isoformat(),
             "graph_updated": True,
             "index_updated": True,
             "log_updated": True,
         }
         
-        logger.info(f"✅ Ingestion complete: {processed} processed, {failed} failed")
+        logger.info(f"✅ Ingestion complete: {processed} processed, {trashed} trashed, {failed} failed")
         return result
         
     except Exception as e:
