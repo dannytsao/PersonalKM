@@ -8,17 +8,18 @@ import os
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple, List
+import time
 
 # Import helper classes
 try:
     from bot.ingestion_wiki_helpers import (
         WikiSchema, WikiIndex, WikiLog, WikiPage, 
-        find_related_pages, integrate_wikilinks, ContentQualityChecker
+        find_related_pages, integrate_wikilinks, ContentQualityChecker, RunningLog
     )
 except ImportError:
     from ingestion_wiki_helpers import (
         WikiSchema, WikiIndex, WikiLog, WikiPage,
-        find_related_pages, integrate_wikilinks, ContentQualityChecker
+        find_related_pages, integrate_wikilinks, ContentQualityChecker, RunningLog
     )
 
 # Only import OpenAI if needed
@@ -274,21 +275,38 @@ Last updated: {datetime.now().isoformat()}
 
 def ingest_raw_to_wiki(vault_path: Path) -> dict:
     """Main ingestion: process raw/ and organize to wiki/."""
+    # Initialize running log
+    running_log = RunningLog(vault_path, "ingestion")
+    running_log.step("INIT", "Starting ingestion process")
+    
     try:
         raw_path = vault_path / "raw"
         wiki_path = vault_path / "wiki"
         
+        running_log.step("CHECK", f"Checking raw/ folder: {raw_path}")
         if not raw_path.exists():
-            logger.warning("raw/ folder does not exist")
-            return {"status": "error", "message": "raw/ folder not found", "processed": 0}
+            running_log.error("CHECK", f"raw/ folder not found at {raw_path}")
+            result = {"status": "error", "message": "raw/ folder not found", "processed": 0}
+            running_log.finish(result)
+            return result
         
         # Initialize wiki helpers
+        running_log.step("INIT_SCHEMA", "Loading wiki schema")
         schema = WikiSchema(wiki_path / "SCHEMA.md")
+        running_log.success("INIT_SCHEMA")
+        
+        running_log.step("INIT_INDEX", "Loading wiki index")
         wiki_index = WikiIndex(wiki_path / "index.md")
+        running_log.success("INIT_INDEX")
+        
+        running_log.step("INIT_LOG", "Loading wiki log")
         wiki_log = WikiLog(wiki_path / "log.md")
+        running_log.success("INIT_LOG")
         
         # Process all files in raw/
+        running_log.step("SCAN", "Scanning raw/ for markdown files")
         raw_files = list(raw_path.glob("*.md"))
+        running_log.success("SCAN", f"Found {len(raw_files)} files")
         processed = 0
         failed = 0
         trashed = 0
@@ -343,6 +361,10 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
         graph_path = wiki_path / "knowledge-graph.md"
         graph_path.write_text(graph_content)
         
+        running_log.success("GRAPH", f"Knowledge graph updated")
+        running_log.success("SAVE_INDEX", "Wiki index saved")
+        running_log.success("SAVE_LOG", "Wiki log saved")
+        
         result = {
             "status": "success",
             "processed": processed,
@@ -355,14 +377,23 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
             "graph_updated": True,
             "index_updated": True,
             "log_updated": True,
+            "log_file": str(running_log.get_path()),
         }
         
+        running_log.finish(result)
         logger.info(f"✅ Ingestion complete: {processed} processed, {trashed} trashed, {failed} failed")
+        logger.info(f"📋 Running log: {running_log.get_path()}")
         return result
         
     except Exception as e:
         logger.error(f"Ingestion failed: {e}")
-        return {"status": "error", "message": str(e), "processed": 0}
+        result = {"status": "error", "message": str(e), "processed": 0}
+        try:
+            running_log.error("EXCEPTION", str(e))
+            running_log.finish(result)
+        except:
+            pass
+        return result
 
 
 def generate_ingestion_report(vault_path: Path, result: dict) -> str:
