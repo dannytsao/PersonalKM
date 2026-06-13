@@ -39,152 +39,21 @@
 
 ---
 
-## Phase 3: Deploy to Production
+## Phase 3: Deploy to Production (COMPLETED ✅)
 
-### Step 1: Backup Current Data
+**Steps already executed:**
 
-```bash
-# In PersonalKM working directory
-git tag safety-pre-v2-deployment
-git push origin safety-pre-v2-deployment
+1. ✅ Backup tag: `safety-pre-v2-deployment`
+2. ✅ Ingestion v2 activated as `bot/ingestion.py`
+3. ✅ Backup created: `bot/ingestion_v1.py`
+4. ✅ Test suite: ALL PASSING
+5. ✅ Committed & pushed to GitHub
+6. ✅ Render deployed (autoDeploy: true)
+7. ✅ Cron job scheduled: `scripts/ingestion_job.py`
+8. ✅ render.yaml updated: personal-km-weekly-ingestion service
+9. ✅ Schedule: Sunday 9:00 AM UTC (0 9 * * 0)
 
-# This creates a restore point if something goes wrong
-```
-
-### Step 2: Replace ingestion.py with v2
-
-**Option A (Recommended): Gradual Migration**
-
-Keep both versions running in parallel:
-
-```bash
-# Keep original ingestion.py as fallback
-mv bot/ingestion.py bot/ingestion_v1.py
-
-# Activate v2
-cp bot/ingestion_v2.py bot/ingestion.py
-```
-
-Then update `scripts/ingestion_job.py` (or cron) to import from bot.ingestion:
-
-```python
-# OLD:
-from bot.ingestion import ingest_raw_to_wiki
-
-# NEW (same path, but v2 code):
-from bot.ingestion import ingest_raw_to_wiki
-```
-
-**Option B (Direct Replacement - Only if No Active Jobs)**
-
-```bash
-rm bot/ingestion.py
-cp bot/ingestion_v2.py bot/ingestion.py
-```
-
-### Step 3: Test on Staging Data
-
-Create test raw/ files and run dry-run:
-
-```bash
-# Create a few test notes in raw/
-cat > raw/test-devops.md << 'EOF'
-# Docker Best Practices 2026
-
-- Use multi-stage builds
-- Minimize layer count
-- With Kubernetes orchestration
-EOF
-
-cat > raw/test-ai.md << 'EOF'
-# Fine-tuning with LoRA
-
-Using gpt-4o-mini models and transformers library for efficient fine-tuning.
-EOF
-
-# Run ingestion
-python3 -m bot.ingestion ingest_raw_to_wiki ./
-
-# Verify results
-ls -la wiki/entities/
-ls -la wiki/
-cat wiki/log.md
-cat wiki/index.md
-```
-
-### Step 4: Verify Output Structure
-
-Check that new pages have llm-wiki frontmatter:
-
-```bash
-head -20 wiki/entities/test-devops.md
-```
-
-Expected output:
-```yaml
----
-title: Docker Best Practices 2026
-created: 2026-06-13
-updated: 2026-06-13
-type: entity
-tags: ["tech", "container", "devops"]
-sources: ["raw/test-devops.md"]
-confidence: medium
-contested: false
-contradictions: []
----
-
-# Docker Best Practices 2026
-...
-```
-
-### Step 5: Run Full Integration Test
-
-```bash
-python3 scripts/test_llmwiki_integration.py
-```
-
-Expected: ✅ All tests pass
-
-### Step 6: Verify Navigation Files
-
-```bash
-# Check index.md has entries
-grep -c '^\[\[' wiki/index.md
-
-# Check log.md has audit trail
-grep -c '## \[' wiki/log.md
-
-# Verify knowledge-graph.md still works (backward compat)
-head -10 wiki/knowledge-graph.md
-```
-
----
-
-## Phase 4: Monitor First Run
-
-### Before Pushing to Render
-
-1. **Commit changes locally**
-   ```bash
-   git add bot/ingestion.py bot/ingestion_v1.py
-   git commit -m "feat: activate llm-wiki ingestion v2"
-   ```
-
-2. **Push to GitHub**
-   ```bash
-   git push origin main
-   ```
-
-3. **Render auto-deploys** (autoDeploy: true in render.yaml)
-
-4. **Check deployment**
-   ```bash
-   curl https://personal-km-line-bot.onrender.com/health
-   # Expected: 200 OK
-   ```
-
-### During First Ingestion (Sunday 9 AM)
+### During First Ingestion (Sunday 9 AM UTC)
 
 Monitor the cron job:
 
