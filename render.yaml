@@ -32,6 +32,30 @@ services:
       - key: GIT_AUTHOR_EMAIL
         value: line-link-bot@example.com
   - type: cron
+    name: personal-km-weekly-ingestion
+    runtime: python
+    plan: starter
+    branch: main
+    schedule: "0 9 * * 0"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scripts/ingestion_job.py
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: VAULT_REPO_URL
+        sync: false
+      - key: VAULT_BRANCH
+        value: main
+      - key: VAULT_PATH
+        value: /tmp/personal-km-vault
+      - key: GIT_AUTHOR_NAME
+        value: PersonalKM Bot
+      - key: GIT_AUTHOR_EMAIL
+        value: personalkm-bot@example.com
+      - key: OPENAI_API_KEY
+        sync: false
+  - type: cron
     name: personal-km-housekeeping
     runtime: python
     plan: starter

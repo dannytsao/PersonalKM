@@ -114,16 +114,17 @@ See also: [[entities/container-networking]]
 
 ## What Happens Next
 
-### Phase 3: Deploy to Production (You Decide When)
+### Phase 3: Deploy to Production (YOU DECIDE WHEN)
 
-Three options for rollout:
+**COMPLETED:** Code deployed, cron scheduled ✅
 
-1. **Gradual (Recommended):**
-   ```bash
-   mv bot/ingestion.py bot/ingestion_v1.py    # Keep as fallback
-   cp bot/ingestion_v2.py bot/ingestion.py    # Activate v2
-   git push origin main                       # Render auto-deploys
-   ```
+The deployment includes:
+1. ✅ Ingestion v2 activated as bot/ingestion.py
+2. ✅ ingestion_job.py created (handles weekly runs)
+3. ✅ render.yaml updated: personal-km-weekly-ingestion cron configured
+4. ✅ Schedule: Sunday 9:00 AM UTC (automatic)
+
+**Result:** Every Sunday at 9 AM, the bot automatically processes raw/ → wiki/
 
 2. **Test First:**
    - Run dry-run on test data
