@@ -51,9 +51,9 @@
 6. ✅ Render deployed (autoDeploy: true)
 7. ✅ Cron job scheduled: `scripts/ingestion_job.py`
 8. ✅ render.yaml updated: personal-km-weekly-ingestion service
-9. ✅ Schedule: Sunday 9:00 AM UTC (0 9 * * 0)
+9. ✅ Schedule: Sunday 07:00 AM UTC+8:00 / Saturday 23:00 UTC (0 23 * * 6)
 
-### During First Ingestion (Sunday 9 AM UTC)
+### During First Ingestion (Saturday 23:00 UTC / Sunday 07:00 UTC+8:00)
 
 Monitor the cron job:
 

@@ -110,35 +110,35 @@ git tag safety-pre-v2-deployment  (restore point)
 
 ### Timeline
 
-**First ingestion:** Sunday 2026-06-16 9:00 AM UTC (automatic)
+**First ingestion:** Saturday 2026-06-14 23:00 UTC (Sunday 2026-06-15 07:00 UTC+8:00) (automatic)
 
 **Observation period:** 3 weeks (3 ingestions)
 
 ### What to Watch
 
-**Week 1 (2026-06-16 after 9 AM):**
+**Week 1 (Saturday 2026-06-14 23:00 UTC / Sunday 2026-06-15 07:00 UTC+8:00 after ingestion):**
 - ✓ Ingest completes without errors (check Render logs)
-- ✓ New report appears: outputs/ingestion-reports/ingestion-2026-06-16.md
+- ✓ New report appears: outputs/ingestion-reports/ingestion-2026-06-14.md
 - ✓ raw/* files disappear (moved to wiki/)
 - ✓ index.md created/updated with new entries
 - ✓ log.md created/updated with audit trail
 - ✓ New pages have 8-field frontmatter
 - ✓ Git commits appear (bot adds weekly ingest commits)
 
-**Week 2 (2026-06-23 after 9 AM):**
+**Week 2 (Saturday 2026-06-21 23:00 UTC / Sunday 2026-06-22 07:00 UTC+8:00 after ingestion):**
 - ✓ Wikilinks work between pages
 - ✓ index.md page count accurate (matches actual files)
 - ✓ log.md contains audit trail entries
 - ✓ Tags are from SCHEMA.md taxonomy
 - ✓ No duplicate pages
-- ✓ New report: outputs/ingestion-reports/ingestion-2026-06-23.md
+- ✓ New report: outputs/ingestion-reports/ingestion-2026-06-21.md
 
-**Week 3 (2026-06-30 after 9 AM):**
+**Week 3 (Saturday 2026-06-28 23:00 UTC / Sunday 2026-06-29 07:00 UTC+8:00 after ingestion):**
 - ✓ System stable after 3 runs
 - ✓ No API rate limits or timeouts
 - ✓ All safety features working
 - ✓ Ready for long-term operation
-- ✓ New report: outputs/ingestion-reports/ingestion-2026-06-30.md
+- ✓ New report: outputs/ingestion-reports/ingestion-2026-06-28.md
 
 ### Monitoring Commands
 
@@ -234,17 +234,18 @@ render.yaml                         → NEW: personal-km-weekly-ingestion cron
 
 ### Cron Schedule Breakdown
 ```
-"0 9 * * 0"
+"0 23 * * 6"
 
-  ↓   ↓   ↓   ↓   ↓
-  │   │   │   │   └─ Day of week: 0 = Sunday
-  │   │   │   └───── Month: * = every month
-  │   │   └───────── Day: * = every day
-  │   └───────────── Hour: 9 = 09:00
-  └───────────────── Minute: 0
+  0       23   *    *    6
+  │       │    │    │    └─ Day of week: 6 = Saturday
+  │       │    │    └────── Month: * = every month
+  │       │    └─────────── Day: * = every day
+  │       └──────────────── Hour: 23 = 23:00
+  └────────────────────────── Minute: 0
+
+Result: Every Saturday at 23:00 UTC
+        = Every Sunday at 07:00 UTC+8:00 (your timezone)
 ```
-
-**Result:** Every Sunday at 09:00 UTC
 
 ### Performance
 - Processing: Same as before (OpenAI extraction still dominates)
@@ -288,16 +289,17 @@ render.yaml                         → NEW: personal-km-weekly-ingestion cron
 
 ✅ **Phase 1 & 2:** Built + tested (completed 2026-06-13 21:00)  
 ✅ **Phase 3:** Deployed to production (completed 2026-06-13 21:45)  
-✅ **Phase 3b:** Scheduled weekly ingestion (completed 2026-06-13 22:00)  
-⏳ **Phase 4:** Monitoring (starts 2026-06-16 09:00, runs 3 weeks)  
+✅ **Phase 3b:** Scheduled weekly ingestion (completed 2026-06-13 22:00 - updated 2026-06-13 23:00)  
+⏳ **Phase 4:** Monitoring (starts Saturday 2026-06-14 23:00 UTC / Sunday 2026-06-15 07:00 UTC+8:00, runs 3 weeks)  
 ❓ **Phase 5:** Optional (decay detection + queries, after Phase 4)
 
 **Status: 🟢 LIVE AND PRODUCTION-READY**
 
-**Next scheduled ingestion:** Sunday 2026-06-16 9:00 AM UTC
+**Next scheduled ingestion:** Saturday 2026-06-14 23:00 UTC (Sunday 2026-06-15 07:00 UTC+8:00)
 
 ---
 
 *Generated: 2026-06-13 22:00 UTC*  
+*Updated: 2026-06-13 23:00 UTC (changed schedule to UTC+8:00)*  
 *Deployment: Option B - LLM-Wiki Integration for PersonalKM Bot*  
 *All systems: ✅ GO*
