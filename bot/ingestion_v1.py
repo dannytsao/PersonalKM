@@ -1,25 +1,14 @@
 """
-Enhanced Ingestion System with LLM-Wiki Integration
-Processes raw/ → wiki/ with index.md and log.md maintenance
+Second Brain Weekly Ingestion System
+Processes raw/ folder and organizes into wiki/ structure
+Phase 4: Automated organization
 """
 import json
 import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple, List
-
-# Import helper classes
-try:
-    from bot.ingestion_wiki_helpers import (
-        WikiSchema, WikiIndex, WikiLog, WikiPage, 
-        find_related_pages, integrate_wikilinks
-    )
-except ImportError:
-    from ingestion_wiki_helpers import (
-        WikiSchema, WikiIndex, WikiLog, WikiPage,
-        find_related_pages, integrate_wikilinks
-    )
+from typing import Optional
 
 # Only import OpenAI if needed
 try:
@@ -61,7 +50,7 @@ AI_KEYWORDS = [
 ]
 
 
-def categorize_note(content: str) -> Tuple[str, List[str]]:
+def categorize_note(content: str) -> tuple[str, list[str]]:
     """Determine if note is DevOps/AI and return category."""
     content_lower = content.lower()
     
@@ -80,7 +69,7 @@ def categorize_note(content: str) -> Tuple[str, List[str]]:
     return "concepts" if categories == ["general"] else "entities", categories
 
 
-def extract_entities_ai(content: str, categories: List[str]) -> dict:
+def extract_entities_ai(content: str, categories: list[str]) -> dict:
     """Use AI to extract entities from note."""
     if not client:
         logger.warning("OpenAI client not available, using basic extraction")
@@ -107,8 +96,7 @@ Respond ONLY with JSON:"""
             max_tokens=300,
         )
         
-        msg_content = response.choices[0].message.content
-        output = msg_content.strip() if msg_content else ""
+        output = response.choices[0].message.content.strip()
         start = output.find('{')
         end = output.rfind('}') + 1
         
@@ -121,117 +109,58 @@ Respond ONLY with JSON:"""
         return {"entities": [], "relationships": [], "wiki_path": "concepts/general"}
 
 
-def build_llmwiki_frontmatter(
-    title: str,
-    page_type: str,
-    categories: List[str],
-    entities: List[str],
-    summary: str,
-    source_path: Path,
-    schema: WikiSchema
-) -> dict:
-    """Build LLM-Wiki compliant frontmatter."""
-    
-    # Map categories to tags
-    tags = []
-    
-    # Add domain tags (always include primary domain)
-    if "devops" in categories:
-        tags.append("tech")
-        tags.append("container")
-    if "ai" in categories:
-        tags.append("tech")
-        tags.append("ai-llm")
-    if not tags:
-        tags.append("general")
-    
-    # Validate tags against schema
-    valid_tags, _ = schema.validate_tags(tags)
-    if not valid_tags:
-        valid_tags = ["tech"]
-    
-    return {
-        "title": title,
-        "created": datetime.now().strftime("%Y-%m-%d"),
-        "updated": datetime.now().strftime("%Y-%m-%d"),
-        "type": page_type,
-        "tags": valid_tags,
-        "sources": [str(source_path)],
-        "confidence": "medium",
-        "contested": False,
-        "contradictions": [],
-    }
-
-
-def organize_note_to_wiki(
-    raw_path: Path,
-    wiki_path: Path,
-    schema: WikiSchema,
-    wiki_index: WikiIndex,
-    wiki_log: WikiLog
-) -> Tuple[bool, Optional[str]]:
-    """Move note from raw/ to wiki/ with LLM-Wiki organization."""
+def organize_note_to_wiki(raw_path: Path, wiki_path: Path) -> bool:
+    """Move note from raw/ to wiki/ with organization."""
     try:
         content = raw_path.read_text()
         
         # Categorize
         subfolder, categories = categorize_note(content)
         
-        # Extract entities and metadata
-        extraction = extract_entities_ai(content, categories)
-        entities = extraction.get("entities", [])
-        summary = extraction.get("summary", WikiPage.extract_body_summary(content))
-        
-        # Create title from filename
-        title = raw_path.stem
+        # Extract entities (optional but useful)
+        entities = extract_entities_ai(content, categories)
         
         # Determine destination
         wiki_category_path = wiki_path / subfolder
         wiki_category_path.mkdir(parents=True, exist_ok=True)
         
-        dest_name = f"{title}.md"
+        # Create destination filename
+        source_name = raw_path.stem
+        dest_name = f"{source_name}.md"
         dest_path = wiki_category_path / dest_name
         
-        # Build llm-wiki frontmatter
-        fm = build_llmwiki_frontmatter(title, subfolder.rstrip('s'), categories, entities, summary, raw_path, schema)
-        
-        # Add frontmatter to content
-        fm_str = WikiPage.build_frontmatter(fm)
-        full_content = f"{fm_str}\n\n{content}\n"
+        # Add metadata to top of file if not already present
+        if not content.startswith("---"):
+            metadata = f"""---
+captured_date: {datetime.now().isoformat()}
+categories: {json.dumps(categories)}
+entities: {json.dumps(entities.get('entities', []))}
+wiki_path: {entities.get('wiki_path', subfolder)}
+---
+
+"""
+            content = metadata + content
         
         # Write to wiki
-        dest_path.write_text(full_content)
-        logger.info(f"✅ Organized {raw_path.name} → {subfolder}/{title}")
-        
-        # Update index.md
-        rel_path = f"{subfolder}/{title}"
-        wiki_index.add_entry(subfolder.capitalize(), rel_path, summary, overwrite=True)
-        
-        # Add wikilinks to related pages
-        if entities:
-            integrate_wikilinks(wiki_path, subfolder, title, entities[:5])
-        
-        # Log the action
-        wiki_log.append("ingest", title, [f"Type: {subfolder}", f"Categories: {', '.join(categories)}"])
+        dest_path.write_text(content)
         
         # Remove from raw
         raw_path.unlink()
         
-        return True, rel_path
+        logger.info(f"✅ Organized {raw_path.name} → {dest_path.relative_to(wiki_path.parent)}")
+        return True
         
     except Exception as e:
         logger.error(f"Failed to organize {raw_path}: {e}")
-        return False, None
+        return False
 
 
 def build_knowledge_graph(wiki_path: Path) -> str:
-    """Generate knowledge graph markdown (backward compatible)."""
+    """Generate knowledge graph markdown."""
     try:
-        graph_md = f"""# 📊 Knowledge Graph
+        graph_md = """# 📊 Knowledge Graph
 
-Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}
-
-"""
+Generated: {}\n\n""".format(datetime.now().strftime("%Y-%m-%d %H:%M"))
         
         # Index entities
         entities_path = wiki_path / "entities"
@@ -261,9 +190,9 @@ Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}
             
             graph_md += "\n"
         
-        graph_md += f"""---
-Last updated: {datetime.now().isoformat()}
-"""
+        graph_md += """---
+Last updated: {}
+""".format(datetime.now().isoformat())
         
         return graph_md
         
@@ -282,38 +211,20 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
             logger.warning("raw/ folder does not exist")
             return {"status": "error", "message": "raw/ folder not found", "processed": 0}
         
-        # Initialize wiki helpers
-        schema = WikiSchema(wiki_path / "SCHEMA.md")
-        wiki_index = WikiIndex(wiki_path / "index.md")
-        wiki_log = WikiLog(wiki_path / "log.md")
-        
         # Process all files in raw/
         raw_files = list(raw_path.glob("*.md"))
         processed = 0
         failed = 0
-        created_pages = []
         
         logger.info(f"Starting ingestion: {len(raw_files)} files in raw/")
         
         for note_file in raw_files:
-            success, page_path = organize_note_to_wiki(note_file, wiki_path, schema, wiki_index, wiki_log)
-            if success:
+            if organize_note_to_wiki(note_file, wiki_path):
                 processed += 1
-                if page_path:
-                    created_pages.append(page_path)
             else:
                 failed += 1
         
-        # Save updated index
-        wiki_index.save()
-        
-        # Log batch operation
-        if created_pages:
-            wiki_log.append("ingest_batch", f"{processed} notes processed", 
-                          [f"Created: {', '.join(created_pages[:5])}" + 
-                           (f" (+{len(created_pages)-5} more)" if len(created_pages) > 5 else "")])
-        
-        # Build knowledge graph (backward compatible)
+        # Build knowledge graph
         graph_content = build_knowledge_graph(wiki_path)
         graph_path = wiki_path / "knowledge-graph.md"
         graph_path.write_text(graph_content)
@@ -323,11 +234,8 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
             "processed": processed,
             "failed": failed,
             "total": len(raw_files),
-            "created_pages": created_pages,
             "timestamp": datetime.now().isoformat(),
             "graph_updated": True,
-            "index_updated": True,
-            "log_updated": True,
         }
         
         logger.info(f"✅ Ingestion complete: {processed} processed, {failed} failed")
@@ -349,24 +257,6 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}
 - Failed: {result.get('failed', 0)}
 - Total: {result.get('total', 0)}
 
-## Pages Created
-"""
-    
-    created = result.get('created_pages', [])
-    if created:
-        for page in created[:10]:
-            report += f"- `{page}`\n"
-        if len(created) > 10:
-            report += f"- ... and {len(created) - 10} more\n"
-    else:
-        report += "(None)\n"
-    
-    report += f"""
-## Infrastructure Updates
-- index.md: Updated ✅
-- log.md: Updated ✅
-- knowledge-graph.md: Updated ✅
-
 ## Details
 ```json
 {json.dumps(result, indent=2)}
@@ -374,18 +264,12 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}
 
 ## What Happened
 1. Scanned raw/ folder
-2. Extracted entities from each note using AI
-3. Built LLM-Wiki frontmatter (tags, sources, confidence)
-4. Categorized and moved to wiki/ (entities/ or concepts/)
-5. Added wikilinks between related pages
-6. Updated index.md with page catalog
-7. Appended to log.md audit trail
-8. Built knowledge-graph.md
-9. Committed changes to Git
+2. Extracted entities from each note
+3. Categorized and moved to wiki/
+4. Built knowledge-graph.md
+5. Committed changes
 
 Next ingestion: 1 week
 
----
-*Integrated with Karpathy LLM-Wiki pattern for knowledge compilation and cross-referencing.*
 """
     return report
