@@ -29,26 +29,39 @@ class WikiSchema:
             content = self.schema_path.read_text()
             taxonomy = {}
             
-            # Parse tag sections
-            # Look for "### Category" followed by tag lines
-            category_pattern = r"### ([a-zA-Z\s]+)\n((?:- `?\w+`?(?:\s+—.*?)?\n)*)"
-            matches = re.finditer(category_pattern, content)
+            # Split by sections and parse tags
+            lines = content.split('\n')
+            current_category = None
+            tags_buffer = []
             
-            for match in matches:
-                category_name = match.group(1).strip()
-                tags_text = match.group(2)
-                tags = []
+            for line in lines:
+                # Detect category headers (### Name)
+                if line.startswith('###'):
+                    # Save previous category if exists
+                    if current_category and tags_buffer:
+                        taxonomy[current_category] = tags_buffer
+                    
+                    current_category = line.replace('###', '').strip()
+                    tags_buffer = []
                 
-                # Extract individual tags
-                for line in tags_text.split('\n'):
-                    if line.strip().startswith('-'):
-                        # Extract tag from "- tag" or "- `tag`" or "- tag — description"
-                        tag = re.search(r'`?(\w+)`?', line)
-                        if tag:
-                            tags.append(tag.group(1))
-                
-                if tags:
-                    taxonomy[category_name] = tags
+                # Detect tag lines (- tag or - `tag` with optional description)
+                elif line.strip().startswith('-') and current_category:
+                    # Extract tag name from "- tag" or "- `tag`" or "- tag — description"
+                    line = line.strip()[1:].strip()  # Remove leading dash
+                    
+                    # Remove description if present (text after —)
+                    if ' —' in line or ' -' in line:
+                        line = line.split(' —')[0].split(' -')[0].strip()
+                    
+                    # Remove backticks if present
+                    tag = line.strip('`').strip()
+                    
+                    if tag and tag.isidentifier():
+                        tags_buffer.append(tag)
+            
+            # Don't forget last category
+            if current_category and tags_buffer:
+                taxonomy[current_category] = tags_buffer
             
             return taxonomy if taxonomy else self._default_taxonomy()
         
