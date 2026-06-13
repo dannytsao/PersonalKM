@@ -40,8 +40,8 @@
 
 6. ✅ **Cron Scheduling Added**
    - `scripts/ingestion_job.py` created (handles ingestion + reporting)
-   - `render.yaml` updated: new cron service scheduled for Sunday 9 AM UTC
-   - Schedule: `"0 9 * * 0"` (Sunday 09:00 UTC)
+   - `render.yaml` updated: new cron service scheduled for **Sunday 07:00 AM (UTC+8:00) / Saturday 23:00 UTC**
+   - Schedule: `"0 23 * * 6"` (Saturday 23:00 UTC = Sunday 07:00 UTC+8:00)
    - Auto-deploy: true (picks up changes automatically)
 
 ---
@@ -51,7 +51,7 @@
 ### Production (NOW LIVE)
 
 ```
-WEEKLY CRON (Sunday 9 AM UTC):
+WEEKLY CRON (Sunday 07:00 AM UTC+8:00 / Saturday 23:00 UTC):
   render.yaml → personal-km-weekly-ingestion
     ↓
   scripts/ingestion_job.py
