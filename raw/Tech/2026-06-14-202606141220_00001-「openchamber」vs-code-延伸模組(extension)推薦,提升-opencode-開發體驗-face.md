@@ -1,5 +1,8 @@
 ---
-tags: [技術]
+tags:
+  - tech
+  - vscode
+  - opencode
 source: LINE
 date: 2026-06-14
 log_id: 202606141220_00001
