@@ -1,6 +1,8 @@
 ---
 tags:
-  - 技術
+  - tech
+  - ArtificialIntelligence
+  - LLM
 source: LINE
 date: 2026-06-04
 url: https://www.facebook.com/share/p/1EkewSD8Vi/

@@ -1,6 +1,8 @@
 ---
 tags:
-  - 技術
+  - tech
+  - hermes
+  - agent
 source: LINE
 date: 2026-06-06
 url: https://www.youtube.com/watch?v=Gjd9JoiTZds&t=370s
