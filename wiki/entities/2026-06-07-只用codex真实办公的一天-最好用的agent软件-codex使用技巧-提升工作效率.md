@@ -3,8 +3,12 @@ title: 2026-06-07-只用codex真实办公的一天-最好用的agent软件-codex
 created: 2026-06-14
 updated: 2026-06-14
 type: entitie
-tags: ["tech"]
-sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-\u53ea\u7528codex\u771f\u5b9e\u529e\u516c\u7684\u4e00\u5929-\u6700\u597d\u7528\u7684agent\u8f6f\u4ef6-codex\u4f7f\u7528\u6280\u5de7-\u63d0\u5347\u5de5\u4f5c\u6548\u7387.md"]
+tags:
+  - tech
+  - agent
+  - codex
+sources:
+  - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-只用codex真实办公的一天-最好用的agent软件-codex使用技巧-提升工作效率.md
 confidence: medium
 ---
 
