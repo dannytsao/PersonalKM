@@ -1,6 +1,6 @@
 ---
 tags:
-  - 技術
+  - tech
 source: LINE
 date: 2026-06-04
 url: https://youtu.be/xaLZOoV_nw8?si=-bonLCBmubOS4IB9

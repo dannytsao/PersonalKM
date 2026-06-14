@@ -1,6 +1,8 @@
 ---
 tags:
-  - 技術
+  - tech
+  - agent
+  - secondbrain
 source: LINE
 date: 2026-06-04
 url: https://youtu.be/Yzpx4Xaigms?si=wjxpguwOxsvLyY_F
