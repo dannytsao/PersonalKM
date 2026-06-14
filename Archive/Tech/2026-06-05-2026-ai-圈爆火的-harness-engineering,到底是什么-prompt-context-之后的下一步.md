@@ -1,6 +1,7 @@
 ---
 tags:
-  - 技術
+  - tech
+  - harmess
 source: LINE
 date: 2026-06-05
 url: https://youtu.be/IoQSFZAhzrI?si=O1EmnNN2SztKf-VS

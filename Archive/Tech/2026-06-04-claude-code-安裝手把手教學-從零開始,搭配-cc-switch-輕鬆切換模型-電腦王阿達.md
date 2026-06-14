@@ -1,6 +1,7 @@
 ---
 tags:
-  - 技術
+  - tech
+  - ArtificialIntelligence
 source: LINE
 date: 2026-06-04
 url: https://www.koc.com.tw/archives/642628

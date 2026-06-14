@@ -1,6 +1,7 @@
 ---
 tags:
-  - 技術
+  - tech
+  - LLM
 source: LINE
 date: 2026-06-04
 url: https://youtu.be/r59BNhIuh_4?si=A5DgGyc3jZ6bGvjq
