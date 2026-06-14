@@ -28,6 +28,12 @@ try:
 except ImportError:
     OpenAI = None
 
+# Import health check
+try:
+    from bot.ingestion_health_check import IngestionHealthCheck
+except ImportError:
+    from ingestion_health_check import IngestionHealthCheck
+
 logger = logging.getLogger(__name__)
 
 # Initialize OpenAI with API key from environment
@@ -380,6 +386,19 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
             "log_updated": True,
             "log_file": str(running_log.get_path()),
         }
+        
+        # Run health check after ingestion
+        logger.info("\n" + "=" * 80)
+        logger.info("RUNNING POST-INGESTION HEALTH CHECK")
+        logger.info("=" * 80)
+        health_check = IngestionHealthCheck(vault_path)
+        health_report = health_check.run_all_checks()
+        result["health_check"] = health_report
+        
+        # Override status if health check failed
+        if health_report["status"] == "degraded":
+            result["status"] = "completed_with_issues"
+            logger.warning("⚠️  Ingestion completed but health check found issues")
         
         running_log.finish(result)
         logger.info(f"✅ Ingestion complete: {processed} processed, {trashed} trashed, {failed} failed")
