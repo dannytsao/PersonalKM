@@ -24,7 +24,7 @@ Monitor the first 3 automatic ingestions to ensure all systems are working corre
 **Date:** Saturday 2026-06-14 23:00 UTC / Sunday 2026-06-15 07:00 UTC+8:00
 
 ### Before Ingestion
-- [ ] Verify cron job is scheduled in render.yaml
+- [x] Verify cron job is scheduled in render.yaml
 - [ ] Check Render dashboard shows personal-km-weekly-ingestion service
 - [ ] Verify OpenAI API key is set in Render environment
 
