@@ -303,9 +303,9 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
         wiki_log = WikiLog(wiki_path / "log.md")
         running_log.success("INIT_LOG")
         
-        # Process all files in raw/
+        # Process all files in raw/ (including subdirectories)
         running_log.step("SCAN", "Scanning raw/ for markdown files")
-        raw_files = list(raw_path.glob("*.md"))
+        raw_files = list(raw_path.glob("**/*.md"))
         running_log.success("SCAN", f"Found {len(raw_files)} files")
         processed = 0
         failed = 0
@@ -321,12 +321,13 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
             
             if is_low_quality:
                 logger.warning(f"Trashing low-quality note: {note_file.name} - {reason}")
-                # Move to archive instead of deleting
-                archive_path = vault_path / "archive" / note_file.name
+                # Move to archive instead of deleting, preserving subdirectory structure
+                rel_path = note_file.relative_to(raw_path)
+                archive_path = vault_path / "archive" / rel_path
                 archive_path.parent.mkdir(parents=True, exist_ok=True)
                 note_file.rename(archive_path)
                 trashed += 1
-                trashed_files.append(note_file.name)
+                trashed_files.append(str(rel_path))
                 continue
             
             success, page_path = organize_note_to_wiki(note_file, wiki_path, schema, wiki_index, wiki_log)
