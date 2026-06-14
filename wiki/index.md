@@ -1,16 +1,286 @@
 # Wiki Index
 
 > Content catalog. Every wiki page listed under its type with a one-line summary.
-> Read this first to find relevant pages for any query.
-> Last updated: 2026-06-13 | Total pages: 1
+> Last updated: 2026-06-14 08:33 | Total pages: 273
 
 ## Entities
 
+- [[entities/2026-06-07-8萬顆星的hermes-agent少了它根本不能用!3分鐘打造ai中控台]] — 8萬顆星的Hermes Agent少了它根本不能用！3分鐘打造AI中控台
+- [[entities/2026-06-07-build-an-ai-second-brain-knowledge-base-(step-by-step)]] — Build An AI Second Brain Knowledge Base Step-By-Step
+- [[entities/2026-06-07-claude-+-karpathy's-second-brain-is-insane]] — Claude + Karpathy's Second Brain is INSANE
+- [[entities/2026-06-07-claude-cowork是什麼、怎麼用-新手10分鐘設定教學,一次學會檔案自動化]] — Claude Cowork是什麼、怎麼用？新手10分鐘設定教學，一次學會檔案自動化
+- [[entities/2026-06-07-gemma-4-12b-on-a-16gb-mac-mini-is-surprisingly-capable]] — Gemma 4 12B on a 16GB Mac Mini Is Surprisingly Capable
+- [[entities/2026-06-07-generative-ai-技術交流中心-企業在導入-ai-應用時,常面臨現行「檢索增強生成(rag)」系統的瓶頸-fa]] — Generative AI 技術交流中心 | 企業在導入 AI 應用時，常面臨現行「檢索增強生成（RAG）」系統的瓶頸 | Facebook
+- [[entities/2026-06-07-hermes-agent-tutorial-for-beginners-(full-step-by-step-setup]] — Hermes Agent Tutorial for Beginners Full Step-by-Step Setup
+- [[entities/2026-06-07-hermes-agent出桌面端app,告别终端,这才是ai-agent的未来]] — Hermes Agent出桌面端APP，告别终端，这才是AI Agent的未来
+- [[entities/2026-06-07-i-built-an-ai-second-brain-using-obsidian-+-claude-(copy-me)]] — I Built an AI Second Brain Using Obsidian + Claude Copy Me
+- [[entities/2026-06-07-my-full-claude-cowork-setup-(steal-my-workflows!)]] — My Full Claude Cowork Setup steal my workflows!
+- [[entities/2026-06-07-the-3-file-ai-system-that-works-with-any-model]] — The 3-File AI System That Works With ANY MODEL
+- [[entities/2026-06-07-the-hermes-desktop-app-changes-everything-(full-setup)]] — The Hermes Desktop App Changes Everything Full Setup
+- [[entities/2026-06-07-只用codex真实办公的一天-最好用的agent软件-codex使用技巧-提升工作效率]] — 只用codex真实办公的一天|最好用的agent软件|codex使用技巧|提升工作效率
+- [[entities/2026-06-07-大部分的-rag-都是個黑箱。-facebook]] — 大部分的 RAG 都是個黑箱。 | Facebook
+- [[entities/2026-06-07-我想用ai做一個微電影,大約10分鐘,我應該先怎麼開始-我有個大約的劇本了,gpt幫我寫了,然後我要怎麼變成電影呢-fa]] — 我想用Ai做一個微電影，大約10分鐘，我應該先怎麼開始？我有個大約的劇本了，gpt幫我寫了，然後我要怎麼變成電影呢？ | Facebook
+- [[entities/2026-06-08-202606081207_00001-abmedia.io]] — abmedia.io
+- [[entities/2026-06-08-202606081207_00001-agent-harness-engineering]] — Agent Harness Engineering
+- [[entities/2026-06-08-202606081207_00001-agent-harness-engineering-2]] — Agent Harness Engineering
+- [[entities/2026-06-08-202606081207_00001-continuous-deployment-&-delivery-software-for-devops-teams-o]] — Continuous Deployment & Delivery Software for DevOps teams | Octopus Deploy
+- [[entities/2026-06-08-202606081207_00001-github-ai-boost-awesome-harness-engineering-awesome-list-for]] — GitHub - ai-boost/awesome-harness-engineering: Awesome list for AI agent harness
+- [[entities/2026-06-08-202606081207_00001-harness-ai-for-devops,-testing,-appsec,-and-cost-optimizatio]] — Harness: AI for DevOps, Testing, AppSec, and Cost Optimization
+- [[entities/2026-06-08-202606081207_00001-harness-ai-for-devops,-testing,-appsec,-and-cost-optimizatio-2]] — Harness: AI for DevOps, Testing, AppSec, and Cost Optimization
+- [[entities/2026-06-08-202606081207_00001-harness-engineering(驾驭工程)-菜鸟教程]] — Harness Engineering（驾驭工程） | 菜鸟教程
+- [[entities/2026-06-08-202606081207_00001-harness-engineering-for-coding-agent-users]] — Harness engineering for coding agent users
+- [[entities/2026-06-08-202606081207_00001-harness-engineering-for-coding-agent-users-(-)-what-is-harne]] — Harness engineering for coding agent users  What Is Harness Engineering for
+- [[entities/2026-06-08-202606081207_00001-harness-engineering-—-ai-工程師的第三個維度]] — Harness Engineering — AI 工程師的第三個維度
+- [[entities/2026-06-08-202606081207_00001-harness-engineering-完全解析-當-ai-agent-的護城河不再是模型,而是環境-hackmd]] — Harness Engineering 完全解析：當 AI Agent 的護城河不再是模型，而是環境 - HackMD
+- [[entities/2026-06-08-202606081207_00001-harness-engineering-是什麼-ai-代寫程式時代你也該懂的工程觀念]] — Harness Engineering 是什麼？AI 代寫程式時代你也該懂的工程觀念
+- [[entities/2026-06-08-202606081207_00001-harness-engineering-是什麼-企業-ai-agent-框架導入完整指南-ceo-insights]] — Harness Engineering 是什麼？企業 AI Agent 框架導入完整指南 | CEO Insights
+- [[entities/2026-06-08-202606081207_00001-harness-engineering-架構全景-ai-可以寫-code,但不能自己上-production]] — Harness Engineering 架構全景：AI 可以寫 Code，但不能自己上 Production
+- [[entities/2026-06-08-202606081207_00001-harness-vs.-jenkins-devops-tool-comparison]] — Harness vs. Jenkins: DevOps tool comparison
+- [[entities/2026-06-08-202606081207_00001-medium.com-2]] — medium.com
+- [[entities/2026-06-08-202606081207_00001-what-is-harness-engineering-for-ai-agents-milvus-milvus-blog]] — What Is Harness Engineering for AI Agents? | Milvus - Milvus Blog
+- [[entities/2026-06-08-202606081207_00001-什麼是-harness-engineering-ai-agent-開發完整指南-(2026)-nxcode]] — 什麼是 Harness Engineering？AI Agent 開發完整指南 2026 | NxCode
+- [[entities/2026-06-08-202606081207_00001-企業-ai-轉型實戰指南-ai-agent-架構、地端-llm、ai-資安完整指南]] — 企業 AI 轉型實戰指南｜AI Agent 架構、地端 LLM、AI 資安完整指南
+- [[entities/2026-06-08-202606081250_00001-openclaw-x-hermes-ai-agents-&-monetization-(hidden-opportuni]] — OpenClaw x Hermes: AI Agents & Monetization Hidden Opportunities | 🔥 Kilo just b
+- [[entities/2026-06-08-202606081251_00001-openclaw-x-hermes-ai-agents-&-monetization-(hidden-opportuni]] — OpenClaw x Hermes: AI Agents & Monetization Hidden Opportunities | 🔥 This multi-
+- [[entities/2026-06-08-202606081320_00002-claude-code-vs-codex-完整教學-新手怎麼選-非工程師也能上手的桌面版比較]] — Claude Code vs Codex 完整教學｜新手怎麼選？非工程師也能上手的桌面版比較
+- [[entities/2026-06-08-202606082306_00001-anthropic-academy-claude-官方-13-門線上課程免費上、可領官方證書-電腦王阿達]] — Anthropic Academy：Claude 官方 13 門線上課程免費上、可領官方證書 - 電腦王阿達
+- [[entities/2026-06-08-202606082348_00001-【2026最新】ai短剧制作全套教程!免费送全套资料包+提示词+模型整合包]] — 【2026最新】AI短剧制作全套教程！免费送全套资料包+提示词+模型整合包
+- [[entities/2026-06-08-202606082356_00001-stop-using-claude-without-an-agentic-os]] — Stop Using Claude Without an Agentic OS
+- [[entities/2026-06-08-202606090622_00001-generative-ai-技術交流中心-agent-需要工具時,llm-生成-cli-skill-plugins-mc]] — Generative AI 技術交流中心 | Agent 需要工具時，LLM 生成> CLI > Skill > Plugins > MCP > 寫程式 | F
+- [[entities/2026-06-08-202606090627_00001-ai-技術研究社-chatgpt-gemini-claude-openclaw-𓂀寫扣-x-教學-x-講幹話-醫院最新引]] — AI 技術研究社 ChatGPT/Gemini/Claude/OpenClaw 𓂀寫扣 x 教學 x 講幹話 | 醫院最新引進的『物理性強心針』醫療套裝 | F
+- [[entities/2026-06-08-202606090641_00001-生日花有很多個版本,花語也不盡相同。試試看你的chatgpt會跑出的生日花雜誌封面會是什麼。性別和長相請自行修改。-產生]] — 生日花有很多個版本，花語也不盡相同。試試看你的ChatGPT會跑出的生日花雜誌封面會是什麼。性別和長相請自行修改。 產生一張極具真實感的雜誌封面，以O月O日的生
+- [[entities/2026-06-08-ai-技術研究社-chatgpt-gemini-claude-openclaw-𓂀寫扣-x-教學-x-講幹話-分享最近用]] — AI 技術研究社 ChatGPT/Gemini/Claude/OpenClaw 𓂀寫扣 x 教學 x 講幹話 | 分享最近用codex搭建comfyui的學習成
+- [[entities/2026-06-08-facebook-2]] — Facebook
+- [[entities/2026-06-08-genai-&-agentic-ai-論壇-google-把整個工程教育團隊裁掉了——這不只是一次裁員,這是一個訊號-f]] — GenAI & Agentic AI 論壇 | Google 把整個工程教育團隊裁掉了——這不只是一次裁員，這是一個訊號 | Facebook
+- [[entities/2026-06-08-github-fathah-hermes-desktop-desktop-companion-for-hermes-..]] — GitHub - fathah/hermes-desktop: Desktop Companion for Hermes ...  電腦王阿達- He
+- [[entities/2026-06-08-github-fathah-hermes-desktop-desktop-companion-for-hermes-ag]] — GitHub - fathah/hermes-desktop: Desktop Companion for Hermes Agent
+- [[entities/2026-06-08-github-nousresearch-hermes-agent-the-agent-that-grows-with-y]] — GitHub - NousResearch/hermes-agent: The agent that grows with you
+- [[entities/2026-06-08-hermes-agent-new-desktop-app-the-24-7-self-evolving-ai-agent]] — Hermes Agent NEW Desktop App - The 24/7 Self-Evolving AI Agent!
+- [[entities/2026-06-08-hermes-agent-official-new-desktop-app-the-24-7-self-evolving]] — Hermes Agent Official NEW Desktop App - The 24/7 Self-Evolving AI Agent!
+- [[entities/2026-06-08-hermes-agent-official-new-desktop-app-the-24-7-self-evolving-2]] — Hermes Agent Official NEW Desktop App - The 24/7 Self-Evolving AI Agent!
+- [[entities/2026-06-08-hermes-agent-官方正式推出桌面版應用程式!輕鬆一鍵安裝,科技小白也能快速上手]] — Hermes Agent 官方正式推出桌面版應用程式！輕鬆一鍵安裝，科技小白也能快速上手
+- [[entities/2026-06-08-medium.com-2]] — medium.com
+- [[entities/2026-06-08-nous-research-推出-hermes-desktop-公測版-ai-agent-告別終端機時代]] — Nous Research 推出 Hermes Desktop 公測版 AI Agent 告別終端機時代
+- [[entities/2026-06-08-official-hermes-desktop-is-finally-here]] — Official Hermes Desktop Is FINALLY Here
+- [[entities/2026-06-08-openai.com]] — openai.com
+- [[entities/2026-06-08-prompt-case-(@prompt_case)-on-threads]] — Prompt Case @promptcase on Threads
+- [[entities/2026-06-08-releases-·-fathah-hermes-desktop]] — Releases · fathah/hermes-desktop
+- [[entities/2026-06-08-skill-issue-andrej-karpathy-on-code-agents,-autoresearch,-an]] — Skill Issue: Andrej Karpathy on Code Agents, AutoResearch, and the Loopy Era of 
+- [[entities/2026-06-08-【2026-5-29-課程錄影】copilot-cowork-ai-協作與自動化最佳實務-微軟-microsoft-36]] — 【2026/5/29 課程錄影】Copilot Cowork: AI 協作與自動化最佳實務--微軟 Microsoft 365 Copilot 手把手線上教學工
+- [[entities/2026-06-08-【aigc实战课-109】榨干你的plus会员!在comfyui调用gpt会员生图,无需api,几乎免费!]] — 【AIGC实战课 109】榨干你的plus会员！在ComfyUI调用GPT会员生图，无需API，几乎免费！
+- [[entities/2026-06-08-電腦王阿達]] — 電腦王阿達
+- [[entities/2026-06-09-202606091813_00001-sliven-(@sliven0722)-on-threads]] — Sliven @sliven0722 on Threads
+- [[entities/2026-06-09-202606091822_00001-govin.ai-(@govin999999)-on-threads]] — Govin.AI @govin999999 on Threads
+- [[entities/2026-06-09-202606092143_00001-1000份文档丢给ai,30分钟自动归档+知识图谱,还能写带引用的新方案-claude-code+obsidian]] — 1000份文档丢给AI，30分钟自动归档+知识图谱，还能写带引用的新方案 | Claude Code+Obsidian
+- [[entities/2026-06-09-202606092143_00002-别再乱装skill了!这-4-组skill,才是agent的顶级生产力。]] — 别再乱装Skill了！这 4 组Skill，才是Agent的顶级生产力。
+- [[entities/2026-06-09-202606092143_00003-claude-cowork-深度体验-我把整套内容工作流装进了-ai,从选题到封面全自动]] — Claude Cowork 深度体验：我把整套内容工作流装进了 AI，从选题到封面全自动
+- [[entities/2026-06-09-202606092144_00001-codex-額度總是不夠-零基礎先學這4個進階技巧-含多案例實操]] — Codex 額度總是不夠？零基礎先學這4個進階技巧｜含多案例實操
+- [[entities/2026-06-09-202606092348_00001-prompt-case-(@prompt_case)-on-threads]] — Prompt Case @promptcase on Threads
+- [[entities/2026-06-09-202606092353_00001-prompt-case-(@prompt_case)-on-threads]] — Prompt Case @promptcase on Threads
+- [[entities/2026-06-09-202606092356_00001-github-pat-jj-harness-1-🚀-ultra-recipe-for-training-long-hor]] — GitHub - pat-jj/harness-1: 🚀 Ultra Recipe for Training Long-Horizon Search Agent
+- [[entities/2026-06-10-202606100023_00001-mqtt-與-aiot-整合運用-【本地玩轉-近期較熱門的gemma-4-12b-facebook]] — MQTT 與 AIoT 整合運用 | 【本地玩轉 近期較熱門的Gemma 4 12B | Facebook
+- [[entities/2026-06-10-202606100622_00001-the-biggest-lie-you've-been-told-about-hermes-agent]] — The Biggest Lie You've Been Told About Hermes Agent
+- [[entities/2026-06-10-202606101106_00001-new-notebooklm-ai-agent!]] — NEW NotebookLM AI Agent!
+- [[entities/2026-06-10-202606101202_00003-flora光影慢旅-✧-旅行-攝影-日常-on-instagram-台北散步地圖-公館-蟾蜍山煥民新村-很喜歡一些有一些]] — Flora光影慢旅 ✧ 旅行｜攝影｜日常 on Instagram: "台北散步地圖｜公館｜蟾蜍山煥民新村 很喜歡一些有一些過去軌跡的聚落或是建築，想像他們在涼
+- [[entities/2026-06-10-202606101211_00001-mcp-是什麼-claude-code-核心功能詳解-以-figma、n8n-為例打造會動手的-ai]] — MCP 是什麼？Claude Code 核心功能詳解：以 Figma、n8n 為例打造會動手的 AI
+- [[entities/2026-06-10-202606101213_00001-傳-openai-內部喊出「聊天已死」!chatgpt-將轉型-ai-超級-app-電腦王阿達]] — 傳 OpenAI 內部喊出「聊天已死」！ChatGPT 將轉型 AI 超級 App - 電腦王阿達
+- [[entities/2026-06-10-202606101710_00001-這是一份為您彙整的完整知識藍圖,記錄了您從最初詢問熱門術語,到逐步理清-「ai-代理自動化開發(agentic-deve]] — 這是一份為您彙整的完整知識藍圖，記錄了您從最初詢問熱門術語，到逐步理清 「AI 代理自動化開發（Agentic Development）」 核心工作流的思維脈絡
+- [[entities/2026-06-10-202606101713_00001-ai-credits-&-startup-perks-save-up-to-$7m-on-220+-tools-get]] — AI Credits & Startup Perks: Save up to $7M on 220+ Tools | Get AI Perks
+- [[entities/2026-06-10-202606101713_00001-allow-configuring-different-models-for-plan-mode-vs-executio]] — Allow configuring different models for plan mode vs execution mode · Issue #3379
+- [[entities/2026-06-10-202606101713_00001-claude-code-by-anthropic-ai-coding-agent,-terminal,-ide]] — Claude Code by Anthropic | AI Coding Agent, Terminal, IDE
+- [[entities/2026-06-10-202606101713_00001-claude-code-plan-mode-2026-complete-guide-with-shortcuts]] — Claude Code Plan Mode 2026: Complete Guide With Shortcuts
+- [[entities/2026-06-10-202606101713_00001-claude-platform]] — Claude Platform
+- [[entities/2026-06-10-202606101713_00001-code-execution-tool]] — Code execution tool
+- [[entities/2026-06-10-202606101713_00001-from-react-to-ralph-loop-a-continuous-iteration-paradigm-for]] — From ReAct to Ralph Loop A Continuous Iteration Paradigm for AI Agents
+- [[entities/2026-06-10-202606101713_00001-how-claude-code-works-claude-code-docs]] — How Claude Code works - Claude Code Docs
+- [[entities/2026-06-10-202606101713_00001-inventing-the-ralph-wiggum-loop-creator-geoffrey-huntley]] — Inventing the Ralph Wiggum Loop | Creator Geoffrey Huntley
+- [[entities/2026-06-10-202606101713_00001-medium.com-2]] — medium.com
+- [[entities/2026-06-10-202606101713_00001-plan-mode-in-claude-code-think-before-you-build-with-ai-code]] — Plan Mode in Claude Code - Think Before You Build with AI - codewithmukesh
+- [[entities/2026-06-10-202606101713_00001-plan-mode-vs-direct-execution-the-ai-agent-factory]] — Plan Mode vs Direct Execution | The AI Agent Factory
+- [[entities/2026-06-10-202606101713_00001-ralph-wiggum-loop-autonomous-coding-with-fresh-context]] — Ralph Wiggum Loop: Autonomous Coding with Fresh Context
+- [[entities/2026-06-10-202606101713_00001-the-ai-agent-factory]] — The AI Agent Factory
+- [[entities/2026-06-10-202606101713_00001-the-ralph-loop-a-practical-pattern-for-reliable-ai-agents-(a]] — The Ralph Loop: A Practical Pattern for Reliable AI Agents and Why “Done” Is Not
+- [[entities/2026-06-10-202606101713_00001-the-ralph-loop-explained-automate-ai-coding-tasks-in-java]] — The Ralph Loop Explained: Automate AI Coding Tasks in Java
+- [[entities/2026-06-10-202606101713_00001-您的敏銳度非常高!「plan-➔-execute-➔-evaluate(計畫-➔-執行-➔-評估)」-這個核心邏輯,在概]] — 您的敏銳度非常高！「Plan ➔ Execute ➔ Evaluate（計畫 ➔ 執行 ➔ 評估）」 這個核心邏輯，在概念上確實就是 Ralph Loop（或常
+- [[entities/2026-06-10-202606102053_00001-claude-應用社群-用-claude-code-跟-codex-久了,我有兩個固定的煩躁點-facebook]] — Claude 應用社群 | 用 Claude Code 跟 Codex 久了，我有兩個固定的煩躁點 | Facebook
+- [[entities/2026-06-11-202606110953_00001-這是一個完美的起跑點!既然您已經完成了-sdd(軟體設計規格書),且偏好「看著它一步步改」的精密掌控模式,您現在就像是一]] — 這是一個完美的起跑點！既然您已經完成了 SDD（軟體設計規格書），且偏好「看著它一步步改」的精密掌控模式，您現在就像是一位手握精準藍圖的總工程師。 以下為您規劃
+- [[entities/2026-06-11-202606111244_00001-openclaw-中文社群-【agent-是你的員工、助理、還是工具人-facebook]] — OpenClaw 中文社群 | 【Agent 是你的員工、助理、還是工具人 | Facebook
+- [[entities/2026-06-11-202606111253_00001-how-to-build-a-multi-agent-workflow-for-llm-wikis-in-hermes]] — How to Build a Multi-Agent Workflow for LLM Wikis in Hermes Kanban
+- [[entities/2026-06-11-202606111254_00001-2026普通人学ai-推荐吴恩达这8门课,帮你补齐知识地图-ai入门系统化学习]] — 2026普通人学AI：推荐吴恩达这8门课，帮你补齐知识地图 | AI入门系统化学习
+- [[entities/2026-06-11-202606111254_00002-hermes-agent-masterclass-3.-memory,-plugins,-honcho,-and-obs]] — Hermes Agent Masterclass: 3. Memory, Plugins, Honcho, and Obsidian
+- [[entities/2026-06-11-202606111453_00001-‏‏٢٢-ألف‏-مشاهدة‏-·-‏‏٢٥٢‏-تفاعلاً‏-google-colab-cli-與-skill]] — ‏‏٢٢ ألف‏ مشاهدة‏ · ‏‏٢٥٢‏ تفاعلاً‏ | Google Colab CLI 與 Skills 已推出，可直接從您的終端機執行完
+- [[entities/2026-06-12-202606120603_00002-愛ai大師-(@master_aiaiai)-on-threads]] — 愛AI大師 @masteraiaiai on Threads
+- [[entities/2026-06-12-202606120611_00001-松音(小美)-(@dseditor)-on-threads]] — 松音小美 @dseditor on Threads
+- [[entities/2026-06-12-202606120612_00001-未來商務-(@futurecommerce_official)-on-threads]] — 未來商務 @futurecommerceofficial on Threads
+- [[entities/2026-06-12-202606120619_00001-ai-工具情報局-(@tech.ai_tw)-on-threads]] — AI 工具情報局 @tech.aitw on Threads
+- [[entities/2026-06-12-202606120619_00001-沈重宗-ai-esg-數位轉型-(@jackshenaiadvisor)-on-threads]] — 沈重宗 ai/esg/數位轉型 @jackshenaiadvisor on Threads
+- [[entities/2026-06-12-202606120623_00001-@largitdata-on-threads]] — @largitdata on Threads
+- [[entities/2026-06-12-202606120624_00001-碩-(@s_h_u_ooo)-on-threads]] — 碩 @shuooo on Threads
+- [[entities/2026-06-12-202606120627_00001-llm-wiki]] — llm-wiki
+- [[entities/2026-06-12-202606120931_00001-generative-ai-技術交流中心-現在的ai到底是有多誇張-facebook]] — Generative AI 技術交流中心 | 現在的AI到底是有多誇張 | Facebook
+- [[entities/2026-06-12-202606120955_00001-genai-&-agentic-ai-論壇-【claude-code-官方使用秘訣】-facebook]] — GenAI & Agentic AI 論壇 | 【Claude Code 官方使用秘訣】 | Facebook
+- [[entities/2026-06-12-202606122105_00001-【附送工具-+-模型网站】10分钟教会你0成本用上codex,不花一分钱,实现agent自由!]] — 【附送工具 + 模型网站】10分钟教会你0成本用上Codex，不花一分钱，实现Agent自由！
+- [[entities/2026-06-12-202606122224_00001-這影片生成-ai-工具太狂!10-分鐘用-codex-+-hyperframe,把圖片、pdf、官網瞬間變成宣傳片,串聯]] — 這影片生成 AI 工具太狂！10 分鐘用 Codex + Hyperframe，把圖片、PDF、官網瞬間變成宣傳片，串聯 Google 生態系秒變動畫神人！【欸
+- [[entities/2026-06-13-202606130017_00001-claude-taiwan-它今天幫你看額度-facebook]] — Claude Taiwan | 它今天幫你看額度 | Facebook
+- [[entities/2026-06-13-202606130752_00001-ai-agent-benchmark-for-real-world-professional-workflows]] — AI Agent Benchmark for Real-World Professional Workflows
+- [[entities/2026-06-13-202606130754_00001-github-rdi-berkeley-agents-last-exam-agents'-last-exam]] — GitHub - rdi-berkeley/agents-last-exam: Agents' Last Exam
+- [[entities/2026-06-13-202606130833_00001-不會寫程式也能用!hermes-agent桌面版完整教學-模型串接-排程任務-實際應用]] — 不會寫程式也能用！Hermes Agent桌面版完整教學：模型串接/排程任務/實際應用
+- [[entities/2026-06-13-202606130856_00001-我进入任何新行业都会做这5件事-codex-+-obsidian-行业研究完整流程]] — 我进入任何新行业都会做这5件事：Codex + Obsidian 行业研究完整流程
+- [[entities/2026-06-13-202606130932_00001-矽谷大神-karpathy-筆記術!十分鐘學會如何用-claude-code-建立個人知識庫]] — 矽谷大神 Karpathy 筆記術！十分鐘學會如何用 Claude Code 建立個人知識庫
+- [[entities/2026-06-13-202606130938_00001-跟kaparthy学搭建ai知识库-附obsidian实例]] — 跟Kaparthy学搭建AI知识库-附Obsidian实例
+- [[entities/2026-06-13-202606130950_00001-karpathy知识库搭建-obsidian+大模型llm]] — karpathy知识库搭建：Obsidian+大模型LLM
+- [[entities/2026-06-13-202606131006_00001-如何为-obsidian-配置-ai-agent-9-个必备-skill-详解与安装指南]] — 如何为 Obsidian 配置 AI Agent？9 个必备 Skill 详解与安装指南
+- [[entities/2026-06-13-202606131015_00001-如何为-obsidian-配置-ai-agent-9-个必备-skill-详解与安装指南]] — 如何为 Obsidian 配置 AI Agent？9 个必备 Skill 详解与安装指南
+- [[entities/2026-06-13-202606131033_00001-从0搭建ai第二大脑-obsidian-+-claude-code-保姆级全流程教程(非技术人也能做)]] — 从0搭建AI第二大脑：Obsidian + Claude Code 保姆级全流程教程（非技术人也能做）
+- [[entities/2026-06-13-202606131109_00001-我用ai-+-obsidian-搭了一个-会思考-的第二大脑-告别灵感焦虑]] — 我用AI + Obsidian 搭了一个"会思考"的第二大脑｜告别灵感焦虑
+- [[entities/2026-06-13-202606131121_00001-ai个人知识库搭建教程-用karpathy的llm-wiki方法,三步让收藏夹真正发挥价值]] — AI个人知识库搭建教程｜用Karpathy的LLM Wiki方法，三步让收藏夹真正发挥价值
+- [[entities/2026-06-13-202606131148_00001-github-hinterdupfinger-obsidian-ollama]] — GitHub - hinterdupfinger/obsidian-ollama
+- [[entities/2026-06-13-202606131148_00001-github-martwozniak-ollama-obsidian-integration-this-plugin-i]] — GitHub - martwozniak/ollama-obsidian-integration: This plugin integrates Ollama'
+- [[entities/2026-06-13-202606131148_00001-obs157-用copilot外掛使用本地ai模型服務-使用ollama與lm-studio-–-簡睿隨筆]] — Obs157｜用Copilot外掛使用本地AI模型服務－使用Ollama與LM Studio – 簡睿隨筆
+- [[entities/2026-06-13-202606131148_00001-obsidian-and-ollama-free-local-ai-powered-pkm]] — Obsidian and Ollama - Free Local AI Powered PKM
+- [[entities/2026-06-13-202606131148_00001-obsidian-community-2]] — Obsidian Community
+- [[entities/2026-06-13-202606131148_00001-obsidian-copilot-auto-completion-docs-how-to-ollama-setup-gu]] — obsidian-copilot-auto-completion/docs/how-to/Ollama setup guide.md at master · j
+- [[entities/2026-06-13-202606131148_00001-obsidian-smart-connections-update-📝-rediscover-notes-with-ob]] — Obsidian Smart Connections UPDATE 📝 Rediscover Notes With Obsidian AI
+- [[entities/2026-06-13-202606131148_00001-ollama]] — Ollama
+- [[entities/2026-06-13-202606131148_00001-ollama-obsidian-hub-obsidian-publish]] — ollama - Obsidian Hub - Obsidian Publish
+- [[entities/2026-06-13-202606131148_00001-ollama-–-obsidian-plugin-·-obsidian-stats]] — Ollama – Obsidian Plugin · Obsidian Stats
+- [[entities/2026-06-13-202606131148_00001-plutoplatypus-on-instagram-using-local-models-through-ollama]] — Plutoplatypus on Instagram: "Using local models through Ollama in a RAG Retrieva
+- [[entities/2026-06-13-202606131148_00001-private-obsidian-ai-add-deepseek-to-your-obsidian-with-ollam]] — Private Obsidian AI:  Add DeepSeek to your Obsidian with Ollama GUIDE + SETUP
+- [[entities/2026-06-13-202606131148_00001-running-a-local-ai-inside-obsidian-with-ollama]] — Running a Local AI Inside Obsidian with Ollama
+- [[entities/2026-06-13-202606131148_00001-【obsidian-第二大腦-ai-強化】copilot-搭配-ollama-讓你的筆記更聰明!安裝教學]] — 【Obsidian 第二大腦 AI 強化】Copilot 搭配 Ollama 讓你的筆記更聰明！安裝教學
+- [[entities/2026-06-13-202606131148_00001-透過將-obsidian-與-ollama-整合,你可以在完全斷網、保護隱私的環境下,利用本地的-ai-大型語言模型(如]] — 透過將 Obsidian 與 Ollama 整合，你可以在完全斷網、保護隱私的環境下，利用本地的 AI 大型語言模型（如 Llama 3、DeepSeek、Ge
+- [[entities/2026-06-13-202606131203_00001-【obsidian-第二大腦-ai-強化】copilot-搭配-ollama-讓你的筆記更聰明!安裝教學]] — 【Obsidian 第二大腦 AI 強化】Copilot 搭配 Ollama 讓你的筆記更聰明！安裝教學
+- [[entities/2026-06-13-202606131208_00001-让-ai-洞察你的知识网络-obsidian-cli]] — 让 AI 洞察你的知识网络 Obsidian CLI
+- [[entities/2026-06-13-202606131246_00001-claude-code-+-obsidian-個人知識庫,token-用量直接節省-95%]] — Claude Code + Obsidian 個人知識庫，token 用量直接節省 95%
+- [[entities/2026-06-13-202606131323_00001-govin.ai-(@govin999999)-on-threads]] — Govin.AI @govin999999 on Threads
 - [[entities/test-docker-note]] — Docker best practices for 2026 with modern container optimization techniques
 
 ## Concepts
 
-(None yet)
+- [[concepts/2026-06-07-my-obsidian-vault-in-2026-what-i-actually-open-every-day]] — My Obsidian Vault in 2026 - What I Actually Open Every Day
+- [[concepts/2026-06-07-share.google]] — share.google
+- [[concepts/2026-06-07-share.google-2]] — share.google
+- [[concepts/2026-06-07-youtube]] — - YouTube
+- [[concepts/2026-06-07-一半人沒來過,是大橋景觀咖啡,低消250能窩半天,南洋氣息是主打特色]] — 一半人沒來過，是大橋景觀咖啡，低消250能窩半天，南洋氣息是主打特色
+- [[concepts/2026-06-07-在地人才知道,就是瑪瑙綠鏡湖,沿湖步道繞一圈免10分鐘,美麗湖光是招牌]] — 在地人才知道，就是瑪瑙綠鏡湖，沿湖步道繞一圈免10分鐘，美麗湖光是招牌
+- [[concepts/2026-06-07-煮酒論英雄-世界政經轉譯機]] — 煮酒論英雄 世界政經轉譯機
+- [[concepts/2026-06-08-202606081207_00001-abmedia.io]] — abmedia.io
+- [[concepts/2026-06-08-202606081207_00001-addyosmani.com]] — AddyOsmani.com
+- [[concepts/2026-06-08-202606081207_00001-ai-app-builder-build-apps-without-coding-2026-nxcode-nxcode]] — AI App Builder | Build Apps Without Coding 2026 | NxCode | NxCode
+- [[concepts/2026-06-08-202606081207_00001-github-deusyu-harness-engineering-harness-engineering-学习指南-—]] — GitHub - deusyu/harness-engineering: Harness Engineering 学习指南 — 从概念理解到独立实践的深度学习档
+- [[concepts/2026-06-08-202606081207_00001-github-walkinglabs-awesome-harness-engineering-🛠️-awesome-to]] — GitHub - walkinglabs/awesome-harness-engineering: 🛠️ Awesome tools & guides for 
+- [[concepts/2026-06-08-202606081207_00001-github-walkinglabs-learn-harness-engineering-harness-enginee]] — GitHub - walkinglabs/learn-harness-engineering: Harness engineering beginner tut
+- [[concepts/2026-06-08-202606081207_00001-github-·-change-is-constant.-github-keeps-you-ahead.]] — GitHub · Change is constant. GitHub keeps you ahead.
+- [[concepts/2026-06-08-202606081207_00001-hackmd-your-collaborative-markdown-workspace-for-knowledge-s]] — HackMD: Your Collaborative Markdown Workspace for Knowledge Sharing
+- [[concepts/2026-06-08-202606081207_00001-harness]] — Harness
+- [[concepts/2026-06-08-202606081207_00001-harness-engineering是什麼-台大教授80字實驗揭-ai為何仍需人類引導,還會越罵越笨]] — Harness Engineering是什麼？台大教授80字實驗揭：AI為何仍需人類引導，還會越罵越笨？
+- [[concepts/2026-06-08-202606081207_00001-home]] — Home
+- [[concepts/2026-06-08-202606081207_00001-martinfowler.com]] — martinfowler.com
+- [[concepts/2026-06-08-202606081207_00001-medium.com]] — medium.com
+- [[concepts/2026-06-08-202606081207_00001-o'reilly-media-technology-and-business-training]] — O'Reilly Media - Technology and Business Training
+- [[concepts/2026-06-08-202606081207_00001-oakmega-social-crm-完美銜接-line-與顧客管理系統]] — OakMega Social CRM: 完美銜接 LINE 與顧客管理系統
+- [[concepts/2026-06-08-202606081207_00001-rar-設計攻略]] — RAR 設計攻略
+- [[concepts/2026-06-08-202606081207_00001-test-harness-wikipedia]] — Test harness - Wikipedia
+- [[concepts/2026-06-08-202606081207_00001-wikipedia,-the-free-encyclopedia]] — Wikipedia, the free encyclopedia
+- [[concepts/2026-06-08-202606081207_00001-zhuanlan.zhihu.com]] — zhuanlan.zhihu.com
+- [[concepts/2026-06-08-202606081207_00001-一定要配温開水]] — 一定要配温開水
+- [[concepts/2026-06-08-202606081207_00001-數位時代-businessnext]] — 數位時代 BusinessNext
+- [[concepts/2026-06-08-202606081207_00001-知乎专栏-随心写作,自由表达-知乎]] — 知乎专栏 - 随心写作，自由表达 - 知乎
+- [[concepts/2026-06-08-202606081207_00001-菜鸟教程]] — 菜鸟教程
+- [[concepts/2026-06-08-202606081300_00001-結論-這篇《今周刊》報導中所提到的耶魯醫學博士健走處方,正確答案是-一次只要走-45-分鐘-。-支持原因與來源引用-根據]] — # 結論 這篇《今周刊》報導中所提到的耶魯醫學博士健走處方，正確答案是：一次只要走 45 分鐘。 # 支持原因與來源引用 根據《今周刊》於 2026 年
+- [[concepts/2026-06-08-202606081320_00001-微軟公佈-project-solara-新系統平台-不用-windows-改用-android-核心,專門運行-ai-代]] — 微軟公佈 Project Solara 新系統平台：不用 Windows 改用 Android 核心，專門運行 AI 代理
+- [[concepts/2026-06-08-202606081320_00001-微軟公佈-project-solara-新系統平台-不用-windows-改用-android-核心,專門運行-ai-代-2]] — 微軟公佈 Project Solara 新系統平台：不用 Windows 改用 Android 核心，專門運行 AI 代理
+- [[concepts/2026-06-08-202606081321_00001-漫步茶香古道間!-臺北大縱走六月限定寶石王等你來挑戰]] — 漫步茶香古道間！ 臺北大縱走六月限定寶石王等你來挑戰
+- [[concepts/2026-06-08-202606081321_00001-鳥貴族「899元吃到飽」再增南西店-120分鐘無限供應-ettoday旅遊雲-ettoday新聞雲]] — 鳥貴族「899元吃到飽」再增南西店 120分鐘無限供應 | ETtoday旅遊雲 | ETtoday新聞雲
+- [[concepts/2026-06-08-202606081321_00002-gemini-in-sheets新功能實測-「@」一下就讀雲端硬碟、幫你建表格,3個情境用法一次看]] — Gemini in Sheets新功能實測｜「@」一下就讀雲端硬碟、幫你建表格，3個情境用法一次看
+- [[concepts/2026-06-08-202606081325_00001-俊2的美食日記-📙台北美食-on-instagram-大同📍大稻埕贏過台南小吃的神級蝦仁飯-在捷運中山跟北門站附近的迪化]] — 俊²的美食日記 📙台北美食 on Instagram: "大同📍大稻埕贏過台南小吃的神級蝦仁飯 在捷運中山跟北門站附近的迪化街上 有一家我真心大推好吃到會感動的
+- [[concepts/2026-06-08-202606082326_00001-零成本教學-用ai把任何歌曲秒變ktv伴奏帶]] — 零成本教學 用AI把任何歌曲秒變KTV伴奏帶
+- [[concepts/2026-06-08-202606090616_00001-facebook]] — Facebook
+- [[concepts/2026-06-08-facebook]] — Facebook
+- [[concepts/2026-06-08-github-·-change-is-constant.-github-keeps-you-ahead.]] — GitHub · Change is constant. GitHub keeps you ahead.
+- [[concepts/2026-06-08-google-ai-mode-share]] — Google AI Mode share
+- [[concepts/2026-06-08-google-ai-mode-share-2]] — Google AI Mode share
+- [[concepts/2026-06-08-hermes-desktop-從終端機走向-gui,推出原生三平台桌面版本,主打跨通訊平台「統一記憶」-inside]] — Hermes Desktop 從終端機走向 GUI，推出原生三平台桌面版本，主打跨通訊平台「統一記憶」 - INSIDE
+- [[concepts/2026-06-08-hermes-桌面版app上線!免終端-mit-開源、支援-macos、windows-與-linux]] — Hermes 桌面版APP上線！免終端 MIT 開源、支援 macOS、Windows 與 Linux
+- [[concepts/2026-06-08-https-post.m.smzdm.com-p-ak8prew9]] — https://post.m.smzdm.com/p/ak8prew9/
+- [[concepts/2026-06-08-hyperframes教程-用这套方法,让-codex-剪视频效果以及效率翻倍]] — Hyperframes教程：用这套方法，让 Codex 剪视频效果以及效率翻倍
+- [[concepts/2026-06-08-inside-社群媒體、行動網路、行銷、技術、創業]] — INSIDE - 社群媒體、行動網路、行銷、技術、創業
+- [[concepts/2026-06-08-medium.com]] — medium.com
+- [[concepts/2026-06-08-repoinside-開源專案深度解析]] — RepoInside - 開源專案深度解析
+- [[concepts/2026-06-08-stanley-(@stanleysobest)-on-x]] — Stanley @Stanleysobest on X
+- [[concepts/2026-06-08-threads-•-log-in]] — Threads • Log in
+- [[concepts/2026-06-08-yahoo新聞]] — Yahoo新聞
+- [[concepts/2026-06-08-yahoo股市]] — Yahoo股市
+- [[concepts/2026-06-08-不再開命令列!用-hermes-desktop-一鍵駕馭自我進化的本地-ai-助理(支援-16-種訊息平台-+-ssh]] — 不再開命令列！用 Hermes Desktop 一鍵駕馭自我進化的本地 AI 助理（支援 16 種訊息平台 + SSH 遠端）
+- [[concepts/2026-06-08-什么值得买_社区频道-笔记_购物攻略_消费主张分享]] — 什么值得买社区频道 | 笔记购物攻略消费主张分享
+- [[concepts/2026-06-08-動區動趨-blocktempo-最有影響力的區塊鏈新聞媒體-(比特幣,-加密貨幣)]] — 動區動趨 BlockTempo - 最有影響力的區塊鏈新聞媒體 比特幣, 加密貨幣
+- [[concepts/2026-06-09-202606090920_00001-tools.wingzero.tw]] — tools.wingzero.tw
+- [[concepts/2026-06-09-202606091420_00001-艾瑪-吃喝玩樂-(@alma_8082)-on-threads]] — 艾瑪 吃喝玩樂 @alma8082 on Threads
+- [[concepts/2026-06-09-202606092346_00001-jacky-chen-(@jacky841229)-on-threads]] — Jacky Chen @jacky841229 on Threads
+- [[concepts/2026-06-09-202606092348_00001-譚力詩-jana-(@lishihtan)-on-threads]] — 譚力詩 Jana @lishihtan on Threads
+- [[concepts/2026-06-09-202606092349_00001-夢飛行-flying-dream-(@flyingdream8888)-on-threads]] — 夢飛行 Flying Dream @flyingdream8888 on Threads
+- [[concepts/2026-06-09-202606092349_00002-路小飯-(@palapalakk1489)-on-threads]] — 路小飯 @palapalakk1489 on Threads
+- [[concepts/2026-06-09-202606092351_00001-mountain-kids-山小孩-(@mountainnn.kids)-on-threads]] — 𝙈𝙤𝙪𝙣𝙩𝙖𝙞𝙣 𝙆𝙞𝙙𝙨 山小孩 @mountainnn.kids on Threads
+- [[concepts/2026-06-10-202606100002_00001-好感旅宿開箱-on-instagram-散步的雲-日月潭-低碳療癒風・生態旅宿☁️🌿-🏡-山林與湖畔的慢旅小宿-散步的雲]] — 好感旅宿開箱 on Instagram: "#散步的雲｜日月潭｜低碳療癒風・生態旅宿☁️🌿 / 🏡 #山林與湖畔的慢旅小宿 散步的雲民宿（Roaming Clo
+- [[concepts/2026-06-10-202606100003_00001-好感旅宿開箱-on-instagram-茶田關舍-貳館-臺東關山-輕奢雅緻設計,細膩勾勒高質感氛圍-🌿-簡約而俐落的設計]] — 好感旅宿開箱 on Instagram: "#茶田關舍 貳館｜臺東關山｜輕奢雅緻設計，細膩勾勒高質感氛圍 / 🌿 #簡約而俐落的設計 白牆與木質元素交織，呈現溫
+- [[concepts/2026-06-10-202606100004_00001-好感旅宿開箱-on-instagram]] — 好感旅宿開箱 on Instagram
+- [[concepts/2026-06-10-202606100004_00001-好感旅宿開箱-on-instagram-遇見雲山居-池上・絕美環景玻璃屋-×-縱谷包棟首選-🏔️✨-想在縱谷體驗「白天賞]] — 好感旅宿開箱 on Instagram: "遇見雲山居｜池上・絕美環景玻璃屋 × 縱谷包棟首選 🏔️✨ 想在縱谷體驗「白天賞山脈、夜晚躺星空」的浪漫嗎？#遇見雲
+- [[concepts/2026-06-10-202606100007_00001-遇fun胃-台北-台中美食-日韓港泰旅遊展覽-on-instagram-假日不想人擠人-這個台北秘境先收藏✨-不只看得到]] — 遇fun胃｜台北 台中美食 日韓港泰旅遊展覽 on Instagram: "假日不想人擠人 這個台北秘境先收藏✨ 不只看得到台北景色 還能先去關渡美術館看免費展
+- [[concepts/2026-06-10-202606100008_00001-april-on-instagram-上次去北投-在石牌站走路6分鐘的地方-吃到一間湯頭有在厲害的火鍋😳-如果開在我家附]] — 𝐀𝐩𝐫𝐢𝐥 on Instagram: "上次去北投 在石牌站走路6分鐘的地方 吃到一間湯頭有在厲害的火鍋😳 如果開在我家附近我一定三天兩頭就去吃🥺 因為價位親
+- [[concepts/2026-06-10-202606100009_00001-taichungbaobao-on-instagram-嘿,台中人!你知道台中隱藏的秘境有哪些嗎-✨-想知道更多這些隱藏]] — taichungbaobao on Instagram: "嘿，台中人！你知道台中隱藏的秘境有哪些嗎？✨ 想知道更多這些隱藏的景點嗎？快來看看「台中十大秘境」吧
+- [[concepts/2026-06-10-202606100009_00001-小杜-on-instagram-📍青雲-misty-龍山寺附近的巷弄裡,竟然藏著一棟百年歷史建築-,-進門後那個挑高的空]] — 小杜 on Instagram: "📍青雲 Misty 龍山寺附近的巷弄裡，竟然藏著一棟百年歷史建築 ， 進門後那個挑高的空間真的驚艷到我，陽光灑進來的樣子，簡
+- [[concepts/2026-06-10-202606101152_00001-will-保哥的技術交流中心]] — Will 保哥的技術交流中心
+- [[concepts/2026-06-10-202606101202_00001-田-定豐-on-instagram-當一個地方開始出現在常規的觀光地圖上,有了平整的柏油路與人工修飾的現代線條,那份原本]] — 田 定豐 on Instagram: "當一個地方開始出現在常規的觀光地圖上，有了平整的柏油路與人工修飾的現代線條，那份原本屬於大自然的純粹與神秘感，往往就會大
+- [[concepts/2026-06-10-202606101202_00002-dribs-&-drabs-點點滴滴-on-instagram-.-🌿-新竹北埔景點美食-10-選-🔖-走入茶金百年歷史]] — Dribs & Drabs 點點滴滴 on Instagram: ". 🌿 新竹北埔景點美食 10 選 🔖 走入茶金百年歷史風華 位於新竹山城的北埔，是台灣極具
+- [[concepts/2026-06-10-202606101203_00001-smile-taiwan微笑台灣-on-instagram-台東・大武-南迴四鄉最美書店,山海小鎮裡的「家家酒書房」,讓]] — Smile Taiwan微笑台灣 on Instagram: "｜台東・大武｜南迴四鄉最美書店，山海小鎮裡的「家家酒書房」，讓夢想在地方生根 在台東大武，曾獲廣
+- [[concepts/2026-06-10-202606101204_00001-smile-taiwan微笑台灣-on-instagram-微笑台灣巡迴講座-▷▷苗栗銅鑼-由老屋長出的新生命-巡迴紀錄]] — Smile Taiwan微笑台灣 on Instagram: "#微笑台灣巡迴講座 ▷▷苗栗銅鑼｜由老屋長出的新生命 #巡迴紀錄 老屋，可以帶來什麼樣改變？日前
+- [[concepts/2026-06-10-202606101204_00001-吃貨系紋繡師-✿-變美-美食-生活日常-on-instagram-有些地方,適合用來躲避全世界🌍-北投老宅咖啡廳-隱身巷]] — 吃貨系紋繡師 ✿ 變美｜美食｜生活日常 on Instagram: "有些地方，適合用來躲避全世界🌍 北投老宅咖啡廳 隱身巷弄的 968LAB 外表是廢墟老宅 
+- [[concepts/2026-06-10-202606101206_00001-aga不專業食記-on-instagram-🚩主打有機、天然、在地食材的百匯吃到飽-沒有繁複的重口味調味,只有食材本身的]] — AGA不專業食記 on Instagram: "🚩主打有機、天然、在地食材的百匯吃到飽 沒有繁複的重口味調味，只有食材本身的清甜 也有少數幾道豬、雞、魚，滿足無
+- [[concepts/2026-06-10-202606101206_00002-美比拌飯-on-instagram-米其林必比登的60年雲南菜老店-菜色很有特色-而且很好訂耶-📍人和園餐廳-台北市中山]] — 美比拌飯 on Instagram: "米其林必比登的60年雲南菜老店 菜色很有特色 而且很好訂耶 📍人和園餐廳 台北市中山北路二段112號2樓 #台北美食 #
+- [[concepts/2026-06-10-202606101542_00001-google-ai-mode-share]] — Google AI Mode share
+- [[concepts/2026-06-10-202606101713_00001-codecentric-ag-creating-the-digital-future-together.]] — codecentric AG | Creating the digital future together.
+- [[concepts/2026-06-10-202606101713_00001-codewithmukesh-.net-10-tutorials,-benchmarks-&-courses-codew]] — codewithmukesh - .NET 10 Tutorials, Benchmarks & Courses - codewithmukesh
+- [[concepts/2026-06-10-202606101713_00001-dev-interrupted-substack]] — Dev Interrupted | Substack
+- [[concepts/2026-06-10-202606101713_00001-empower-your-business-in-usa-&-canada-with-alibaba-cloud's-c]] — Empower Your Business in USA & Canada with Alibaba Cloud's Cloud Products & Serv
+- [[concepts/2026-06-10-202606101713_00001-github-·-change-is-constant.-github-keeps-you-ahead.]] — GitHub · Change is constant. GitHub keeps you ahead.
+- [[concepts/2026-06-10-202606101713_00001-linkedin-log-in-or-sign-up]] — LinkedIn: Log In or Sign Up
+- [[concepts/2026-06-10-202606101713_00001-medium.com]] — medium.com
+- [[concepts/2026-06-10-202606101713_00001-saturday-morning-with-ralph-→-ralf-from-idea-to-working-exte]] — Saturday Morning with Ralph → Ralf: From Idea to Working Extension in Under an H
+- [[concepts/2026-06-10-202606101713_00001-youtube]] — YouTube
+- [[concepts/2026-06-10-202606102051_00001-facebook]] — Facebook
+- [[concepts/2026-06-11-202606110612_00001-電腦王阿達]] — 電腦王阿達
+- [[concepts/2026-06-11-202606111123_00001-linebot-astro-bot-sceret-773c4c47f5368c1853b3fb033abc944c]] — linebot astro-bot sceret : 773c4c47f5368c1853b3fb033abc944c
+- [[concepts/2026-06-11-202606111452_00001-天文生物學家「們」如何看待發現外星生命]] — 天文生物學家「們」如何看待發現外星生命？
+- [[concepts/2026-06-11-202606112206_00001-小米推出開源編程-cli-mimo-code-具備跨-session-記憶、無限上下文、限時免費使用-電腦王阿達]] — 小米推出開源編程 CLI MiMo Code：具備跨 Session 記憶、無限上下文、限時免費使用 - 電腦王阿達
+- [[concepts/2026-06-11-202606112209_00001-notebooklm完整攻略-22篇實戰一次收,建知識庫、做簡報、會議財報全應用]] — NotebookLM完整攻略：22篇實戰一次收，建知識庫、做簡報、會議財報全應用
+- [[concepts/2026-06-11-202606112210_00001-一半人不知道,加油站有在賣火鍋,便宜又好吃,每天都大排隊!]] — 一半人不知道，加油站有在賣火鍋，便宜又好吃，每天都大排隊！
+- [[concepts/2026-06-12-202606120602_00001-govin.ai-(@govin999999)-on-threads]] — Govin.AI @govin999999 on Threads
+- [[concepts/2026-06-12-202606120602_00002-凹屋珈琲-awoo-kohii-(@awoo_kohii)-on-threads]] — 凹屋珈琲 Awoo Kohii @awookohii on Threads
+- [[concepts/2026-06-12-202606120603_00001-天母大頭鵝-鵝肉專賣店-(@tianmu_da_tou_goose)-on-threads]] — 天母大頭鵝-鵝肉專賣店 @tianmudatougoose on Threads
+- [[concepts/2026-06-12-202606120608_00001-數位時代-(@bnext_official)-on-threads]] — 數位時代 @bnextofficial on Threads
+- [[concepts/2026-06-12-202606120608_00002-google高達4.5顆星!]] — Google高達4.5顆星！
+- [[concepts/2026-06-12-202606120613_00001-嘿!部落!-(@blogimove)-on-threads]] — 嘿!部落! @blogimove on Threads
+- [[concepts/2026-06-12-202606120615_00001-他和她出乃玩-(@heandshe216)-on-threads]] — 他和她出乃玩 @heandshe216 on Threads
+- [[concepts/2026-06-12-202606120616_00001-海邊走走旅居👣-(@cozy_seaside_kenting)-on-threads]] — 海邊走走旅居👣 @cozyseasidekenting on Threads
+- [[concepts/2026-06-12-202606120617_00001-邱文寶-(@bao_chiou)-on-threads]] — 邱文寶 @baochiou on Threads
+- [[concepts/2026-06-12-202606120618_00001-葉咪乓-(@mipong_0722)-on-threads]] — 葉咪乓 @mipong0722 on Threads
+- [[concepts/2026-06-13-202606131054_00001-不用终端!用手机远程让ai管理你的obsidian笔记-openclaw-+-obsidian-cli-教程]] — 不用终端！用手机远程让AI管理你的Obsidian笔记｜OpenClaw + Obsidian CLI 教程
+- [[concepts/2026-06-13-202606131057_00001-省下96美金!obsidian全平台同步免费教程,5步搞定手机电脑互通(2026最新)]] — 省下96美金！Obsidian全平台同步免费教程，5步搞定手机电脑互通（2026最新）
+- [[concepts/2026-06-13-202606131148_00001-dev-community]] — DEV Community
+- [[concepts/2026-06-13-202606131148_00001-explore-&-discover-obsidian-plugins-and-themes]] — Explore & Discover Obsidian Plugins and Themes
+- [[concepts/2026-06-13-202606131148_00001-github-·-change-is-constant.-github-keeps-you-ahead.]] — GitHub · Change is constant. GitHub keeps you ahead.
+- [[concepts/2026-06-13-202606131148_00001-how-i-built-a-local-ai-assistant-for-obsidian-—-no-cloud,-no]] — How I Built a Local AI Assistant for Obsidian — No Cloud, No API Keys
+- [[concepts/2026-06-13-202606131148_00001-https-community.hpe.com]] — https://community.hpe.com
+- [[concepts/2026-06-13-202606131148_00001-https-community.hpe.com-t5-software-general-building-a-local]] — https://community.hpe.com/t5/software-general/building-a-local-ai-second-brain-a
+- [[concepts/2026-06-13-202606131148_00001-https-jdev.tw]] — https://jdev.tw
+- [[concepts/2026-06-13-202606131148_00001-instagram]] — Instagram
+- [[concepts/2026-06-13-202606131148_00001-obsidian-community]] — Obsidian Community
+- [[concepts/2026-06-13-202606131148_00001-obsidian-publish]] — Obsidian Publish
+- [[concepts/2026-06-13-202606131148_00001-open-{re}source]] — Open {re}Source
+- [[concepts/2026-06-13-202606131148_00001-youtube]] — YouTube
+- [[concepts/2026-06-13-202606131148_00001-zhuanlan.zhihu.com]] — zhuanlan.zhihu.com
+- [[concepts/2026-06-13-202606131148_00001-知乎专栏-随心写作,自由表达-知乎]] — 知乎专栏 - 随心写作，自由表达 - 知乎
+- [[concepts/2026-06-13-202606131242_00001-obsidian必裝插件-新手第一週就該知道的8個神器]] — Obsidian必裝插件｜新手第一週就該知道的8個神器
 
 ## Comparisons
 
@@ -20,6 +290,3 @@
 
 (None yet)
 
----
-
-**Navigation:** Start with SCHEMA.md to understand the domain and tag taxonomy. Check log.md for recent activity. Use search_files to find by keyword or tag.
