@@ -2,30 +2,11 @@
 title: 2026-06-10-202606101713_00001-the-ralph-loop-a-practical-pattern-for-reliable-ai-agents-(a
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-the-ralph-loop-a-practical-pattern-for-reliable-ai-agents-(a.md"]
 confidence: medium
 ---
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-10
-log_id: 202606101713_00001
-url: https://www.linkedin.com/pulse/ralph-loop-practical-pattern-reliable-ai-agents-why-done-chenyu-zhang-rntke
-platform: web
-content_type: webpage
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
-summary: 本文介紹了Ralph Loop，一種實用的架構模式，用於構建具備自我診斷與自我修正能力的可靠AI代理。該模式強調“完成”並非終點，而是持續改進的開始，展示了現代軟體設計的新方向。
-status: unread
----
-
 # The Ralph Loop: A Practical Pattern for Reliable AI Agents (and Why “Done” Is Not the End)
 
 ## Log ID

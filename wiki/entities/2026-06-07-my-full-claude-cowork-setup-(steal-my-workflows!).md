@@ -2,31 +2,11 @@
 title: 2026-06-07-my-full-claude-cowork-setup-(steal-my-workflows!)
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-my-full-claude-cowork-setup-(steal-my-workflows!).md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-07
-url: https://www.youtube.com/watch?v=gdrPkpXuNks
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: 1. 作者展示其Claude co-work設置，包含每日投資追蹤、自動生成軟體與工作流程，並強調透過PRD（產品需求文件）確保Claude準確執行任務，避免誤導性建構。 2. 作者提供完整設定步驟與自訂提示，讓觀眾可直接複製使用，且不需編程知識，並提及相關功能如技能設定與每日摘要的實現方式。
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T13:00:33+08:00
-worker_name: mac-mini-omnichannel
----
-# My Full Claude Cowork Setup (steal my workflows!)
+---# My Full Claude Cowork Setup (steal my workflows!)
 
 ## 摘要
 1. 作者展示其Claude co-work設置，包含每日投資追蹤、自動生成軟體與工作流程，並強調透過PRD（產品需求文件）確保Claude準確執行任務，避免誤導性建構。

@@ -7,25 +7,6 @@ tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Food/2026-06-09-202606092349_00001-\u5922\u98db\u884c-flying-dream-(@flyingdream8888)-on-threads.md"]
 confidence: medium
 ---
-
----
-tags: [美食]
-source: LINE
-date: 2026-06-09
-log_id: 202606092349_00001
-url: https://www.threads.com/@flyingdream8888/post/DZXBuFTk45s?xmt=AQG0Mc1vZNQntUAwkC9I5_vDaK4EaHiylwXTTT5-acSmL01VVJFVB_Yni86BRHeqcNmakZD1&slof=1
-platform: threads
-content_type: social_post
-extraction_status: ok
-needs_review: false
-summary: 店名：夢飛行異國創意料理；地址：淡水英專路141號；摘要：夢飛行異國創意料理位於淡水英專路141號1樓，是由來自香港的夫妻經營的小店，提供多種異國料理如馬來咖喱、法式紅酒燉牛肉及港式奶油脆豬等，所有菜式皆使用高品質橄欖油烹調。營業時間為11:30至22:00，週二及週三公休，讓顧客在台灣即可享受多元異國風味。
-status: unread
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
----
-
 # 夢飛行 Flying Dream (@flyingdream8888) on Threads
 
 ## Log ID

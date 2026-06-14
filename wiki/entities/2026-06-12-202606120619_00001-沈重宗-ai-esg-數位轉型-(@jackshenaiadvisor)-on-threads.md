@@ -2,30 +2,11 @@
 title: 2026-06-12-202606120619_00001-沈重宗-ai-esg-數位轉型-(@jackshenaiadvisor)-on-threads
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-12-202606120619_00001-\u6c88\u91cd\u5b97-ai-esg-\u6578\u4f4d\u8f49\u578b-(@jackshenaiadvisor)-on-threads.md"]
 confidence: medium
 ---
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-12
-log_id: 202606120619_00001
-url: https://www.threads.com/@jackshenaiadvisor/post/DZbLZhCkwxj?xmt=AQG0GrBI3NVeYnG7Gqvu4FHzGp_sESNXhCM472i4n4qAC5Q4icNkt9xPbz5VabaYT-xfJlU-&slof=1
-platform: threads
-content_type: social_post
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
-summary: Google 的 AI 研究工具 NotebookLM 迎來重大升級，採用 Gemini 3.5 與 Antigravity 技術，從 AI 筆記工具進化為具自主研究能力的 AI 研究助理。此升級提升了回答準確度、資料引用可靠性、推理分析能力及長文件理解能力，對研究人員與企業用戶具有重要意義。
-status: unread
----
-
 # 沈重宗 ai/esg/數位轉型 (@jackshenaiadvisor) on Threads
 
 ## Log ID

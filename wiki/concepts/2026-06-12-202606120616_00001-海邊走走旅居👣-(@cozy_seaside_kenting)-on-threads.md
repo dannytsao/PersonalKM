@@ -7,25 +7,6 @@ tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/General/2026-06-12-202606120616_00001-\u6d77\u908a\u8d70\u8d70\u65c5\u5c45\ud83d\udc63-(@cozy_seaside_kenting)-on-threads.md"]
 confidence: medium
 ---
-
----
-tags: [待分類]
-source: LINE
-date: 2026-06-12
-log_id: 202606120616_00001
-url: https://www.threads.com/@cozy_seaside_kenting/post/DZcTVUGCQkO?xmt=AQG01Hj4v8pxhVxKav2v1ehf_mp6E7IzXoIDz42mOdZXsOf3ChrCpU674pvWeUfG34ge8g8N&slof=1
-platform: threads
-content_type: social_post
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
-summary: 海邊走走旅居位於萬里桐海邊，提供自助入住服務，房價介於NT$2,800至5,900每晚。住宿設施包含加大雙人床、4K智慧電視、空氣清淨機、海景浴缸及高級洗沐用品，並有免費零食吧及飲品供應，適合喜歡海景與寧靜環境的旅客。
-status: unread
----
-
 # 海邊走走旅居👣 (@cozy_seaside_kenting) on Threads
 
 ## Log ID

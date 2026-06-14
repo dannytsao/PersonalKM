@@ -2,33 +2,11 @@
 title: 2026-06-13-202606131148_00001-obsidian-smart-connections-update-📝-rediscover-notes-with-ob
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606131148_00001-obsidian-smart-connections-update-\ud83d\udcdd-rediscover-notes-with-ob.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-13
-log_id: 202606131148_00001
-url: https://www.youtube.com/watch?v=7Rvl9Sl29Jk
-platform: youtube
-content_type: video
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-summary: 1. Obsidian Smart Connections 更新透過建立「智能環境」與向量資料庫，將個人知識庫轉化為動態過濾系統，提升AI回應的準確性與資訊檢索效率，並強調本地化運行的隱私與即時性。 2. 新版本3.0新增智能聊天功能、隨機連接按鈕與更靈活的設定控制，協助用戶深化筆記間的關聯性，並透過實際案例展示如何整合智能連接與AI對話以增強知識管理。
-status: unread
-worker_error: ""
-worker_processed_at: 2026-06-13T21:20:46+08:00
-worker_name: mac-mini-omnichannel
----
-# Obsidian Smart Connections UPDATE 📝 Rediscover Notes With Obsidian AI
+---# Obsidian Smart Connections UPDATE 📝 Rediscover Notes With Obsidian AI
 
 ## 摘要
 1. Obsidian Smart Connections 更新透過建立「智能環境」與向量資料庫，將個人知識庫轉化為動態過濾系統，提升AI回應的準確性與資訊檢索效率，並強調本地化運行的隱私與即時性。

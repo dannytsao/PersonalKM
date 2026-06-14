@@ -2,30 +2,11 @@
 title: 2026-06-12-202606120612_00001-未來商務-(@futurecommerce_official)-on-threads
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-12-202606120612_00001-\u672a\u4f86\u5546\u52d9-(@futurecommerce_official)-on-threads.md"]
 confidence: medium
 ---
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-12
-log_id: 202606120612_00001
-url: https://www.threads.com/@futurecommerce_official/post/DZdiuclkoVw?xmt=AQG0uDFu8r8aXFe878GN3xJAyrzGTn1UVtVAgevHsfae2VpkqpRgxqlyp0rNrlAnefzxuX_9&slof=1
-platform: threads
-content_type: social_post
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
-summary: 未來商務介紹如何免費取得Anthropic官方Claude認證，透過Skilljar平台報名並完成三個課程：基礎課程Claude 101、AI素養架構與基礎，以及Claude Cowork入門。完成後可將認證加入LinkedIn，提升個人履歷曝光度。
-status: unread
----
-
 # 未來商務 (@futurecommerce_official) on Threads
 
 ## Log ID

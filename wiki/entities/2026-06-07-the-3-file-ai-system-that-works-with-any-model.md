@@ -2,31 +2,11 @@
 title: 2026-06-07-the-3-file-ai-system-that-works-with-any-model
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-the-3-file-ai-system-that-works-with-any-model.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-07
-url: https://www.youtube.com/watch?v=jbHB-rzKBAs
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: 1. 本文介紹一種名為AI OS的系統，透過三個核心層次（知識宇宙、地圖、工具）讓用戶自主掌控AI流程，避免依賴特定平台，確保即使工具變更仍能持續運作。 2. 系統強調以plain text文件為基礎，透過「地圖」文件協助AI快速定位關鍵資訊，並透過靈活的文件結構實現跨工具的兼容性與長期可持續性。
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T13:32:45+08:00
-worker_name: mac-mini-omnichannel
----
-# The 3-File AI System That Works With ANY MODEL
+---# The 3-File AI System That Works With ANY MODEL
 
 ## 摘要
 1. 本文介紹一種名為AI OS的系統，透過三個核心層次（知識宇宙、地圖、工具）讓用戶自主掌控AI流程，避免依賴特定平台，確保即使工具變更仍能持續運作。

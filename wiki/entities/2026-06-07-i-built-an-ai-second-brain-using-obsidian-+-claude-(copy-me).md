@@ -2,31 +2,11 @@
 title: 2026-06-07-i-built-an-ai-second-brain-using-obsidian-+-claude-(copy-me)
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-i-built-an-ai-second-brain-using-obsidian-+-claude-(copy-me).md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-07
-url: https://youtu.be/TyFLg7XwrA0?si=OARrPSHe3TLIiwiS
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: 1. 作者利用Obsidian與Claude建立「第二大腦」系統，整合所有YouTube影片、商業數據與線上文章，透過資料連結與自動學習功能，解決AI記憶斷裂的問題，並提供免費資源供觀眾使用。 2. 該系統透過Obsidian的mind map與Claude的語境管理，實現資料跨平台查詢與LLM切換時的持續上下文，並結合Andre Karpathy的系統提示語提升AI效能，強調資料自主控制的重要性。
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T12:44:30+08:00
-worker_name: mac-mini-omnichannel
----
-# I Built an AI Second Brain Using Obsidian + Claude (Copy Me)
+---# I Built an AI Second Brain Using Obsidian + Claude (Copy Me)
 
 ## 摘要
 1. 作者利用Obsidian與Claude建立「第二大腦」系統，整合所有YouTube影片、商業數據與線上文章，透過資料連結與自動學習功能，解決AI記憶斷裂的問題，並提供免費資源供觀眾使用。

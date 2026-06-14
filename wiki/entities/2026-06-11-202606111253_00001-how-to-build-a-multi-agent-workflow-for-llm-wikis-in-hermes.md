@@ -2,33 +2,11 @@
 title: 2026-06-11-202606111253_00001-how-to-build-a-multi-agent-workflow-for-llm-wikis-in-hermes
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-11-202606111253_00001-how-to-build-a-multi-agent-workflow-for-llm-wikis-in-hermes.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-11
-log_id: 202606111253_00001
-url: https://youtu.be/hbKvO5MWq08
-platform: youtube
-content_type: video
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-summary: 1. 本文介紹如何利用Hermes Kanban建立多代理工作流程，用於維護和更新LLM維基知識庫，以確保資訊準確且持續更新。 2. 這個流程包含scouts、orchestrator、ingesttor等角色，透過自動化監測、審核與整理，協助清理過時資料並保持知識庫的精準與可管理性。
-status: unread
-worker_error: ""
-worker_processed_at: 2026-06-11T13:03:46+08:00
-worker_name: mac-mini-omnichannel
----
-# How to Build a Multi-Agent Workflow for LLM Wikis in Hermes Kanban
+---# How to Build a Multi-Agent Workflow for LLM Wikis in Hermes Kanban
 
 ## 摘要
 1. 本文介紹如何利用Hermes Kanban建立多代理工作流程，用於維護和更新LLM維基知識庫，以確保資訊準確且持續更新。

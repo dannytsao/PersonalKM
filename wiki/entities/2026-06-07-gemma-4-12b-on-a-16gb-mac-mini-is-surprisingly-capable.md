@@ -2,31 +2,11 @@
 title: 2026-06-07-gemma-4-12b-on-a-16gb-mac-mini-is-surprisingly-capable
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-gemma-4-12b-on-a-16gb-mac-mini-is-surprisingly-capable.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-07
-url: https://www.youtube.com/watch?v=PDxKrp-dTDA
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: 此內容標題為「Gemma 4 12B on a 16GB Mac Mini Is Surprisingly Capable」。重點內容：Google just released an exciting new open-source model as part of the Gemma 4 family. It's a 12 billion parameter model that will fit on a 16 gig device. And in this video, we'll be giving it the full Monty on my 16 gig
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T11:56:30+08:00
-worker_name: mac-mini-omnichannel
----
-# Gemma 4 12B on a 16GB Mac Mini Is Surprisingly Capable
+---# Gemma 4 12B on a 16GB Mac Mini Is Surprisingly Capable
 
 ## 摘要
 此內容標題為「Gemma 4 12B on a 16GB Mac Mini Is Surprisingly Capable」。重點內容：Google just released an exciting new open-source model as part of the Gemma 4 family. It's a 12 billion parameter model that will fit on a 16 gig device. And in this video, we'll be giving it the full Monty on my 16 gig

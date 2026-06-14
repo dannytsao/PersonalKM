@@ -2,7 +2,7 @@
 title: 2026-06-07-只用codex真实办公的一天-最好用的agent软件-codex使用技巧-提升工作效率
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags:
   - tech
   - agent
@@ -10,27 +10,7 @@ tags:
 sources:
   - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-只用codex真实办公的一天-最好用的agent软件-codex使用技巧-提升工作效率.md
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-07
-url: https://www.youtube.com/watch?v=BDN2GEuQHmg
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: 1. 本文展示如何利用Codex軟體在一天內完成數據報表生成、PPT製作、網頁設計、PDF轉換、飛書文件上傳及動畫視頻製作等多項任務，體現其提升工作效率的強大功能。 2. 透過Codex的自動化設定與插件整合（如Remotion動畫插件），可實現跨平台協作與任務自動化，並透過手機端遠端操控，完成從網頁部署到定時消息發送的完整工作流程。
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T14:05:41+08:00
-worker_name: mac-mini-omnichannel
----
-# 只用codex真实办公的一天|最好用的agent软件|codex使用技巧|提升工作效率
+---# 只用codex真实办公的一天|最好用的agent软件|codex使用技巧|提升工作效率
 
 ## 摘要
 1. 本文展示如何利用Codex軟體在一天內完成數據報表生成、PPT製作、網頁設計、PDF轉換、飛書文件上傳及動畫視頻製作等多項任務，體現其提升工作效率的強大功能。

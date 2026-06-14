@@ -2,31 +2,11 @@
 title: 2026-06-07-hermes-agent-tutorial-for-beginners-(full-step-by-step-setup
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-hermes-agent-tutorial-for-beginners-(full-step-by-step-setup.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-07
-url: https://www.youtube.com/watch?v=LvWobwr0Neg
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: 此內容標題為「Hermes Agent Tutorial for Beginners (Full Step-by-Step Setup)」。重點內容：如果您一直在寻找一份清晰 易懂的 Hermes Agent 设置 分步指南 ， 那么您来对地方了。 我是 Matt，在本视频中， 我们将帮助您 在小型云服务器上运行您的代理， 将其连接到 Telegram， 以便您可以通过手机向它发送消息， 并逐步讲解如何赋予它 可重复使用的技能。 我还会向您展示如何安排任务 ，让它即使在您睡觉时也能自动为您完成一些事情。 如果您担心视频 只会讲解设置过程，那就大错特错了。 代理运行后， 我们将讲解如何
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T12:12:40+08:00
-worker_name: mac-mini-omnichannel
----
-# Hermes Agent Tutorial for Beginners (Full Step-by-Step Setup)
+---# Hermes Agent Tutorial for Beginners (Full Step-by-Step Setup)
 
 ## 摘要
 此內容標題為「Hermes Agent Tutorial for Beginners (Full Step-by-Step Setup)」。重點內容：如果您一直在寻找一份清晰 易懂的 Hermes Agent 设置 分步指南 ， 那么您来对地方了。 我是 Matt，在本视频中， 我们将帮助您 在小型云服务器上运行您的代理， 将其连接到 Telegram， 以便您可以通过手机向它发送消息， 并逐步讲解如何赋予它 可重复使用的技能。 我还会向您展示如何安排任务 ，让它即使在您睡觉时也能自动为您完成一些事情。 如果您担心视频 只会讲解设置过程，那就大错特错了。 代理运行后， 我们将讲解如何

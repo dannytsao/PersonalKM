@@ -2,33 +2,11 @@
 title: 2026-06-13-202606131148_00001-obsidian-and-ollama-free-local-ai-powered-pkm
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606131148_00001-obsidian-and-ollama-free-local-ai-powered-pkm.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-13
-log_id: 202606131148_00001
-url: https://www.youtube.com/watch?v=0KttkhL7-b4
-platform: youtube
-content_type: video
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-summary: 1. 本文探討如何透過Obsidian結合本地AI（如Ollama）實現離線知識管理，強調私有化AI實例的優勢，包括數據隱私、離線運行及成本效益，並說明其適用於單筆筆記或整體Vault的查詢場景。 2. 文中介紹多種本地AI解決方案（如Ollama、LM Studio）及硬體需求，建議選擇支持Obsidian的工具，並提及Llama 2、Llama 3等模型的靈活應用，強調硬體性能對索引與查詢效率的影響。
-status: unread
-worker_error: ""
-worker_processed_at: 2026-06-13T21:04:47+08:00
-worker_name: mac-mini-omnichannel
----
-# Obsidian and Ollama - Free Local AI Powered PKM
+---# Obsidian and Ollama - Free Local AI Powered PKM
 
 ## 摘要
 1. 本文探討如何透過Obsidian結合本地AI（如Ollama）實現離線知識管理，強調私有化AI實例的優勢，包括數據隱私、離線運行及成本效益，並說明其適用於單筆筆記或整體Vault的查詢場景。

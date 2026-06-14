@@ -2,30 +2,11 @@
 title: 2026-06-09-202606092348_00001-prompt-case-(@prompt_case)-on-threads
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-09-202606092348_00001-prompt-case-(@prompt_case)-on-threads.md"]
 confidence: medium
 ---
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-09
-log_id: 202606092348_00001
-url: https://www.threads.com/@prompt_case/post/DZXMizjjafj?xmt=AQG0EMft28TWDto8jOmhEOhVSCHo4hXyxrUDChS2mgSO4tWjY1StFhXaVczHhAMDDNTLJgpw&slof=1
-platform: threads
-content_type: social_post
-extraction_status: ok
-needs_review: false
-summary: Prompt Case 開發了一款名為「GPT Relay」的免費 Codex 插件，能將 Codex 與已登入的 ChatGPT 直接連接，避免使用者在兩者間反覆複製貼上。該插件可讓使用者在 Codex 內直接呼叫 ChatGPT 進行深度分析、研究、圖片生成等功能，提升工作效率並減少錯誤。
-status: unread
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
----
-
 # Prompt Case (@prompt_case) on Threads
 
 ## Log ID

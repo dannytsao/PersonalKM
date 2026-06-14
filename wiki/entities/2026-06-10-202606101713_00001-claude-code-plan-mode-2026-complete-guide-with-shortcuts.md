@@ -2,30 +2,11 @@
 title: 2026-06-10-202606101713_00001-claude-code-plan-mode-2026-complete-guide-with-shortcuts
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-claude-code-plan-mode-2026-complete-guide-with-shortcuts.md"]
 confidence: medium
 ---
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-10
-log_id: 202606101713_00001
-url: https://www.getaiperks.com/en/ai/claude-code-plan-mode
-platform: web
-content_type: webpage
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
-summary: 本文介紹了Claude Code的Plan Mode功能，該模式能在修改代碼前先分析整個代碼庫。文章還涵蓋了使用快捷鍵的方法、適用時機以及如何獲取免費的Anthropic積分。
-status: unread
----
-
 # Claude Code Plan Mode 2026: Complete Guide With Shortcuts
 
 ## Log ID

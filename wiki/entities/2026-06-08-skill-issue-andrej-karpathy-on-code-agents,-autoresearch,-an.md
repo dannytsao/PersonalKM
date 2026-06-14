@@ -2,31 +2,11 @@
 title: 2026-06-08-skill-issue-andrej-karpathy-on-code-agents,-autoresearch,-an
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-skill-issue-andrej-karpathy-on-code-agents,-autoresearch,-an.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-08
-url: https://www.youtube.com/watch?v=kwSVtQ7dziU
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: 1. Andrej Karpathy強調現代理 agent 技術已成為日常開發的核心，他個人已從手動編碼轉為透過代理執行多項任務，並面臨如何有效整合這些工具的技能挑戰。 2. 他指出當前AI研究與工程的進展使開發者能以宏觀行動操作軟體庫，但核心問題仍圍繞「技能」——即如何善用現有工具串聯出更高效率的開發流程。
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T16:34:22+08:00
-worker_name: mac-mini-omnichannel
----
-# Skill Issue: Andrej Karpathy on Code Agents, AutoResearch, and the Loopy Era of AI
+---# Skill Issue: Andrej Karpathy on Code Agents, AutoResearch, and the Loopy Era of AI
 
 ## 摘要
 1. Andrej Karpathy強調現代理 agent 技術已成為日常開發的核心，他個人已從手動編碼轉為透過代理執行多項任務，並面臨如何有效整合這些工具的技能挑戰。

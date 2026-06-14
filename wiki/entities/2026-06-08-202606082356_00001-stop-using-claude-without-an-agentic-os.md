@@ -2,32 +2,11 @@
 title: 2026-06-08-202606082356_00001-stop-using-claude-without-an-agentic-os
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-202606082356_00001-stop-using-claude-without-an-agentic-os.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-08
-log_id: 202606082356_00001
-url: https://youtu.be/1x32W8zAtrg?si=mttcAHQNW2bxn8iQ
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: 1. 本文強調建立Agentic OS（代理操作系統）可提升Claude等AI工具的效能，透過個人化儀表板整合企業資料與即時上下文，實現自動化工作流程與跨平台協作。 2. 設置Agentic OS有三種選項，包括活體網址、Obsidian與Cloth桌面，並能支援多種AI模型，使系統具模型無關性且可輕鬆分享給團隊或客戶。
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T14:58:06+08:00
-worker_name: mac-mini-omnichannel
----
-# Stop Using Claude Without an Agentic OS
+---# Stop Using Claude Without an Agentic OS
 
 ## 摘要
 1. 本文強調建立Agentic OS（代理操作系統）可提升Claude等AI工具的效能，透過個人化儀表板整合企業資料與即時上下文，實現自動化工作流程與跨平台協作。

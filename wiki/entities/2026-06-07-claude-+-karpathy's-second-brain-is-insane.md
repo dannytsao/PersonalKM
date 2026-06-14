@@ -2,7 +2,7 @@
 title: 2026-06-07-claude-+-karpathy's-second-brain-is-insane
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags:
   - tech
   - secondbrain
@@ -10,27 +10,7 @@ tags:
 sources:
   - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-claude-+-karpathy's-second-brain-is-insane.md
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-07
-url: https://www.youtube.com/watch?v=5FiHjotg2zU
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: 1. Andrej Karpathy 提出利用 Claude Code 與 Obsidian 建立「第二個大腦」系統，用以組織個人或商業數據，提升思維與工作效率，Nick B Zark 將示範完整建置流程。 2. 該系統結合 Obsidian Web Clipper、Summarize 工具及 Vercel 框架，提供知識庫管理、查詢分析與內容健康檢查功能，並可透過一鍵下載取得完整技能套件。
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T11:14:00+08:00
-worker_name: mac-mini-omnichannel
----
-# Claude + Karpathy's Second Brain is INSANE
+---# Claude + Karpathy's Second Brain is INSANE
 
 ## 摘要
 1. Andrej Karpathy 提出利用 Claude Code 與 Obsidian 建立「第二個大腦」系統，用以組織個人或商業數據，提升思維與工作效率，Nick B Zark 將示範完整建置流程。

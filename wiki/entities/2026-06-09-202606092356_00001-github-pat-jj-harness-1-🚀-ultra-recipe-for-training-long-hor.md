@@ -2,30 +2,11 @@
 title: 2026-06-09-202606092356_00001-github-pat-jj-harness-1-🚀-ultra-recipe-for-training-long-hor
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-09-202606092356_00001-github-pat-jj-harness-1-\ud83d\ude80-ultra-recipe-for-training-long-hor.md"]
 confidence: medium
 ---
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-09
-log_id: 202606092356_00001
-url: https://github.com/pat-jj/harness-1
-platform: web
-content_type: webpage
-extraction_status: ok
-needs_review: false
-summary: 此專案為一個在GitHub上的開源資源，提供訓練長期搜尋代理的超級配方，目標是匹配前沿AI的搜尋能力，並使用20B模型進行訓練。
-status: unread
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
----
-
 # GitHub - pat-jj/harness-1: 🚀 Ultra Recipe for Training Long-Horizon Search Agents - matching frontier AI's search capability with a 20B model
 
 ## Log ID

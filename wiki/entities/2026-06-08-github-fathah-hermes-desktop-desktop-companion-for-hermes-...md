@@ -2,28 +2,11 @@
 title: 2026-06-08-github-fathah-hermes-desktop-desktop-companion-for-hermes-..
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-github-fathah-hermes-desktop-desktop-companion-for-hermes-...md"]
 confidence: medium
 ---
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-08
-url: https://github.com/fathah/hermes-desktop
-platform: line-message
-extraction_status: ok
-needs_review: false
-summary: Hermes Desktop 是 Nous Research 推出的官方原生圖形介面應用程式，專為管理與執行具備自我進化能力的開源 AI 助理 Hermes Agent 設計。它支援 Windows、macOS 與 Linux，提供一鍵式安裝、多模型切換、跨通訊軟體控制及多種安全沙盒環境，並且採用 MIT 授權開源發布。
-status: unread
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
----
-
 # [GitHub - fathah/hermes-desktop: Desktop Companion for Hermes ...]( ) [電腦王阿達- He
 
 ## 原始貼文

@@ -2,30 +2,11 @@
 title: 2026-06-10-202606102053_00001-claude-應用社群-用-claude-code-跟-codex-久了,我有兩個固定的煩躁點-facebook
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606102053_00001-claude-\u61c9\u7528\u793e\u7fa4-\u7528-claude-code-\u8ddf-codex-\u4e45\u4e86,\u6211\u6709\u5169\u500b\u56fa\u5b9a\u7684\u7169\u8e81\u9ede-facebook.md"]
 confidence: medium
 ---
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-10
-log_id: 202606102053_00001
-url: https://www.facebook.com/share/p/18n1j3ednm/
-platform: web
-content_type: webpage
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
-summary: 本文討論使用 Claude Code 與 Codex 兩款工具時遇到的兩個主要煩躁點：一是每次開新對話都需重新說明進度，雖然有 /resume 指令可調出舊對話，但需手動選擇且會將整段對話倒入新視窗，造成視窗擁擠；二是使用量限制問題，兩者各有額度限制，影響使用體驗。
-status: unread
----
-
 # Claude 應用社群 | 用 Claude Code 跟 Codex 久了，我有兩個固定的煩躁點 | Facebook
 
 ## Log ID

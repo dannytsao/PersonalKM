@@ -2,31 +2,11 @@
 title: 2026-06-08-hermes-agent-new-desktop-app-the-24-7-self-evolving-ai-agent
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-hermes-agent-new-desktop-app-the-24-7-self-evolving-ai-agent.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-08
-url: https://www.youtube.com/watch?v=YBp_PXBbe80
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: Hermes Agent 是一個持續進化的自主AI系統，具備長期記憶、自我改進循環及深度學習能力，能透過閉環學習自動建立可重複使用的技能，並隨著使用時間提升對用戶的了解。 Hermes 新推出的桌面應用程式提供視覺化介面與跨平台支援，簡化多代理管理與工作流程編排，讓用戶能更直覺地操作這項開源AI工具，降低使用門檻。
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T15:14:04+08:00
-worker_name: mac-mini-omnichannel
----
-# Hermes Agent NEW Desktop App - The 24/7 Self-Evolving AI Agent!
+---# Hermes Agent NEW Desktop App - The 24/7 Self-Evolving AI Agent!
 
 ## 摘要
 Hermes Agent 是一個持續進化的自主AI系統，具備長期記憶、自我改進循環及深度學習能力，能透過閉環學習自動建立可重複使用的技能，並隨著使用時間提升對用戶的了解。

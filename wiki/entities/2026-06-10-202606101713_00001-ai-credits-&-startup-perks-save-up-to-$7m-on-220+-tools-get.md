@@ -2,30 +2,11 @@
 title: 2026-06-10-202606101713_00001-ai-credits-&-startup-perks-save-up-to-$7m-on-220+-tools-get
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-ai-credits-&-startup-perks-save-up-to-$7m-on-220+-tools-get.md"]
 confidence: medium
 ---
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-10
-log_id: 202606101713_00001
-url: https://www.getaiperks.com
-platform: web
-content_type: webpage
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
-summary: Get AI Perks 提供超過220種工具的 AI 點數，最高可節省達700萬美元，包括 OpenAI（5萬美元）、Anthropic（2.5萬美元）、Cursor（1,200美元）。此服務免費提供給新創公司，已有超過1萬名創業者使用。
-status: unread
----
-
 # AI Credits & Startup Perks: Save up to $7M on 220+ Tools | Get AI Perks
 
 ## Log ID

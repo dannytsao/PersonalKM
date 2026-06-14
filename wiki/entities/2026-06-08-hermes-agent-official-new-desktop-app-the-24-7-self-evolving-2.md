@@ -2,31 +2,11 @@
 title: 2026-06-08-hermes-agent-official-new-desktop-app-the-24-7-self-evolving-2
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-hermes-agent-official-new-desktop-app-the-24-7-self-evolving-2.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-08
-url: https://www.youtube.com/watch?v=nb5ALoAGAbE&t=28
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: 1. Hermes Agent 官方推出全新桌面應用，整合CLI與網關版本的完整功能，支援Windows/macOS/Linux，並與原有配置自動同步。 2. Zapier 新增MCP+SDK架構，讓AI模型能跨應用執行操作，搭配Hermes網頁儀表板的全面升級，提升管理與監控效率。
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T15:30:09+08:00
-worker_name: mac-mini-omnichannel
----
-# Hermes Agent Official NEW Desktop App - The 24/7 Self-Evolving AI Agent!
+---# Hermes Agent Official NEW Desktop App - The 24/7 Self-Evolving AI Agent!
 
 ## 摘要
 1. Hermes Agent 官方推出全新桌面應用，整合CLI與網關版本的完整功能，支援Windows/macOS/Linux，並與原有配置自動同步。

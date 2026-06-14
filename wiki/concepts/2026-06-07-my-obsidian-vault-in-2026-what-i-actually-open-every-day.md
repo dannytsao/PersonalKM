@@ -6,27 +6,7 @@ type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-my-obsidian-vault-in-2026-what-i-actually-open-every-day.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-07
-url: https://www.youtube.com/watch?v=nNvQMDbzdBg
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: 1. 作者展示其2026年Obsidian知識庫的日常使用情況，包括透過Commander插件自訂快速指令管理多個工作區，並fork過時插件以持續維護功能。 2. 透過RSS feeds與發現系統整合YouTube影片與其他資訊，分類儲存於不同工作區，並根據需求進行回顧或筆記處理。
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T13:16:35+08:00
-worker_name: mac-mini-omnichannel
----
-# My Obsidian Vault in 2026 - What I Actually Open Every Day
+---# My Obsidian Vault in 2026 - What I Actually Open Every Day
 
 ## 摘要
 1. 作者展示其2026年Obsidian知識庫的日常使用情況，包括透過Commander插件自訂快速指令管理多個工作區，並fork過時插件以持續維護功能。

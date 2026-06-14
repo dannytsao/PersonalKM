@@ -2,31 +2,11 @@
 title: 2026-06-08-official-hermes-desktop-is-finally-here
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-official-hermes-desktop-is-finally-here.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-08
-url: https://www.youtube.com/watch?v=M6ZyekLCJ7o
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: 1. Hermes這款廣受歡迎的自主AI代理終於推出官方桌面應用，讓用戶無需透過終端機即可使用，並詳細說明了安裝步驟與關鍵設置。 2. 安裝後需選擇Open Router作為模型管理工具、設定API密鑰，並調整主題顏色至深色模式以提升使用體驗。
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T16:18:22+08:00
-worker_name: mac-mini-omnichannel
----
-# Official Hermes Desktop Is FINALLY Here
+---# Official Hermes Desktop Is FINALLY Here
 
 ## 摘要
 1. Hermes這款廣受歡迎的自主AI代理終於推出官方桌面應用，讓用戶無需透過終端機即可使用，並詳細說明了安裝步驟與關鍵設置。

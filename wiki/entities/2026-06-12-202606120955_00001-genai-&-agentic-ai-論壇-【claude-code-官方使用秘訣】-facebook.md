@@ -2,30 +2,11 @@
 title: 2026-06-12-202606120955_00001-genai-&-agentic-ai-論壇-【claude-code-官方使用秘訣】-facebook
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-12-202606120955_00001-genai-&-agentic-ai-\u8ad6\u58c7-\u3010claude-code-\u5b98\u65b9\u4f7f\u7528\u79d8\u8a23\u3011-facebook.md"]
 confidence: medium
 ---
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-12
-log_id: 202606120955_00001
-url: https://www.facebook.com/share/p/1DVshtmkE8/
-platform: web
-content_type: webpage
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
-summary: 本文分享了 Claude Code 創始人 Boris Cherny 在 GenAI & Agentic AI 論壇上的演講重點，介紹 Claude Code 作為一種 agentic coding assistant 的特性，適合用於完整功能開發、錯誤修復及程式碼庫探索等工作。
-status: unread
----
-
 # GenAI & Agentic AI 論壇 | 【Claude Code 官方使用秘訣】 | Facebook
 
 ## Log ID

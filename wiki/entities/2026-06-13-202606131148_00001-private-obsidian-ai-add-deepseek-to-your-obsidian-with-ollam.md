@@ -2,33 +2,11 @@
 title: 2026-06-13-202606131148_00001-private-obsidian-ai-add-deepseek-to-your-obsidian-with-ollam
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606131148_00001-private-obsidian-ai-add-deepseek-to-your-obsidian-with-ollam.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-13
-log_id: 202606131148_00001
-url: https://www.youtube.com/watch?v=tC9wegnRyZk&t=93
-platform: youtube
-content_type: video
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-summary: 本影片教導如何透過Ollama安裝DeepSeek模型至Obsidian，實現完全本地化且私有的AI協作體驗，包含設定Copilot插件與嵌入模型以計算筆記相關性。 影片分三階段說明：安裝Obsidian Compiler、整合私有AI模型DeepSeek與Ollama，並透過嵌入模型技術提升AI對用戶筆記的查詢與分析能力。
-status: unread
-worker_error: ""
-worker_processed_at: 2026-06-13T21:52:49+08:00
-worker_name: mac-mini-omnichannel
----
-# Private Obsidian AI:  Add DeepSeek to your Obsidian with Ollama (GUIDE + SETUP)
+---# Private Obsidian AI:  Add DeepSeek to your Obsidian with Ollama (GUIDE + SETUP)
 
 ## 摘要
 本影片教導如何透過Ollama安裝DeepSeek模型至Obsidian，實現完全本地化且私有的AI協作體驗，包含設定Copilot插件與嵌入模型以計算筆記相關性。

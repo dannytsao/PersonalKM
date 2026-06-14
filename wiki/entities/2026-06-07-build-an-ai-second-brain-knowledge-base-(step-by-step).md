@@ -2,7 +2,7 @@
 title: 2026-06-07-build-an-ai-second-brain-knowledge-base-(step-by-step)
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags:
   - tech
   - ArtificialIntelligence
@@ -11,27 +11,7 @@ tags:
 sources:
   - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-build-an-ai-second-brain-knowledge-base-(step-by-step).md
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-07
-url: https://www.youtube.com/watch?v=yke4fLQUsh4
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: 1. 作者建立了一個整合wiki知識庫、CRM與日記的AI第二大腦系統，能透過聊天或日記查詢儲存的網頁內容、影音資料與人際互動資訊，並強調知識庫需主動連結而非僅作為資訊存儲。   2. 系統核心為中央知識庫，搭配Chrome剪貼簿與Obsidian工具整合網頁資料，並透過日記與CRM元件活化資訊，避免資訊沉睡，同時允許個人化調整如客戶管理或健身筆記等應用。
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T10:57:19+08:00
-worker_name: mac-mini-omnichannel
----
-# Build An AI Second Brain Knowledge Base (Step-By-Step)
+---# Build An AI Second Brain Knowledge Base (Step-By-Step)
 
 ## 摘要
 1. 作者建立了一個整合wiki知識庫、CRM與日記的AI第二大腦系統，能透過聊天或日記查詢儲存的網頁內容、影音資料與人際互動資訊，並強調知識庫需主動連結而非僅作為資訊存儲。

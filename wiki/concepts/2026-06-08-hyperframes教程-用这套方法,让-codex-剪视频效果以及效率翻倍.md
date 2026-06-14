@@ -6,27 +6,7 @@ type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-hyperframes\u6559\u7a0b-\u7528\u8fd9\u5957\u65b9\u6cd5,\u8ba9-codex-\u526a\u89c6\u9891\u6548\u679c\u4ee5\u53ca\u6548\u7387\u7ffb\u500d.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-08
-url: https://www.youtube.com/watch?v=yfiV1ExXaq0
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: Hyperframes透過系統化的前期準備與流程優化，大幅提升AI剪輯效率與成片品質，核心在於透過Video Spec Builder強制釐清腳本、素材、節奏等關鍵決策，避免後期返工。 此方法結合HTML渲染與自動化工具，內建語音合成、字幕生成、背景音樂等功能，並透過預設主題與自訂設計語言，協助用戶快速生成符合需求的視頻腳本與素材清單。
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T16:02:28+08:00
-worker_name: mac-mini-omnichannel
----
-# Hyperframes教程：用这套方法，让 Codex 剪视频效果以及效率翻倍
+---# Hyperframes教程：用这套方法，让 Codex 剪视频效果以及效率翻倍
 
 ## 摘要
 Hyperframes透過系統化的前期準備與流程優化，大幅提升AI剪輯效率與成片品質，核心在於透過Video Spec Builder強制釐清腳本、素材、節奏等關鍵決策，避免後期返工。

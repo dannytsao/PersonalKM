@@ -2,31 +2,11 @@
 title: 2026-06-07-the-hermes-desktop-app-changes-everything-(full-setup)
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-the-hermes-desktop-app-changes-everything-(full-setup).md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-07
-url: https://www.youtube.com/watch?v=2pIihd3dpoA
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: 1. Hermes 發布桌面應用程式，提供原生圖形界面，讓用戶無需終端機操作即可使用其強大功能，改變了過去需技術背景才能使用的狀況。 2. 安裝步驟簡易，包含連接模型提供者（如 Open Router）及設定通訊方式（如 Telegram），並可自訂工作空間與外觀。
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T13:48:49+08:00
-worker_name: mac-mini-omnichannel
----
-# The Hermes Desktop App Changes Everything (Full Setup)
+---# The Hermes Desktop App Changes Everything (Full Setup)
 
 ## 摘要
 1. Hermes 發布桌面應用程式，提供原生圖形界面，讓用戶無需終端機操作即可使用其強大功能，改變了過去需技術背景才能使用的狀況。

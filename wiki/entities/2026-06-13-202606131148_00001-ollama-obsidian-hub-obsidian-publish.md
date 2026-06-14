@@ -2,30 +2,11 @@
 title: 2026-06-13-202606131148_00001-ollama-obsidian-hub-obsidian-publish
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606131148_00001-ollama-obsidian-hub-obsidian-publish.md"]
 confidence: medium
 ---
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-13
-log_id: 202606131148_00001
-url: https://publish.obsidian.md/hub/02+-+Community+Expansions/02.05+All+Community+Expansions/Plugins/ollama
-platform: web
-content_type: webpage
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
-summary: 本文介紹了 Ollama 插件在 Obsidian Hub 上的相關資訊，包括 GitHub 上的所有版本發布、清單版本以及問題標籤管理等技術細節，適合對 Obsidian 插件開發或使用有興趣的用戶參考。
-status: unread
----
-
 # ollama - Obsidian Hub - Obsidian Publish
 
 ## Log ID

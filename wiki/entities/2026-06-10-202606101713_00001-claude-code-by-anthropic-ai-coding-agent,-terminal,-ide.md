@@ -2,30 +2,11 @@
 title: 2026-06-10-202606101713_00001-claude-code-by-anthropic-ai-coding-agent,-terminal,-ide
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-claude-code-by-anthropic-ai-coding-agent,-terminal,-ide.md"]
 confidence: medium
 ---
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-10
-log_id: 202606101713_00001
-url: https://code.claude.com
-platform: web
-content_type: webpage
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
-summary: Claude Code 是由 Anthropic 開發的 AI 編碼代理工具，提供終端機和整合開發環境功能。它能理解程式碼庫、編輯檔案、執行指令，協助開發者更快速地完成專案。
-status: unread
----
-
 # Claude Code by Anthropic | AI Coding Agent, Terminal, IDE
 
 ## Log ID

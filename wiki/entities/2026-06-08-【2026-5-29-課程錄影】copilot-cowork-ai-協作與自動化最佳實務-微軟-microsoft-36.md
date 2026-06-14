@@ -2,31 +2,11 @@
 title: 2026-06-08-【2026-5-29-課程錄影】copilot-cowork-ai-協作與自動化最佳實務-微軟-microsoft-36
 created: 2026-06-14
 updated: 2026-06-14
-type: entitie
+type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-\u30102026-5-29-\u8ab2\u7a0b\u9304\u5f71\u3011copilot-cowork-ai-\u5354\u4f5c\u8207\u81ea\u52d5\u5316\u6700\u4f73\u5be6\u52d9-\u5fae\u8edf-microsoft-36.md"]
 confidence: medium
----
-
----
-tags: [技術]
-source: LINE
-date: 2026-06-08
-url: https://www.youtube.com/watch?v=WfaDQHjkdH8
-platform: youtube
-extraction_status: ok
-needs_review: false
-summary: "此內容標題為「【2026/5/29 課程錄影】Copilot Cowork: AI 協作與自動化最佳實務--微軟 Microsoft 365 Copilot 手把手線上教學工作坊」。重點內容：今天非常榮幸可以邀请到专家技术部资深解决方案经理Thomas来为我们分享这个最近正热门的可拍可 work最快我们时间就赶紧把握把时间交给Thomas在麻烦Thomas谢谢 我们的谢谢面底大家早是我来的Thomas那我现在分享一下我的桌面 来看一下 全大家应该有看到吗 应该有看到桌面对吗 有 好谢谢你好 那我们直接开始就是接下来这应该是一个小时机内的时间了 那我会跟大家介绍一下最近刚出的口拍的新功能叫N36口拍的可 work 那可能有人听"
-status: unread
-needs_local_worker: false
-worker_status: done
-worker_type: omnichannel_md
-worker_retry_count: 0
-worker_error: ""
-worker_processed_at: 2026-06-10T16:52:54+08:00
-worker_name: mac-mini-omnichannel
----
-# 【2026/5/29 課程錄影】Copilot Cowork: AI 協作與自動化最佳實務--微軟 Microsoft 365 Copilot 手把手線上教學工作坊
+---# 【2026/5/29 課程錄影】Copilot Cowork: AI 協作與自動化最佳實務--微軟 Microsoft 365 Copilot 手把手線上教學工作坊
 
 ## 摘要
 此內容標題為「【2026/5/29 課程錄影】Copilot Cowork: AI 協作與自動化最佳實務--微軟 Microsoft 365 Copilot 手把手線上教學工作坊」。重點內容：今天非常榮幸可以邀请到专家技术部资深解决方案经理Thomas来为我们分享这个最近正热门的可拍可 work最快我们时间就赶紧把握把时间交给Thomas在麻烦Thomas谢谢 我们的谢谢面底大家早是我来的Thomas那我现在分享一下我的桌面 来看一下 全大家应该有看到吗 应该有看到桌面对吗 有 好谢谢你好 那我们直接开始就是接下来这应该是一个小时机内的时间了 那我会跟大家介绍一下最近刚出的口拍的新功能叫N36口拍的可 work 那可能有人听
