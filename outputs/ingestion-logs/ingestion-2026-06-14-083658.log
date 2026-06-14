@@ -1,0 +1,28 @@
+================================================================================
+Ingestion Log Started: 2026-06-14T08:36:58.139034
+Job Type: ingestion
+================================================================================
+
+[08:36:58 +0.0s] [INFO   ] INIT — Starting ingestion process
+[08:36:58 +0.0s] [INFO   ] CHECK — Checking raw/ folder: /Users/dannytsao/Documents/PersonalKM/raw
+[08:36:58 +0.0s] [INFO   ] INIT_SCHEMA — Loading wiki schema
+[08:36:58 +0.0s] [✅ OK   ] INIT_SCHEMA
+[08:36:58 +0.0s] [INFO   ] INIT_INDEX — Loading wiki index
+[08:36:58 +0.0s] [✅ OK   ] INIT_INDEX
+[08:36:58 +0.0s] [INFO   ] INIT_LOG — Loading wiki log
+[08:36:58 +0.0s] [✅ OK   ] INIT_LOG
+[08:36:58 +0.0s] [INFO   ] SCAN — Scanning raw/ for markdown files
+[08:36:58 +0.0s] [✅ OK   ] SCAN — Found 0 files
+[08:36:58 +0.0s] [✅ OK   ] GRAPH — Knowledge graph updated
+[08:36:58 +0.0s] [✅ OK   ] SAVE_INDEX — Wiki index saved
+[08:36:58 +0.0s] [✅ OK   ] SAVE_LOG — Wiki log saved
+
+================================================================================
+Ingestion Log Finished: 2026-06-14T08:36:58.143420
+Result: success
+Processed: 0
+Trashed: 0
+Failed: 0
+Log File: /Users/dannytsao/Documents/PersonalKM/outputs/ingestion-logs/ingestion-2026-06-14-083658.log
+================================================================================
+
