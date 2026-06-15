@@ -1,5 +1,8 @@
 ---
-tags: [技術]
+tags:
+  - tech
+  - ccswitch
+  - repo
 source: LINE
 date: 2026-06-14
 log_id: 202606142044_00002
@@ -15,7 +18,7 @@ worker_retry_count: 0
 summary: cc-switch 是一款跨平台桌面應用，整合了 Claude Code、Codex、OpenCode、OpenClaw、Gemini CLI 及 Hermes Agent 等多種工具，提供一站式助理功能。官方網站為 ccswitch.io，專案托管於 GitHub 上。
 status: unread
 ---
-
+te
 # GitHub - farion1231/cc-switch: A cross-platform desktop All-in-One assistant for Claude Code, Codex, OpenCode, OpenClaw, Gemini CLI & Hermes Agent. Only official website: ccswitch.
 
 ## Log ID
