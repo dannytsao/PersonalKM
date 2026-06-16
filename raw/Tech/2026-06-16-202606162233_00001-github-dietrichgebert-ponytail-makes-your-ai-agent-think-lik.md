@@ -1,5 +1,7 @@
 ---
-tags: [技術]
+tags:
+  - tech
+  - github
 source: LINE
 date: 2026-06-16
 log_id: 202606162233_00001

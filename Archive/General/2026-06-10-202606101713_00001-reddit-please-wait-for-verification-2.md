@@ -1,5 +1,7 @@
 ---
-tags: [待分類]
+tags:
+  - tech
+  - ralph
 source: LINE
 date: 2026-06-10
 log_id: 202606101713_00001
