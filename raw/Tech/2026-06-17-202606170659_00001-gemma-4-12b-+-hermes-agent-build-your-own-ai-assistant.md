@@ -1,5 +1,9 @@
 ---
-tags: [技術]
+tags:
+  - tech
+  - hermes
+  - Claude
+  - gemma4
 source: LINE
 date: 2026-06-17
 log_id: 202606170659_00001
