@@ -6,32 +6,35 @@ log_id: 202606172147_00001
 url: https://youtu.be/8zMDXvP9ltc
 platform: youtube
 content_type: video
-extraction_status: partial
-needs_review: true
-needs_local_worker: true
-worker_status: pending
+extraction_status: ok
+needs_review: false
+needs_local_worker: false
+worker_status: done
 worker_type: omnichannel_md
 worker_retry_count: 0
-summary: 本影片介紹Obsidian的Bases數據庫功能，說明如何使用Dataview插件來管理資料，並強調Obsidian現在也具備類似Notion的數據庫功能，提升筆記管理效率。由於無法取得影片字幕，建議直接觀看影片以獲取詳細操作說明。
+summary: 1. Obsidian 新增 Bases 數據庫功能，提供類似 Notion 的資料管理體驗，並可取代 Dataview。 2. 本文介紹 Obsidian Bases 數據庫的快速入門方法，幫助用戶更高效地組織和查詢資料。
 status: unread
+worker_error: ""
+worker_processed_at: 2026-06-19T19:48:32+08:00
+worker_name: mac-mini-omnichannel
 ---
-
 # Obsidian Bases数据库功能快速入门 | Dataview可以删了? 不用再羡慕Notion了，Obsidian也有数据库了。
 
-## Log ID
-202606172147_00001
-
 ## 摘要
-本影片介紹Obsidian的Bases數據庫功能，說明如何使用Dataview插件來管理資料，並強調Obsidian現在也具備類似Notion的數據庫功能，提升筆記管理效率。由於無法取得影片字幕，建議直接觀看影片以獲取詳細操作說明。
+1. Obsidian 新增 Bases 數據庫功能，提供類似 Notion 的資料管理體驗，並可取代 Dataview。
+2. 本文介紹 Obsidian Bases 數據庫的快速入門方法，幫助用戶更高效地組織和查詢資料。
 
 ## 重點
-- 本影片介紹Obsidian的Bases數據庫功能，說明如何使用Dataview插件來管理資料，並強調Obsidian現在也具備類似Notion的數據庫功能，提升筆記管理效率。由於無法取得影片字幕，建議直接觀看影片以獲取詳細操作說明。
+- 1. Obsidian 新增 Bases 數據庫功能，提供類似 Notion 的資料管理體驗，並可取代 Dataview。
+2. 本文介紹 Obsidian Bases 數據庫的快速入門方法，幫助用戶更高效地組織和查詢資料。
 
 ## 原始內容
-無法擷取該 YouTube 影片的字幕或逐字稿。建議直接點擊連結觀看影片以獲取詳細資訊。
+#EXTM3U #EXT-X-VERSION:3 #EXT-X-PLAYLIST-TYPE:VOD #EXT-X-TARGETDURATION:600 #EXTINF:600, https://www.youtube.com/api/timedtext?caps=asr&v=8zMDXvP9ltc&lang=zh-Hant&ip=114.36.40.37&ipbits=0&expire=1781891244&sparams=ip,ipbits,expire,caps,v&signature=136702378F74417E29F21B1BCA2FE9234D951052.370ABF8CF3F9E1F9955E8899EEDFA5D1C8B5183C&key=dg_yt0&fmt=vtt&range=0-600 #EXTINF:485, https://www.youtube.com/api/timedtext?caps=asr&v=8zMDXvP9ltc&lang=zh-Hant&ip=114.36.40.37&ipbits=0&expire=1781891244&sparams=ip,ipbits,expire,caps,v&signature=136702378F74417E29F21B1BCA2FE9234D951052.370ABF8CF3F9E1F9955E8899EEDFA5D1C8B5183C&key=dg_yt0&fmt=vtt&range=600-485 #EXT-X-ENDLIST
 
 ## 內含連結
 - https://youtu.be/8zMDXvP9ltc
+- https://www.youtube.com/api/timedtext?caps=asr&v=8zMDXvP9ltc&lang=zh-Hant&ip=114.36.40.37&ipbits=0&expire=1781891244&sparams=ip,ipbits,expire,caps,v&signature=136702378F74417E29F21B1BCA2FE9234D951052.370ABF8CF3F9E1F9955E8899EEDFA5D1C8B5183C&key=dg_yt0&fmt=vtt&range=0-600
+- https://www.youtube.com/api/timedtext?caps=asr&v=8zMDXvP9ltc&lang=zh-Hant&ip=114.36.40.37&ipbits=0&expire=1781891244&sparams=ip,ipbits,expire,caps,v&signature=136702378F74417E29F21B1BCA2FE9234D951052.370ABF8CF3F9E1F9955E8899EEDFA5D1C8B5183C&key=dg_yt0&fmt=vtt&range=600-485
 
 ## 媒體
 - 未擷取
@@ -39,8 +42,8 @@ status: unread
 ## 擷取狀態
 - 平台：youtube
 - 類型：video
-- 擷取狀態：partial
-- 需要人工確認：是
+- 擷取狀態：ok
+- 需要人工確認：否
 
 ## 原文連結
 https://youtu.be/8zMDXvP9ltc
