@@ -9,11 +9,14 @@ content_type: video
 extraction_status: partial
 needs_review: true
 needs_local_worker: true
-worker_status: pending
+worker_status: failed
 worker_type: omnichannel_md
-worker_retry_count: 0
+worker_retry_count: 1
 summary: 本影片介紹了如何實用地使用 ClaudeCode，由 Boris Cherny 主講。由於無法擷取字幕或逐字稿，建議直接觀看影片以獲取詳細教學內容。
 status: unread
+worker_error: yt_dlp_no_subtitle_text;audio_download_failed:CalledProcessError
+worker_processed_at: 2026-06-19T22:36:35+08:00
+worker_name: mac-mini-omnichannel
 ---
 
 # Practical Tips on How to use ClaudeCode By Boris Cherny
