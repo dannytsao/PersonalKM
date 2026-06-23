@@ -1,6 +1,6 @@
 # Documentation Inventory
 
-更新日期：2026-06-11
+更新日期：2026-06-23
 
 這份清單是 PersonalKM 專案文件的單一盤點表。每次新增、移除或重命名專案文件時，都要同步更新本表。
 
@@ -21,12 +21,15 @@
 
 | 文件 | 狀態 | 用途 | 更新時機 |
 |:-----|:-----|:-----|:---------|
+| `docs/llm-wiki-v2-plan.md` | Active | LLM-Wiki v2 完整計畫、Phase 規格、Exit Conditions、執行紀錄 | v2 迭代時 |
 | `docs/mac-mini-omnichannel-worker.md` | Active | Mac mini local worker 操作、安裝與排查 | worker 行為或安裝流程改變時 |
+| `scripts/migrate_wiki_to_v2.py` | Active | LLM-Wiki v2 一次性遷移腳本（已用過，未來 Phase 6 可能再用） | 需再次遷移時 |
+| `scripts/fix_broken_wikilinks.py` | Active | 修復失效 wikilinks 腳本 | wikilink 問題時 |
 | `outputs/ingestion-reports/*.md` | Generated | 自動 ingestion 報告 | 系統自動產生 |
 | `outputs/health-check*.txt` | Generated | 健康檢查輸出 | 系統自動產生 |
 | `raw/**/*.md` | Knowledge Note | LINE Bot 或 worker 捕獲的 raw notes | 系統自動產生或人工整理 |
-| `wiki/**/*.md` | Knowledge Note | 整理後的 wiki notes | ingestion 或人工整理 |
-| `Archive/**/*.md` | Knowledge Note | 已歸檔或歷史 notes | housekeeping 或人工整理 |
+| `wiki/**/*.md` | Knowledge Note | 整理後的 wiki notes（LLM-Wiki v2 格式） | ingestion 或人工整理 |
+| `archive/**/*.md` | Knowledge Note | 已歸檔或歷史 notes | housekeeping 或人工整理 |
 | `Trash/**/*.trash` | Trash | 不再視為 active note 的資料 | housekeeping 或人工整理 |
 
 ## Removed Root Documents
@@ -48,8 +51,14 @@
 | `IMPLEMENTATION-DELIVERY.md` | 交付報告已結案 | `CHANGELOG.md` |
 | `INBOX-MIGRATION-LOG.md` | 遷移紀錄已結案 | `CHANGELOG.md` |
 | `KARPATHY-ENHANCEMENT-SUMMARY.md` | 初期分析已結案 | `CHANGELOG.md` |
+| `LLM-WIKI-BOT-INTEGRATION-PLAN.md` | LLM-Wiki v2 完成 | `docs/llm-wiki-v2-plan.md` |
+| `LLM-WIKI-DEPLOYMENT-GUIDE.md` | LLM-Wiki v2 完成 | `docs/llm-wiki-v2-plan.md` |
+| `LLMWIKI-INTEGRATION-CHANGENOTE.md` | LLM-Wiki v2 完成 | `CHANGELOG.md` |
+| `OPTION-B-COMPLETE.md` | Option B 交付完成 | `CHANGELOG.md` |
+| `OPTION-B-SUMMARY.md` | Option B 交付完成 | `CHANGELOG.md` |
 | `PHASE-1-4-COMPLETE.md` | 完成報告已結案 | `CHANGELOG.md` |
 | `PHASE-1-4-ROADMAP.md` | Roadmap 已完成 | `CHANGELOG.md` |
+| `PHASE-4-MONITORING-CHECKLIST.md` | Phase 4 一次性監控完成 | `CHANGELOG.md` |
 | `PREVENTION-SYSTEM-COMPLETE.md` | 完成報告已結案 | `CHANGELOG.md` |
 | `QUICK-REFERENCE.md` | 舊 quick reference 已由 README 取代 | `README.md` |
 | `SYSTEM-SUMMARY.md` | 完成摘要已結案 | `README.md` |

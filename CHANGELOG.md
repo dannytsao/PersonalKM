@@ -1,6 +1,47 @@
 # Changelog
 
-所有已結案的實施報告、一次性分析與完成摘要，統一整理到這份 changelog。根目錄只保留仍需要維護的活文件。
+All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
+
+## 2026-06-23
+
+### Added
+
+- **LLM-Wiki v2** — full 5-phase upgrade to the knowledge ingestion pipeline.
+
+  New `bot/` modules:
+  - `llm_summarizer.py` — AI distillation (MiniMax or fallback) + `distill_to_markdown()` + `detect_entity_mentions()`. Replaces long raw transcripts with scannable 300–500 char summaries.
+  - `entity_dedup.py` — `EntityRegistry` indexes 323 existing wiki pages. New captures about the same entity are merged into the existing page instead of creating duplicates.
+  - `wikilinks.py` — `WikilinkManager` adds bidirectional links. New page → links to entity; entity page → backlink to new page.
+  - `ingestion_v2.py` — integrated pipeline wiring all 4 phases together. Runs in Render cron every Saturday 23:00 UTC.
+
+  New scripts:
+  - `scripts/migrate_wiki_to_v2.py` — one-time migration of 375 existing wiki pages to distilled format (536,571 chars saved).
+  - `scripts/fix_broken_wikilinks.py` — removed orphan wikilinks from 215 wiki files (42,479 chars saved).
+
+  `bot/config.py` — added `MINIMAX_API_KEY` and `MINIMAX_MODEL` environment variables.
+
+- **Phase 2 migration**: all 375 wiki pages now distilled. Bodies reduced ~80–85% while preserving `sources:`, `tags:`, frontmatter. Original content untouched in `raw/`.
+
+- **Phase 3 migration**: entity deduplication index built. 323 entities indexed. Confirmed `claude-code` ↔ `Claude Code` fuzzy matching works.
+
+- **Phase 4 migration**: bidirectional wikilinks active. 0 broken links across 376 wiki files. Health check: **healthy**.
+
+- **`docs/llm-wiki-v2-plan.md`** — full v2 plan with phase specs, exit conditions, rollback plan, and execution log.
+
+### Changed
+
+- `bot/ingestion.py` remains v1 (legacy). v2 lives in `bot/ingestion_v2.py`. Both can coexist during transition.
+- Cron schedule shifted from **Sunday 09:00 UTC+8** to **Saturday 23:00 UTC** (Sunday 07:00 UTC+8).
+- Ingestion now skips files with `confidence: low` pattern match, empty content, or 404-style content before processing.
+
+### Removed
+
+- `LLM-WIKI-BOT-INTEGRATION-PLAN.md` — superseded by `docs/llm-wiki-v2-plan.md`.
+- `LLM-WIKI-DEPLOYMENT-GUIDE.md` — content moved to plan document.
+- `OPTION-B-COMPLETE.md` — delivery complete.
+- `OPTION-B-SUMMARY.md` — delivery complete.
+- `PHASE-4-MONITORING-CHECKLIST.md` — one-time monitoring done.
+- `LLMWIKI-INTEGRATION-CHANGENOTE.md` — superseded by this changelog entry.
 
 ## 2026-06-11
 
