@@ -105,7 +105,54 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 - 雙向 wikilink
 - health check 驗證
 
-### 9. Housekeeping archive / trash consistency — 待做
+### 9. Canonical Entity Pages + True Dedup — Phase 6 待做 ⚠️
+
+目標：建立真正的 entity canonical pages（如 `docker.md`、`claude-code.md`），而非僅有長檔名的 entity-indexed 頁面。
+
+**現況問題（2026-06-23 評估）：**
+- Phase 3 建立了 `EntityRegistry`（索引 324 筆），但只索引了現有頁面的**檔名**，非真正的實體名稱
+- 零個乾淨的 canonical entity page（無 `docker.md`、`claude-code.md` 等）
+- 381 個 wiki 頁面中，374 個是孤兒（0 個 incoming backlinks）
+- 相同主題的 capture → 產生 2 個長檔名頁面，而非合併到同一個 entity page
+- Karpathy 原文：「A single new source might trigger writes to **10–15 wiki pages**」，我們的 Phase 3 還沒做到這點
+
+**Karpathy vs 我們的對比：**
+| | Karpathy LLM Wiki | PersonalKM LLM-Wiki v2 |
+|--|--|--|
+| Entity dedup | 建立 canonical `docker.md` | 索引 324 個長檔名（0 個 canonical） |
+| 跨頁影響 | 1 個 source → 10-15 個 wiki 頁面更新 | 1 個 source → 1 個新 wiki 頁面 |
+| 雙向連結 | 已實現（backlinks + outbound） | 374/381 頁面是 orphan |
+| Query → wiki write-back | Karpathy：好問題的答案寫回 wiki | 未實現 |
+
+**Phase 6 具體工作：**
+
+1. **建立 canonical entity 列表**
+   - 從現有 381 個 wiki 頁面內容中提取真正的實體名（如從 `docker-tutorial.md` body 找到 `Docker`）
+   - 建立 `docker.md`、`claude-code.md`、`github-actions.md` 等 canonical 頁面
+   - 預計建立 50-100 個 canonical entity page（覆蓋最常見的主題）
+
+2. **重構 Phase 3 dedup 邏輯**
+   - `EntityRegistry` 改為基於 entity 名稱（而非檔名）做 match/merge
+   - 新 capture 進來時，查 registry → 已有 entity → 追加到 canonical page；無 entity → 建立新 canonical page
+   - 不再創建 `2026-06-23-docker-tutorial-xxx.md` 這種長檔名
+
+3. **重寫 backfill 脚本**
+   - 用 `scripts/backfill_wikilinks.py` 的架構，但改為：識別 page 內容中的 entity mention → 連結到 canonical entity page
+   - 目標：多數頁面都有 ≥1 個 incoming backlink
+
+4. **可選：Query → Write-back pipeline**
+   - `/query <問題>`：搜尋 wiki，回答，並問「要不要把這個結論寫進 wiki？」
+   - 建立「好問題的答案沉澱到 wiki」的飛輪
+
+**Exit Conditions：**
+- `docker.md`、`claude-code.md`、`hermes-agent.md` 等 ≥20 個 canonical entity page 存在
+- ≥80% wiki 頁面有 ≥1 個 incoming backlink（目前 0%）
+- 相同主題的 2 個 capture → 合併進同一個 canonical page（非建立 2 個檔案）
+- `scripts/backfill_wikilinks.py` 可完整重建所有 wikilinks
+
+**預估規模：** 中等 — 需要重新設計 Phase 3 的 dedup 策略，但不需要改 `llm_summarizer.py` 或 `wikilinks.py` 的核心邏輯。
+
+### 10. Housekeeping archive / trash consistency — 待做
 
 目標：維持 `status: done` 自動 archive，`status: X` 自動移到 Trash，且 GitHub/Obsidian 狀態一致。
 
@@ -129,6 +176,7 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 最值得優先做的是：
 
-1. Layer 2 content cleaning，直接改善 raw note 品質。
-2. Food structured extraction，因為你最近的實際使用痛點最多。
-3. Housekeeping report，確保 archive/trash 自動化值得信任。
+1. **Phase 6：Canonical Entity Pages** — 根本改善 wiki 連結密度，讓 Karpathy 的 entity dedup 真正落地（見 P3#9）
+2. Layer 2 content cleaning，直接改善 raw note 品質。
+3. Food structured extraction，因為你最近的實際使用痛點最多。
+4. Housekeeping report，確保 archive/trash 自動化值得信任。
