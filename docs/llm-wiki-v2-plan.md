@@ -275,7 +275,7 @@ git checkout <last-good-commit-hash> -- outputs/
 ```
 [X] Phase 1: MiniMax Client      ✅ COMPLETE (commit 33dec1a)
 [X] Phase 2: AI Summarization    ✅ COMPLETE (commit c51e705)
-[ ] Phase 3: Entity Deduplication
+[X] Phase 3: Entity Deduplication ✅ COMPLETE (commit 5b5c739)
 [ ] Phase 4: Bidirectional Wikilinks
 [ ] Phase 5: Full Integration
 ```
