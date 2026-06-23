@@ -1,8 +1,10 @@
 # PersonalKM Improvement Backlog
 
-更新日期：2026-06-11
+更新日期：2026-06-23
 
 這份文件整理目前 LINE Bot + Obsidian 個人知識系統的後續改善事項。優先順序以「降低漏收、提升 raw note 品質、讓 Obsidian 更可用」為主。
+
+已完成的 LLM-Wiki v2 已移至 `docs/llm-wiki-v2-plan.md`。
 
 ## P0 - Reliability / 不漏收
 
@@ -26,7 +28,7 @@
 
 ## P1 - Raw Quality / 進 raw 前與 raw 內清理
 
-### 3. Layer 1 URL hygiene - 已完成
+### 3. Layer 1 URL hygiene — 已完成 ✅
 
 狀態：已完成，2026-06-11。
 
@@ -38,7 +40,7 @@
 後續可調整：
 - 若仍有無關 URL 進入 raw，收集實例後加入 blocklist 或 allowlist 規則。
 
-### 4. Layer 2 content cleaning - 待做
+### 4. Layer 2 content cleaning — 待做
 
 目標：即使主 URL 是正確的，也要在「擷取到的頁面正文」進入 note body 前，移除和主旨無關的廣告、推薦文、導購區塊、頁尾導覽、分享按鈕、無關外部連結。
 
@@ -54,7 +56,7 @@
 - 保留一份 `raw_source_excerpt` 或 `cleaning_notes`，方便追查清理是否過度。
 - 加測試案例：文章主文 + 廣告區塊 + 延伸閱讀，確認只保留主文與必要來源連結。
 
-### 5. Food note structured extraction - 進行中/待強化
+### 5. Food note structured extraction — 待強化
 
 目標：美食類 note 穩定抽出店名、縣市、地址、Google Maps 連結；多店家貼文要支援多筆店家資訊。
 
@@ -70,9 +72,11 @@
 
 ## P2 - Enrichment / 補強平台內容
 
-### 6. YouTube deep summary upgrade
+### 6. YouTube deep summary upgrade — 評估中
 
 目標：YouTube 不只摘要一小段，而是輸出更可回顧的知識筆記。
+
+LLM-Wiki v2 的 `llm_summarizer.py` 已有基礎濃縮，Phase 6 可考慮深化輸出格式。
 
 建議輸出：
 - 影片一句話結論。
@@ -82,7 +86,7 @@
 - 關鍵名詞與相關工具。
 - 適合放入 wiki 的概念節點。
 
-### 7. Instagram / Threads / X local recovery
+### 7. Instagram / Threads / X local recovery — 待做
 
 目標：當 Render 只能抓到 partial metadata 時，由本機 worker 或未來 cloud-safe worker 補強。
 
@@ -93,16 +97,15 @@
 
 ## P3 - Organization / Obsidian 可用性
 
-### 8. Raw to wiki ingestion quality
+### 8. Raw to wiki ingestion quality — 已大幅改善 ✅ (LLM-Wiki v2)
 
-目標：讓 `raw/` 內 canonical notes 更穩定整理到 `wiki/entities`、`wiki/concepts`、`wiki/sources`。
+LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
+- AI 濃縮摘要（80-85% body 壓縮）
+- entity 去重合併
+- 雙向 wikilink
+- health check 驗證
 
-建議做法：
-- 增加 ingestion report：新增、已整理、失敗、待人工確認。
-- 將相同主題或同一工具的 note 連回既有 wiki node。
-- 建立「同 folder 關聯圖」用的 tags/frontmatter convention。
-
-### 9. Housekeeping archive / trash consistency
+### 9. Housekeeping archive / trash consistency — 待做
 
 目標：維持 `status: done` 自動 archive，`status: X` 自動移到 Trash，且 GitHub/Obsidian 狀態一致。
 
@@ -113,7 +116,7 @@
 
 ## P4 - Search / Retrieval
 
-### 10. Query interface / personal knowledge search
+### 10. Query interface / personal knowledge search — Phase 6 候選
 
 目標：能用問題查自己的 raw/wiki 知識庫，而不是只靠 Obsidian 手動搜尋。
 
