@@ -1,4 +1,4 @@
----
+
 
 title: 2026-06-07-build-an-ai-second-brain-knowledge-base-(step-by-step)
 created: 2026-06-14
@@ -26,3 +26,7 @@ contested: false
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
+
+## See also
+
+- [[knowledge-graph]]

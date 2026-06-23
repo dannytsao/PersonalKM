@@ -1,4 +1,4 @@
----
+
 
 title: 2026-06-08-official-hermes-desktop-is-finally-here
 created: 2026-06-14
@@ -21,3 +21,7 @@ contested: false
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
+
+## See also
+
+- [[knowledge-graph]]

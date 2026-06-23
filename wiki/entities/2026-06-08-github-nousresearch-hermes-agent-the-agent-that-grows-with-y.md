@@ -1,4 +1,4 @@
----
+
 
 title: 2026-06-08-github-nousresearch-hermes-agent-the-agent-that-grows-with-y
 created: 2026-06-14
@@ -21,3 +21,7 @@ NousResearch 開發的 hermes-agent 是一個可隨使用者需求成長的智�
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
+
+## See also
+
+- [[knowledge-graph]]

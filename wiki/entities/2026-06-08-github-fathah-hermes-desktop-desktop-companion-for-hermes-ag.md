@@ -1,4 +1,4 @@
----
+
 
 title: 2026-06-08-github-fathah-hermes-desktop-desktop-companion-for-hermes-ag
 created: 2026-06-14
@@ -21,3 +21,7 @@ contested: false
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
+
+## See also
+
+- [[knowledge-graph]]

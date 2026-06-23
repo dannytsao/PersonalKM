@@ -421,10 +421,11 @@ summary: "**重點摘要：**
 
 詳細計畫與執行紀錄：`docs/llm-wiki-v2-plan.md`。
 
-### ⏰ Phase 6: 知識圖譜與檢索 (規劃中)
-- [ ] Entity relationships 圖譜
-- [ ] Query interface / 個人知識搜尋
-- [ ] 決策點：運行 1 個月後決定
+### ⏰ Phase 6: Canonical Entity Architecture (規劃中)
+- [ ] 建立真正的 canonical entity pages（`docker.md`、`claude-code.md` 等），而非長檔名頁面
+- [ ] 重構 Phase 3 dedup：相同 topic → 合併到 canonical page，非建立新檔
+- [ ] 目標：≥80% wiki 頁面有 ≥1 個 incoming backlink（目前 0%）
+- 詳見 `IMPROVEMENT-BACKLOG.md` P3#9
 
 後續改善事項統一追蹤於 `IMPROVEMENT-BACKLOG.md`。
 

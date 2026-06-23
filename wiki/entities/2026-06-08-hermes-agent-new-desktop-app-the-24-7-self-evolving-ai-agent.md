@@ -1,4 +1,4 @@
----
+
 
 title: 2026-06-08-hermes-agent-new-desktop-app-the-24-7-self-evolving-ai-agent
 created: 2026-06-14
@@ -21,3 +21,7 @@ Hermes Agent 是一個持續進化的自主AI系統，具備長期記憶、自�
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
+
+## See also
+
+- [[knowledge-graph]]

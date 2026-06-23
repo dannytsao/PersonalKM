@@ -1,4 +1,4 @@
----
+
 title: 2026-06-08-google-ai-mode-share-2
 created: 2026-06-14
 updated: 2026-06-23
@@ -18,3 +18,6 @@ contested: false
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
 
+## See also
+
+- [[knowledge-graph]]

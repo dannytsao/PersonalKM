@@ -1,4 +1,4 @@
----
+
 
 title: 2026-06-13-202606131148_00001-running-a-local-ai-inside-obsidian-with-ollama
 created: 2026-06-14
@@ -21,3 +21,7 @@ contested: false
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
+
+## See also
+
+- [[knowledge-graph]]
