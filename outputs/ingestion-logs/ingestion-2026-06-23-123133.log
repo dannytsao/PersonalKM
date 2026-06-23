@@ -1,0 +1,28 @@
+================================================================================
+Ingestion Log Started: 2026-06-23T12:31:33.379059
+Job Type: ingestion
+================================================================================
+
+[12:31:33 +0.0s] [INFO   ] INIT — Starting ingestion process
+[12:31:33 +0.0s] [INFO   ] CHECK — Checking raw/ folder: raw
+[12:31:33 +0.0s] [INFO   ] INIT_SCHEMA — Loading wiki schema
+[12:31:33 +0.0s] [✅ OK   ] INIT_SCHEMA
+[12:31:33 +0.0s] [INFO   ] INIT_INDEX — Loading wiki index
+[12:31:33 +0.0s] [✅ OK   ] INIT_INDEX
+[12:31:33 +0.0s] [INFO   ] INIT_LOG — Loading wiki log
+[12:31:33 +0.0s] [✅ OK   ] INIT_LOG
+[12:31:33 +0.0s] [INFO   ] SCAN — Scanning raw/ for markdown files
+[12:31:33 +0.0s] [✅ OK   ] SCAN — Found 104 files
+[12:31:33 +0.2s] [✅ OK   ] GRAPH — Knowledge graph updated
+[12:31:33 +0.2s] [✅ OK   ] SAVE_INDEX — Wiki index saved
+[12:31:33 +0.2s] [✅ OK   ] SAVE_LOG — Wiki log saved
+
+================================================================================
+Ingestion Log Finished: 2026-06-23T12:31:33.551392
+Result: completed_with_issues
+Processed: 103
+Trashed: 1
+Failed: 0
+Log File: outputs/ingestion-logs/ingestion-2026-06-23-123133.log
+================================================================================
+
