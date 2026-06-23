@@ -24,6 +24,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
     from bot.ingestion import ingest_raw_to_wiki, generate_ingestion_report
+    from bot.notification import (
+        notify_ingestion_start,
+        notify_ingestion_success,
+        notify_ingestion_failure
+    )
 except ImportError as e:
     logger.error(f"Failed to import ingestion module: {e}")
     sys.exit(1)
@@ -117,7 +122,14 @@ def main_with_retry():
             return 1
     
     # Run ingestion
+    start_time = time.time()
     logger.info("Starting ingestion: raw/ → wiki/")
+    
+    # Count files before processing
+    raw_path = vault_path / "raw"
+    file_count = len(list(raw_path.glob("**/*.md"))) if raw_path.exists() else 0
+    notify_ingestion_start(str(vault_path), file_count)
+    
     try:
         result = ingest_raw_to_wiki(vault_path)
         
@@ -128,6 +140,7 @@ def main_with_retry():
         report_path = save_ingestion_report(vault_path, result)
         
         # Check status
+        duration = time.time() - start_time
         if result.get("status") == "success":
             logger.info("=" * 80)
             logger.info("✅ INGESTION JOB COMPLETED SUCCESSFULLY")
@@ -138,12 +151,24 @@ def main_with_retry():
             logger.info(f"Report: {report_path}")
             if "log_file" in result:
                 logger.info(f"Running log: {result['log_file']}")
+            
+            # Send success notification
+            notify_ingestion_success(
+                str(vault_path),
+                result.get('processed', 0),
+                result.get('failed', 0),
+                duration
+            )
             return 0
         else:
             logger.error("=" * 80)
             logger.error("❌ INGESTION JOB FAILED")
             logger.error("=" * 80)
-            logger.error(f"Error: {result.get('message', 'Unknown error')}")
+            error_msg = result.get('message', 'Unknown error')
+            logger.error(f"Error: {error_msg}")
+            
+            # Send failure notification
+            notify_ingestion_failure(str(vault_path), error_msg)
             return 1
     
     except Exception as e:
@@ -151,6 +176,9 @@ def main_with_retry():
         logger.error("❌ INGESTION JOB CRASHED")
         logger.error("=" * 80)
         logger.exception(f"Unexpected error: {e}")
+        
+        # Send failure notification
+        notify_ingestion_failure(str(vault_path), str(e))
         return 1
 
 
