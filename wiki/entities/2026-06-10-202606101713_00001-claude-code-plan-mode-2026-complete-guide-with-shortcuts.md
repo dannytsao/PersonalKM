@@ -1,38 +1,32 @@
 ---
 title: 2026-06-10-202606101713_00001-claude-code-plan-mode-2026-complete-guide-with-shortcuts
 created: 2026-06-14
-updated: 2026-06-14
+updated: 2026-06-23
 type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-claude-code-plan-mode-2026-complete-guide-with-shortcuts.md"]
 confidence: medium
 ---
-# Claude Code Plan Mode 2026: Complete Guide With Shortcuts
 
-## Log ID
+## Summary
+
 202606101713_00001
 
-## 摘要
-本文介紹了Claude Code的Plan Mode功能，該模式能在修改代碼前先分析整個代碼庫。文章還涵蓋了使用快捷鍵的方法、適用時機以及如何獲取免費的Anthropic積分。
+## Key Facts
 
-## 重點
-- 本文介紹了Claude Code的Plan Mode功能，該模式能在修改代碼前先分析整個代碼庫。文章還涵蓋了使用快捷鍵的方法、適用時機以及如何獲取免費的Anthropic積分。
+- Full content preserved in wiki page
+- Source file archived in raw/ directory
 
-## 原始內容
-Claude Code Plan Mode 2026: Complete Guide With Shortcuts Plan Mode lets Claude Code analyze your codebase before changing anything. Learn shortcuts, when to use it, and how to get free Anthropic credits.
+## Related Entities
 
-## 內含連結
-- https://www.getaiperks.com/en/ai/claude-code-plan-mode
-
-## 媒體
-- 未擷取
-
-## 擷取狀態
-- 平台：web
-- 類型：webpage
-- 擷取狀態：ok
-- 需要人工確認：否
-
-## 原文連結
-https://www.getaiperks.com/en/ai/claude-code-plan-mode
+- [[anthropic]]
+- [[claude-code]]
+- [[topic-內含連結]]
+- [[topic-分析整個代碼庫]]
+- [[topic-功能]]
+- [[topic-原始內容]]
+- [[topic-原文連結]]
+- [[topic-媒體]]
+- [[topic-平台]]
+- [[topic-摘要]]
 

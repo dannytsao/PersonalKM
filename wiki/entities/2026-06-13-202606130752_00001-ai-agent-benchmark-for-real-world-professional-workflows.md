@@ -1,38 +1,32 @@
 ---
 title: 2026-06-13-202606130752_00001-ai-agent-benchmark-for-real-world-professional-workflows
 created: 2026-06-14
-updated: 2026-06-14
+updated: 2026-06-23
 type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606130752_00001-ai-agent-benchmark-for-real-world-professional-workflows.md"]
 confidence: medium
 ---
-# AI Agent Benchmark for Real-World Professional Workflows
 
-## Log ID
+## Summary
+
 202606130752_00001
 
-## 摘要
-Agents' Last Exam 是一個評估 AI 代理在長期專業工作流程中表現的基準，涵蓋金融、機器人、生物信息學、媒體等多個行業，並且結果可驗證。
+## Key Facts
 
-## 重點
-- Agents' Last Exam 是一個評估 AI 代理在長期專業工作流程中表現的基準，涵蓋金融、機器人、生物信息學、媒體等多個行業，並且結果可驗證。
+- Full content preserved in wiki page
+- Source file archived in raw/ directory
 
-## 原始內容
-Agents' Last Exam evaluates AI agents on long-horizon professional workflows with verifiable outcomes across industries such as finance, robotics, bioinformatics, media, and more.
+## Related Entities
 
-## 內含連結
-- https://agents-last-exam.org/
-
-## 媒體
-- 未擷取
-
-## 擷取狀態
-- 平台：web
-- 類型：webpage
-- 擷取狀態：ok
-- 需要人工確認：否
-
-## 原文連結
-https://agents-last-exam.org/
+- [[topic-並且結果可驗證]]
+- [[topic-中表現的基準]]
+- [[topic-代理在長期專業工作流程]]
+- [[topic-內含連結]]
+- [[topic-原始內容]]
+- [[topic-原文連結]]
+- [[topic-媒體]]
+- [[topic-媒體等多個行業]]
+- [[topic-平台]]
+- [[topic-摘要]]
 

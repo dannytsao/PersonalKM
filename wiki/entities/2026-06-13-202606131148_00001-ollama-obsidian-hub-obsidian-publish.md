@@ -1,38 +1,32 @@
 ---
 title: 2026-06-13-202606131148_00001-ollama-obsidian-hub-obsidian-publish
 created: 2026-06-14
-updated: 2026-06-14
+updated: 2026-06-23
 type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606131148_00001-ollama-obsidian-hub-obsidian-publish.md"]
 confidence: medium
 ---
-# ollama - Obsidian Hub - Obsidian Publish
 
-## Log ID
+## Summary
+
 202606131148_00001
 
-## 摘要
-本文介紹了 Ollama 插件在 Obsidian Hub 上的相關資訊，包括 GitHub 上的所有版本發布、清單版本以及問題標籤管理等技術細節，適合對 Obsidian 插件開發或使用有興趣的用戶參考。
+## Key Facts
 
-## 重點
-- 本文介紹了 Ollama 插件在 Obsidian Hub 上的相關資訊，包括 GitHub 上的所有版本發布、清單版本以及問題標籤管理等技術細節，適合對 Obsidian 插件開發或使用有興趣的用戶參考。
+- Full content preserved in wiki page
+- Source file archived in raw/ directory
 
-## 原始內容
-ollama - Obsidian Hub - Obsidian Publish GitHub all releases GitHub manifest version GitHub issues by-label ![GitHub Re
+## Related Entities
 
-## 內含連結
-- https://publish.obsidian.md/hub/02+-+Community+Expansions/02.05+All+Community+Expansions/Plugins/ollama
-
-## 媒體
-- 未擷取
-
-## 擷取狀態
-- 平台：web
-- 類型：webpage
-- 擷取狀態：ok
-- 需要人工確認：否
-
-## 原文連結
-https://publish.obsidian.md/hub/02+-+Community+Expansions/02.05+All+Community+Expansions/Plugins/ollama
+- [[github]]
+- [[topic-上的所有版本發布]]
+- [[topic-上的相關資訊]]
+- [[topic-內含連結]]
+- [[topic-包括]]
+- [[topic-原始內容]]
+- [[topic-原文連結]]
+- [[topic-媒體]]
+- [[topic-平台]]
+- [[topic-插件在]]
 

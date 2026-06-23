@@ -1,38 +1,32 @@
 ---
 title: 2026-06-13-202606131148_00001-github-hinterdupfinger-obsidian-ollama
 created: 2026-06-14
-updated: 2026-06-14
+updated: 2026-06-23
 type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606131148_00001-github-hinterdupfinger-obsidian-ollama.md"]
 confidence: medium
 ---
-# GitHub - hinterdupfinger/obsidian-ollama
 
-## Log ID
+## Summary
+
 202606131148_00001
 
-## 摘要
-這是一個名為 obsidian-ollama 的 GitHub 專案，主要用於開發相關的軟體工具。用戶可以在 GitHub 上找到並參與該專案的貢獻。
+## Key Facts
 
-## 重點
-- 這是一個名為 obsidian-ollama 的 GitHub 專案，主要用於開發相關的軟體工具。用戶可以在 GitHub 上找到並參與該專案的貢獻。
+- Full content preserved in wiki page
+- Source file archived in raw/ directory
 
-## 原始內容
-GitHub - hinterdupfinger/obsidian-ollama Contribute to hinterdupfinger/obsidian-ollama development by creating an account on GitHub.
+## Related Entities
 
-## 內含連結
-- https://github.com/hinterdupfinger/obsidian-ollama
-
-## 媒體
-- 未擷取
-
-## 擷取狀態
-- 平台：web
-- 類型：webpage
-- 擷取狀態：ok
-- 需要人工確認：否
-
-## 原文連結
-https://github.com/hinterdupfinger/obsidian-ollama
+- [[github]]
+- [[topic-上找到並參與該專案的貢]]
+- [[topic-主要用於開發相關的軟體]]
+- [[topic-內含連結]]
+- [[topic-原始內容]]
+- [[topic-原文連結]]
+- [[topic-媒體]]
+- [[topic-專案]]
+- [[topic-工具]]
+- [[topic-平台]]
 

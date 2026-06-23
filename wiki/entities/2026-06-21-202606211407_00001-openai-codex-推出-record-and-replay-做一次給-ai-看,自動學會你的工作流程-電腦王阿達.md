@@ -8,50 +8,25 @@ sources: ["raw/Tech/2026-06-21-202606211407_00001-openai-codex-\u63a8\u51fa-reco
 confidence: medium
 ---
 
----
-tags: [技術]
-source: LINE
-date: 2026-06-21
-log_id: 202606211407_00001
-url: https://www.koc.com.tw/archives/646598
-platform: web
-content_type: webpage
-extraction_status: ok
-needs_review: false
-needs_local_worker: false
-worker_status: not_required
-worker_type: none
-worker_retry_count: 0
-summary: OpenAI Codex 推出了 Record and Replay 功能，讓使用者只需示範一次工作流程，AI 就能自動學會並執行，無需撰寫複雜的提示語句。這項技術大幅簡化了與 AI 互動的過程，提高工作效率。
-status: unread
----
+## Summary
 
-# OpenAI Codex 推出 Record and Replay：做一次給 AI 看，自動學會你的工作流程 - 電腦王阿達
-
-## Log ID
 202606211407_00001
 
-## 摘要
-OpenAI Codex 推出了 Record and Replay 功能，讓使用者只需示範一次工作流程，AI 就能自動學會並執行，無需撰寫複雜的提示語句。這項技術大幅簡化了與 AI 互動的過程，提高工作效率。
+## Key Facts
 
-## 重點
-- OpenAI Codex 推出了 Record and Replay 功能，讓使用者只需示範一次工作流程，AI 就能自動學會並執行，無需撰寫複雜的提示語句。這項技術大幅簡化了與 AI 互動的過程，提高工作效率。
+- Full content preserved in wiki page
+- Source file archived in raw/ directory
 
-## 原始內容
-OpenAI Codex 推出 Record and Replay：做一次給 AI 看，自動學會你的工作流程 - 電腦王阿達 這句話精準描述了 Record and Replay 的定位：不是要你寫 prompt 教 AI 做事，而是直接「示範」一次，AI 自己學。
+## Related Entities
 
-## 內含連結
-- https://www.koc.com.tw/archives/646598
-
-## 媒體
-- 未擷取
-
-## 擷取狀態
-- 平台：web
-- 類型：webpage
-- 擷取狀態：ok
-- 需要人工確認：否
-
-## 原文連結
-https://www.koc.com.tw/archives/646598
+- [[openai]]
+- [[topic-一次]]
+- [[topic-不是要你寫]]
+- [[topic-互動的過程]]
+- [[topic-作流程]]
+- [[topic-做一次給]]
+- [[topic-做事]]
+- [[topic-內含連結]]
+- [[topic-功能]]
+- [[topic-原始內容]]
 

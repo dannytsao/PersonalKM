@@ -1,20 +1,19 @@
 ---
 title: 2026-06-08-202606081207_00001-wikipedia,-the-free-encyclopedia
 created: 2026-06-14
-updated: 2026-06-14
+updated: 2026-06-23
 type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/General/2026-06-08-202606081207_00001-wikipedia,-the-free-encyclopedia.md"]
 confidence: medium
 ---
-# Wikipedia, the free encyclopedia
 
-## Log ID
+## Summary
+
 202606081207_00001
 
-## 摘要
-Wikipedia 是一個自由的百科全書，提供廣泛的知識和資訊。它是一個開放編輯的平台，讓全球用戶共同貢獻內容。
+## Key Facts
 
-## 原文連結
-https://en.wikipedia.org
+- Full content preserved in wiki page
+- Source file archived in raw/ directory
 

@@ -1,38 +1,32 @@
 ---
 title: 2026-06-10-202606101713_00001-ralph-wiggum-loop-autonomous-coding-with-fresh-context
 created: 2026-06-14
-updated: 2026-06-14
+updated: 2026-06-23
 type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-ralph-wiggum-loop-autonomous-coding-with-fresh-context.md"]
 confidence: medium
 ---
-# Ralph Wiggum Loop: Autonomous Coding with Fresh Context
 
-## Log ID
+## Summary
+
 202606101713_00001
 
-## 摘要
-本文介紹了名為 Ralph Wiggum Loop 的技術，該技術允許 AI 代理在獲取新鮮上下文的情況下自主生成程式碼。文章以 Ralph Wiggum 這一角色命名，並解釋了該方法的運作原理。
+## Key Facts
 
-## 重點
-- 本文介紹了名為 Ralph Wiggum Loop 的技術，該技術允許 AI 代理在獲取新鮮上下文的情況下自主生成程式碼。文章以 Ralph Wiggum 這一角色命名，並解釋了該方法的運作原理。
+- Full content preserved in wiki page
+- Source file archived in raw/ directory
 
-## 原始內容
-Ralph Wiggum Loop: Autonomous Coding with Fresh Context Ralph Wiggum eats glue. He's the namesake of a technique that lets AI agents generate code autonomously. Here's how the Ralph Wiggum Loop works.
+## Related Entities
 
-## 內含連結
-- https://www.codecentric.de/en/knowledge-hub/blog/the-ralph-wiggum-loop-autonomous-code-generation-with-a-fresh-context
-
-## 媒體
-- 未擷取
-
-## 擷取狀態
-- 平台：web
-- 類型：webpage
-- 擷取狀態：ok
-- 需要人工確認：否
-
-## 原文連結
-https://www.codecentric.de/en/knowledge-hub/blog/the-ralph-wiggum-loop-autonomous-code-generation-with-a-fresh-context
+- [[topic-並解釋了該方法的運作原]]
+- [[topic-代理在獲取新鮮上下文的]]
+- [[topic-內含連結]]
+- [[topic-原始內容]]
+- [[topic-原文連結]]
+- [[topic-媒體]]
+- [[topic-平台]]
+- [[topic-情況下自主生成程式碼]]
+- [[topic-摘要]]
+- [[topic-擷取狀態]]
 

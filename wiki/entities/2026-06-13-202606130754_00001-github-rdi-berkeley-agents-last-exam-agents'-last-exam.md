@@ -1,38 +1,32 @@
 ---
 title: 2026-06-13-202606130754_00001-github-rdi-berkeley-agents-last-exam-agents'-last-exam
 created: 2026-06-14
-updated: 2026-06-14
+updated: 2026-06-23
 type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606130754_00001-github-rdi-berkeley-agents-last-exam-agents'-last-exam.md"]
 confidence: medium
 ---
-# GitHub - rdi-berkeley/agents-last-exam: Agents' Last Exam
 
-## Log ID
+## Summary
+
 202606130754_00001
 
-## 摘要
-這是一個名為 Agents' Last Exam 的 GitHub 專案，由 rdi-berkeley 開發和維護。該專案主要用於展示或貢獻相關的程式碼和資源。
+## Key Facts
 
-## 重點
-- 這是一個名為 Agents' Last Exam 的 GitHub 專案，由 rdi-berkeley 開發和維護。該專案主要用於展示或貢獻相關的程式碼和資源。
+- Full content preserved in wiki page
+- Source file archived in raw/ directory
 
-## 原始內容
-GitHub - rdi-berkeley/agents-last-exam: Agents' Last Exam Agents' Last Exam. Contribute to rdi-berkeley/agents-last-exam development by creating an account on GitHub.
+## Related Entities
 
-## 內含連結
-- https://github.com/rdi-berkeley/agents-last-exam
-
-## 媒體
-- 未擷取
-
-## 擷取狀態
-- 平台：web
-- 類型：webpage
-- 擷取狀態：ok
-- 需要人工確認：否
-
-## 原文連結
-https://github.com/rdi-berkeley/agents-last-exam
+- [[github]]
+- [[topic-內含連結]]
+- [[topic-原始內容]]
+- [[topic-原文連結]]
+- [[topic-媒體]]
+- [[topic-專案]]
+- [[topic-平台]]
+- [[topic-摘要]]
+- [[topic-擷取狀態]]
+- [[topic-未擷取]]
 

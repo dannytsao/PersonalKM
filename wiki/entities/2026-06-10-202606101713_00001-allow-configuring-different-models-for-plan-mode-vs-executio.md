@@ -1,38 +1,32 @@
 ---
 title: 2026-06-10-202606101713_00001-allow-configuring-different-models-for-plan-mode-vs-executio
 created: 2026-06-14
-updated: 2026-06-14
+updated: 2026-06-23
 type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-allow-configuring-different-models-for-plan-mode-vs-executio.md"]
 confidence: medium
 ---
-# Allow configuring different models for plan mode vs execution mode · Issue #33791 · anthropics/claude-code
 
-## Log ID
+## Summary
+
 202606101713_00001
 
-## 摘要
-此議題討論允許用戶在計劃模式與執行模式中配置不同的模型，以便在Max/Team Premium方案中更有效地使用Opus預算，將其用於高價值任務如規劃、架構和複雜除錯，而在簡單任務中使用Sonnet模型。
+## Key Facts
 
-## 重點
-- 此議題討論允許用戶在計劃模式與執行模式中配置不同的模型，以便在Max/Team Premium方案中更有效地使用Opus預算，將其用於高價值任務如規劃、架構和複雜除錯，而在簡單任務中使用Sonnet模型。
+- Full content preserved in wiki page
+- Source file archived in raw/ directory
 
-## 原始內容
-Allow configuring different models for plan mode vs execution mode · Issue #33791 · anthropics/claude-code Problem Users on Max/Team Premium plans want to conserve their Opus budget by using it for high-value tasks (planning, architecture, complex debugging) while using Sonnet for straightforward execut...
+## Related Entities
 
-## 內含連結
-- https://github.com/anthropics/claude-code/issues/33791
-
-## 媒體
-- 未擷取
-
-## 擷取狀態
-- 平台：web
-- 類型：webpage
-- 擷取狀態：ok
-- 需要人工確認：否
-
-## 原文連結
-https://github.com/anthropics/claude-code/issues/33791
+- [[anthropic]]
+- [[claude-code]]
+- [[topic-不同的模型]]
+- [[topic-以便在]]
+- [[topic-內含連結]]
+- [[topic-劃模式與執行模式中配置]]
+- [[topic-原始內容]]
+- [[topic-原文連結]]
+- [[topic-媒體]]
+- [[topic-將其用於高價值任務如規]]
 

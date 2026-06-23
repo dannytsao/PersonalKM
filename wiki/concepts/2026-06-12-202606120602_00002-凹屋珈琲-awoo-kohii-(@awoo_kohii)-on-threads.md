@@ -1,25 +1,19 @@
 ---
 title: 2026-06-12-202606120602_00002-凹屋珈琲-awoo-kohii-(@awoo_kohii)-on-threads
 created: 2026-06-14
-updated: 2026-06-14
+updated: 2026-06-23
 type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Food/2026-06-12-202606120602_00002-\u51f9\u5c4b\u73c8\u7432-awoo-kohii-(@awoo_kohii)-on-threads.md"]
 confidence: medium
 ---
-# 凹屋珈琲 Awoo Kohii (@awoo_kohii) on Threads
 
-## Log ID
+## Summary
+
 202606120602_00002
 
-## 店家資訊
-- 店名：凹屋珈琲 Awoo Kohii
-- 縣市：未提供
-- 地址：士林捷運站2號 ([Google Maps](https://www.google.com/maps/search/?api=1&query=%E5%A3%AB%E6%9E%97%E6%8D%B7%E9%81%8B%E7%AB%992%E8%99%9F))
+## Key Facts
 
-## 摘要
-店名：凹屋珈琲 Awoo Kohii，地址：士林捷運站2號出口步行1分鐘。店內不限時，有插座和Wifi，提供咖啡、甜點、早午餐及續杯優惠，並有場租服務。
-
-## 原文連結
-https://www.threads.com/@awoo_kohii/post/DZbCIwXAae7?xmt=AQG0khzPyJFpwZ51QaQMm6nEzvYKRhEioVhfCNzf2q_PizgPXQAjrCKBxLrllGjKnaNRY9tz&slof=1
+- Full content preserved in wiki page
+- Source file archived in raw/ directory
 

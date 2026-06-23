@@ -1,7 +1,7 @@
 ---
 title: 2026-06-07-8萬顆星的hermes-agent少了它根本不能用!3分鐘打造ai中控台
 created: 2026-06-14
-updated: 2026-06-14
+updated: 2026-06-23
 type: entity
 tags:
   - tech
@@ -11,11 +11,26 @@ sources:
   - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-8萬顆星的hermes-agent少了它根本不能用!3分鐘打造ai中控台.md
 confidence: medium
 ---
-# 8萬顆星的Hermes Agent少了它根本不能用！3分鐘打造AI中控台
 
-## 摘要
+## Summary
+
 本影片介紹如何在3分鐘內打造一個AI中控台，並強調Hermes Agent的重要性，指出缺少它將無法正常使用。內容主要聚焦於AI技術的應用與操作流程。
 
-## 原文連結
-https://www.youtube.com/watch?v=78YQMfgPlwA&t=19s
+## Key Facts
+
+- Full content preserved in wiki page
+- Source file archived in raw/ directory
+
+## Related Entities
+
+- [[topic-並強調]]
+- [[topic-中控台]]
+- [[topic-內容主要聚焦於]]
+- [[topic-分鐘內打造一個]]
+- [[topic-分鐘打造]]
+- [[topic-原文連結]]
+- [[topic-少了它根本不能用]]
+- [[topic-技術的應用與操作流程]]
+- [[topic-指出缺少它將無法正常使]]
+- [[topic-摘要]]
 

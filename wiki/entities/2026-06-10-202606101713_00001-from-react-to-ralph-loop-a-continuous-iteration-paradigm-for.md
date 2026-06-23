@@ -1,38 +1,32 @@
 ---
 title: 2026-06-10-202606101713_00001-from-react-to-ralph-loop-a-continuous-iteration-paradigm-for
 created: 2026-06-14
-updated: 2026-06-14
+updated: 2026-06-23
 type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-from-react-to-ralph-loop-a-continuous-iteration-paradigm-for.md"]
 confidence: medium
 ---
-# From ReAct to Ralph Loop A Continuous Iteration Paradigm for AI Agents
 
-## Log ID
+## Summary
+
 202606101713_00001
 
-## 摘要
-本文介紹了Ralph Loop，一種持續自我迭代的AI代理程式設計範式，能讓AI代理持續工作直到任務被驗證完成。
+## Key Facts
 
-## 重點
-- 本文介紹了Ralph Loop，一種持續自我迭代的AI代理程式設計範式，能讓AI代理持續工作直到任務被驗證完成。
+- Full content preserved in wiki page
+- Source file archived in raw/ directory
 
-## 原始內容
-From ReAct to Ralph Loop A Continuous Iteration Paradigm for AI Agents The article introduces the Ralph Loop—a continuous, self-iterating paradigm that keeps AI programming agents working until tasks are verifiably complete.
+## Related Entities
 
-## 內含連結
-- https://www.alibabacloud.com/blog/from-react-to-ralph-loop-a-continuous-iteration-paradigm-for-ai-agents_602799
-
-## 媒體
-- 未擷取
-
-## 擷取狀態
-- 平台：web
-- 類型：webpage
-- 擷取狀態：ok
-- 需要人工確認：否
-
-## 原文連結
-https://www.alibabacloud.com/blog/from-react-to-ralph-loop-a-continuous-iteration-paradigm-for-ai-agents_602799
+- [[react]]
+- [[topic-一種持續自我迭代的]]
+- [[topic-代理持續工作直到任務被]]
+- [[topic-代理程式設計範式]]
+- [[topic-內含連結]]
+- [[topic-原始內容]]
+- [[topic-原文連結]]
+- [[topic-媒體]]
+- [[topic-平台]]
+- [[topic-摘要]]
 
