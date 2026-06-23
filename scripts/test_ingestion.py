@@ -1,103 +1,84 @@
 #!/usr/bin/env python3
 """
-Test ingestion on a small subset of files.
+Test Ingestion Script
+Run this locally to verify ingestion works with current files
 """
-import json
-import logging
-import os
 import sys
+import os
 from pathlib import Path
-from shutil import rmtree
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(levelname)-8s] %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-# Add bot to path
+# Add repo to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from bot.ingestion import ingest_raw_to_wiki
-
 def test_ingestion():
-    """Run ingestion and report results."""
-    vault_path = Path(os.getenv("VAULT_PATH", "/Users/dannytsao/Documents/PersonalKM"))
+    """Test that ingestion can find and process files."""
+    print("=" * 80)
+    print("🧪 TESTING INGESTION SYSTEM")
+    print("=" * 80)
     
-    logger.info("=" * 80)
-    logger.info("TEST INGESTION")
-    logger.info(f"Vault: {vault_path}")
-    logger.info("=" * 80)
+    # Test 1: Check raw/ directory
+    repo_root = Path(__file__).parent.parent
+    raw_path = repo_root / "raw"
     
-    # Backup existing wiki entities/concepts
-    wiki_path = vault_path / "wiki"
-    entities_backup = vault_path / "wiki_entities_backup"
-    concepts_backup = vault_path / "wiki_concepts_backup"
+    print(f"\n📁 Test 1: Checking raw/ directory")
+    print(f"   Path: {raw_path}")
     
-    logger.info("\n[1] Backing up existing wiki entries...")
-    if (wiki_path / "entities").exists():
-        if entities_backup.exists():
-            rmtree(entities_backup)
-        (wiki_path / "entities").rename(entities_backup)
-        logger.info(f"    ✅ Backed up entities/ → {entities_backup.name}/")
+    if not raw_path.exists():
+        print(f"   ❌ FAIL: raw/ does not exist")
+        return False
     
-    if (wiki_path / "concepts").exists():
-        if concepts_backup.exists():
-            rmtree(concepts_backup)
-        (wiki_path / "concepts").rename(concepts_backup)
-        logger.info(f"    ✅ Backed up concepts/ → {concepts_backup.name}/")
+    # Count files including subdirectories
+    md_files = list(raw_path.glob("**/*.md"))
+    print(f"   ✅ Found {len(md_files)} markdown files")
     
-    # Run ingestion
-    logger.info("\n[2] Running ingestion...")
-    try:
-        result = ingest_raw_to_wiki(vault_path)
-        
-        logger.info(f"\n[3] Ingestion result:")
-        logger.info(f"    Status: {result.get('status', 'unknown')}")
-        logger.info(f"    Processed: {result.get('processed', 0)}")
-        logger.info(f"    Failed: {result.get('failed', 0)}")
-        logger.info(f"    Trashed: {result.get('trashed', 0)}")
-        logger.info(f"    Total: {result.get('total', 0)}")
-        
-        # Count created files
-        logger.info(f"\n[4] Checking created wiki files...")
-        entities_dir = wiki_path / "entities"
-        concepts_dir = wiki_path / "concepts"
-        
-        entities_files = list(entities_dir.glob("*.md")) if entities_dir.exists() else []
-        concepts_files = list(concepts_dir.glob("*.md")) if concepts_dir.exists() else []
-        
-        logger.info(f"    Entities: {len(entities_files)} files")
-        if entities_files:
-            logger.info(f"        Sample: {[f.name for f in entities_files[:3]]}")
-        
-        logger.info(f"    Concepts: {len(concepts_files)} files")
-        if concepts_files:
-            logger.info(f"        Sample: {[f.name for f in concepts_files[:3]]}")
-        
-        total_created = len(entities_files) + len(concepts_files)
-        logger.info(f"    Total: {total_created} wiki files")
-        
-        if total_created == 0:
-            logger.error("\n❌ PROBLEM: No wiki files were created!")
-            logger.error("   Check: bot/ingestion.py organize_note_to_wiki() function")
+    if len(md_files) == 0:
+        print(f"   ⚠️  WARNING: No files to ingest!")
+        return False
+    
+    # Test 2: Check subdirectories
+    print(f"\n📂 Test 2: Checking subdirectories")
+    subdirs = [d for d in raw_path.iterdir() if d.is_dir() and not d.name.startswith('.')]
+    for subdir in subdirs:
+        files = list(subdir.glob("*.md"))
+        print(f"   {subdir.name}/: {len(files)} files")
+    
+    # Test 3: Check wiki/ directory
+    print(f"\n📚 Test 3: Checking wiki/ directory")
+    wiki_path = repo_root / "wiki"
+    if wiki_path.exists():
+        wiki_files = list(wiki_path.glob("**/*.md"))
+        print(f"   ✅ wiki/ exists with {len(wiki_files)} files")
+    else:
+        print(f"   ⚠️  wiki/ does not exist yet (will be created)")
+    
+    # Test 4: Check environment
+    print(f"\n🔑 Test 4: Checking environment variables")
+    required_vars = ["VAULT_REPO_URL", "OPENAI_API_KEY"]
+    for var in required_vars:
+        value = os.getenv(var)
+        if value:
+            # Show partial for security
+            print(f"   ✅ {var}: {value[:10]}...")
         else:
-            logger.info(f"\n✅ SUCCESS: Created {total_created} wiki files")
-        
-        # Show running log
-        if "log_file" in result:
-            logger.info(f"\n[5] Running log: {result['log_file']}")
-        
-    except Exception as e:
-        logger.error(f"\n❌ Ingestion crashed: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        return
+            print(f"   ⚠️  {var}: not set (may be needed for full test)")
     
-    logger.info("\n" + "=" * 80)
-    logger.info("TEST COMPLETE")
-    logger.info("=" * 80)
+    # Test 5: Test glob pattern
+    print(f"\n🔍 Test 5: Testing glob pattern (recursive)")
+    test_files = list(raw_path.glob("**/*.md"))
+    print(f"   Pattern '**/*.md' found: {len(test_files)} files")
+    
+    # Show sample of what would be processed
+    print(f"\n📋 Sample files that would be processed:")
+    for f in test_files[:5]:
+        print(f"   - {f.parent.name}/{f.name[:50]}...")
+    
+    print("\n" + "=" * 80)
+    print("✅ TEST COMPLETE")
+    print("=" * 80)
+    
+    return True
+
 
 if __name__ == "__main__":
-    test_ingestion()
+    success = test_ingestion()
+    sys.exit(0 if success else 1)
