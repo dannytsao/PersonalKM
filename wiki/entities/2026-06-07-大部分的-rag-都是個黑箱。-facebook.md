@@ -1,4 +1,4 @@
----
+
 
 title: 2026-06-07-大部分的-rag-都是個黑箱。-facebook
 created: 2026-06-14
@@ -25,3 +25,7 @@ contested: false
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
+
+## See also
+
+- [[SCHEMA]]

@@ -1,4 +1,4 @@
----
+
 title: 2026-06-21-202606211804_00001-teamorouter-budget-llm-gateway-for-claude-code-and-codex
 created: 2026-06-23
 updated: 2026-06-23
@@ -18,5 +18,6 @@ contested: false
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
+- [[knowledge-graph]]
 
 ## See also

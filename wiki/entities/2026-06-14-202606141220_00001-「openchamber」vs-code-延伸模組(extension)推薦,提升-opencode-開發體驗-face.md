@@ -1,4 +1,4 @@
----
+
 
 title: 2026-06-14-202606141220_00001-「openchamber」vs-code-延伸模組(extension)推薦,提升-opencode-開發體驗-face
 created: 2026-06-23
@@ -21,3 +21,7 @@ contested: false
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
+
+## See also
+
+- [[2026-06-14-202606142044_00002-github-farion1231-cc-switch-a-cross-platform-desktop-all-in]]

@@ -1,4 +1,4 @@
----
+
 
 title: 2026-06-13-202606131148_00001-private-obsidian-ai-add-deepseek-to-your-obsidian-with-ollam
 created: 2026-06-14
@@ -21,3 +21,7 @@ contested: false
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
+
+## See also
+
+- [[2026-06-12-202606122105_00001-【附送工具-+-模型网站】10分钟教会你0成本用上codex,不花一分钱,实现agent自由!]]
