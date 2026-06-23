@@ -298,11 +298,14 @@ def detect_entity_mentions(content: str) -> List[str]:
 def _strip_frontmatter(content: str) -> str:
     """Remove ALL YAML frontmatter blocks from markdown content.
     
-    Some wiki files have multiple consecutive frontmatter blocks (broken YAML).
-    Returns only the actual body content, skipping all frontmatter regions.
-    """
-    import re as _re
+    Handles:
+    - Standard frontmatter: --- ... --- (on their own lines)
+    - Merged closers: ---# Heading (--- on same line as content)
+    - Orphaned frontmatter: file starts with --- but no closer
+    - Multiple consecutive blocks
     
+    Returns only the actual body content.
+    """
     lines = content.split('\n')
     n = len(lines)
     
@@ -312,14 +315,29 @@ def _strip_frontmatter(content: str) -> str:
     i = 0
     while i < n:
         stripped = lines[i].strip()
+        
         if stripped == '---':
             # Found start of a frontmatter block — find its closing ---
             depth = 1
             j = i + 1
             while j < n and depth > 0:
-                if lines[j].strip() == '---':
+                next_stripped = lines[j].strip()
+                if next_stripped == '---':
+                    # Properly closed on own line
                     depth -= 1
-                j += 1
+                    j += 1
+                elif next_stripped.startswith('---'):
+                    # Merged closer: "---# Heading" or "--- [next]"
+                    depth -= 1
+                    j += 1
+                elif depth == 1 and lines[j].startswith('---'):
+                    # Partial merge: "---# content" — the line starts with ---
+                    # but has content after; treat as closer
+                    depth -= 1
+                    j += 1
+                else:
+                    j += 1
+            
             # Mark all lines from i to j (exclusive) as skip
             for k in range(i, j):
                 skip_indices.add(k)
