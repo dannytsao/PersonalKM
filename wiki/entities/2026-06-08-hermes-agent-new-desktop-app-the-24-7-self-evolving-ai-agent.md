@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-08-hermes-agent-new-desktop-app-the-24-7-self-evolving-ai-agent
 created: 2026-06-14
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-hermes-agent-new-desktop-app-the-24-7-self-evolving-ai-agent.md"]
 confidence: medium
----# Hermes Agent NEW Desktop App - The 24/7 Self-Evolving AI Agent!
+
+---
+
+# Hermes Agent NEW Desktop App - The 24/7 Self-Evolving AI Agent!
 
 ## Summary
 
@@ -16,17 +20,3 @@ Hermes Agent 是一個持續進化的自主AI系統，具備長期記憶、自�
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[github]]
-- [[heygen]]
-- [[topic-並隨著使用時間提升對用]]
-- [[topic-供視覺化介面與跨平台支]]
-- [[topic-內含連結]]
-- [[topic-內容已截斷]]
-- [[topic-具備長期記憶]]
-- [[topic-原始內容]]
-- [[topic-原文連結]]
-- [[topic-可重複使用的技能]]
-

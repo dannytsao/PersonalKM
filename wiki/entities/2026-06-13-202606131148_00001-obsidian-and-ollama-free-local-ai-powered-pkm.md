@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-13-202606131148_00001-obsidian-and-ollama-free-local-ai-powered-pkm
 created: 2026-06-14
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606131148_00001-obsidian-and-ollama-free-local-ai-powered-pkm.md"]
 confidence: medium
----# Obsidian and Ollama - Free Local AI Powered PKM
+
+---
+
+# Obsidian and Ollama - Free Local AI Powered PKM
 
 ## Summary
 
@@ -16,17 +20,3 @@ confidence: medium
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[topic-並提及]]
-- [[topic-並說明其適用於單筆筆記]]
-- [[topic-內含連結]]
-- [[topic-內容已截斷]]
-- [[topic-包括數據隱私]]
-- [[topic-原始內容]]
-- [[topic-原文連結]]
-- [[topic-及硬體需求]]
-- [[topic-媒體]]
-- [[topic-實例的優勢]]
-

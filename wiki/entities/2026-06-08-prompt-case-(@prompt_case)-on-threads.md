@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-08-prompt-case-(@prompt_case)-on-threads
 created: 2026-06-14
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-prompt-case-(@prompt_case)-on-threads.md"]
 confidence: medium
+
 ---
+
+
 
 ## Summary
 
@@ -16,17 +20,3 @@ Hermes Agent 桌面版應用程式正式推出，支援 macOS、Windows 及 Linu
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[topic-原文連結]]
-- [[topic-受到用戶期待已久]]
-- [[topic-提供進階的工作流程]]
-- [[topic-摘要]]
-- [[topic-支援]]
-- [[topic-桌面版應用程式正式推出]]
-- [[topic-相關連結已提供]]
-- [[topic-系統]]
-- [[topic-這款工具結合]]
-- [[topic-鼓勵有興趣的用戶嘗試使]]
-

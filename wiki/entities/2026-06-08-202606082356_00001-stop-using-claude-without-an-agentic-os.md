@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-08-202606082356_00001-stop-using-claude-without-an-agentic-os
 created: 2026-06-14
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-202606082356_00001-stop-using-claude-without-an-agentic-os.md"]
 confidence: medium
----# Stop Using Claude Without an Agentic OS
+
+---
+
+# Stop Using Claude Without an Agentic OS
 
 ## Summary
 
@@ -16,17 +20,3 @@ confidence: medium
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[linkedin]]
-- [[topic-並能支援多種]]
-- [[topic-代理操作系統]]
-- [[topic-使系統具模型無關性且可]]
-- [[topic-內含連結]]
-- [[topic-內容已截斷]]
-- [[topic-包括活體網址]]
-- [[topic-原始內容]]
-- [[topic-原文連結]]
-- [[topic-可提升]]
-

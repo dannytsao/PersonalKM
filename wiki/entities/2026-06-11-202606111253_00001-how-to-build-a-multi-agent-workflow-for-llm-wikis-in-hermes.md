@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-11-202606111253_00001-how-to-build-a-multi-agent-workflow-for-llm-wikis-in-hermes
 created: 2026-06-14
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-11-202606111253_00001-how-to-build-a-multi-agent-workflow-for-llm-wikis-in-hermes.md"]
 confidence: medium
----# How to Build a Multi-Agent Workflow for LLM Wikis in Hermes Kanban
+
+---
+
+# How to Build a Multi-Agent Workflow for LLM Wikis in Hermes Kanban
 
 ## Summary
 
@@ -16,17 +20,3 @@ confidence: medium
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[github]]
-- [[topic-以確保資訊準確且持續更]]
-- [[topic-內含連結]]
-- [[topic-內容已截斷]]
-- [[topic-協助清理過時資料並保持]]
-- [[topic-原始內容]]
-- [[topic-原文連結]]
-- [[topic-媒體]]
-- [[topic-審核與整理]]
-- [[topic-平台]]
-

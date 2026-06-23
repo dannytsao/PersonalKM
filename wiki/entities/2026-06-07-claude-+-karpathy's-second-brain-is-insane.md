@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-07-claude-+-karpathy's-second-brain-is-insane
 created: 2026-06-14
 updated: 2026-06-23
@@ -10,7 +11,10 @@ tags:
 sources:
   - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-claude-+-karpathy's-second-brain-is-insane.md
 confidence: medium
----# Claude + Karpathy's Second Brain is INSANE
+
+---
+
+# Claude + Karpathy's Second Brain is INSANE
 
 ## Summary
 
@@ -20,17 +24,3 @@ confidence: medium
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[fihjotg]]
-- [[openai]]
-- [[topic-並可透過一鍵下載取得完]]
-- [[topic-內含連結]]
-- [[topic-內容已截斷]]
-- [[topic-功能]]
-- [[topic-原始內容]]
-- [[topic-原文連結]]
-- [[topic-媒體]]
-- [[topic-將示範完整建置流程]]
-

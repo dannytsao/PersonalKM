@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-07-hermes-agent-tutorial-for-beginners-(full-step-by-step-setup
 created: 2026-06-14
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-hermes-agent-tutorial-for-beginners-(full-step-by-step-setup.md"]
 confidence: medium
----# Hermes Agent Tutorial for Beginners (Full Step-by-Step Setup)
+
+---
+
+# Hermes Agent Tutorial for Beginners (Full Step-by-Step Setup)
 
 ## Summary
 
@@ -16,17 +20,3 @@ confidence: medium
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[docker]]
-- [[lvwobwr]]
-- [[openclaw]]
-- [[topic-一个新的标签页将打开]]
-- [[topic-一台备用的常开机器]]
-- [[topic-一台机器]]
-- [[topic-上层服务器]]
-- [[topic-不仅仅是你告诉它的信息]]
-- [[topic-不知所措]]
-- [[topic-不要与任何人分享此密码]]
-

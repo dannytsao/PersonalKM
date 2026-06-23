@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-15-202606151001_00001-data-science-machine-learning-ai-freelance-jobs-🚀-struggling
 created: 2026-06-23
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-15-202606151001_00001-data-science-machine-learning-ai-freelance-jobs-\ud83d\ude80-struggling.md"]
 confidence: medium
+
 ---
+
+
 
 ## Summary
 
@@ -16,17 +20,3 @@ confidence: medium
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[topic-儀表板製作]]
-- [[topic-內含連結]]
-- [[topic-動撰寫]]
-- [[topic-原始內容]]
-- [[topic-原文連結]]
-- [[topic-如何將]]
-- [[topic-媒體]]
-- [[topic-平台]]
-- [[topic-應用於實際且可用的]]
-- [[topic-摘要]]
-

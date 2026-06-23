@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-07-gemma-4-12b-on-a-16gb-mac-mini-is-surprisingly-capable
 created: 2026-06-14
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-gemma-4-12b-on-a-16gb-mac-mini-is-surprisingly-capable.md"]
 confidence: medium
----# Gemma 4 12B on a 16GB Mac Mini Is Surprisingly Capable
+
+---
+
+# Gemma 4 12B on a 16GB Mac Mini Is Surprisingly Capable
 
 ## Summary
 
@@ -16,17 +20,3 @@ confidence: medium
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[topic-內含連結]]
-- [[topic-內容已截斷]]
-- [[topic-原始內容]]
-- [[topic-原文連結]]
-- [[topic-媒體]]
-- [[topic-平台]]
-- [[topic-摘要]]
-- [[topic-擷取狀態]]
-- [[topic-未擷取]]
-- [[topic-此內容標題為]]
-

@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-13-202606131148_00001-obsidian-smart-connections-update-📝-rediscover-notes-with-ob
 created: 2026-06-14
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606131148_00001-obsidian-smart-connections-update-\ud83d\udcdd-rediscover-notes-with-ob.md"]
 confidence: medium
----# Obsidian Smart Connections UPDATE 📝 Rediscover Notes With Obsidian AI
+
+---
+
+# Obsidian Smart Connections UPDATE 📝 Rediscover Notes With Obsidian AI
 
 ## Summary
 
@@ -16,17 +20,3 @@ confidence: medium
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[topic-並強調本地化運行的隱私]]
-- [[topic-並透過實際案例展示如何]]
-- [[topic-內含連結]]
-- [[topic-內容已截斷]]
-- [[topic-協助用戶深化筆記間的關]]
-- [[topic-原始內容]]
-- [[topic-原文連結]]
-- [[topic-回應的準確性與資訊檢索]]
-- [[topic-媒體]]
-- [[topic-將個人知識庫轉化為動態]]
-

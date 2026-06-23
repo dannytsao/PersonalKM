@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-14-202606141220_00001-「openchamber」vs-code-延伸模組(extension)推薦,提升-opencode-開發體驗-face
 created: 2026-06-23
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-14-202606141220_00001-\u300copenchamber\u300dvs-code-\u5ef6\u4f38\u6a21\u7d44(extension)\u63a8\u85a6,\u63d0\u5347-opencode-\u958b\u767c\u9ad4\u9a57-face.md"]
 confidence: medium
+
 ---
+
+
 
 ## Summary
 
@@ -16,17 +20,3 @@ confidence: medium
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[openchamber]]
-- [[opencode]]
-- [[topic-上開發]]
-- [[topic-不過我通常是在]]
-- [[topic-主要有]]
-- [[topic-使用介面]]
-- [[topic-使用時還要切]]
-- [[topic-內含連結]]
-- [[topic-內更方便地操作]]
-- [[topic-內直接使用]]
-

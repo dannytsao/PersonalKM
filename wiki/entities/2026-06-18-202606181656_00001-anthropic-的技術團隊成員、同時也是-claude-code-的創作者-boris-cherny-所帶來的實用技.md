@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-18-202606181656_00001-anthropic-的技術團隊成員、同時也是-claude-code-的創作者-boris-cherny-所帶來的實用技
 created: 2026-06-23
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-18-202606181656_00001-anthropic-\u7684\u6280\u8853\u5718\u968a\u6210\u54e1\u3001\u540c\u6642\u4e5f\u662f-claude-code-\u7684\u5275\u4f5c\u8005-boris-cherny-\u6240\u5e36\u4f86\u7684\u5be6\u7528\u6280.md"]
 confidence: medium
+
 ---
+
+
 
 ## Summary
 
@@ -17,17 +21,3 @@ confidence: medium
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[anthropic]]
-- [[cursor]]
-- [[huxu]]
-- [[topic-一樣做一個獨立的]]
-- [[topic-並探討了為何選擇終端機]]
-- [[topic-並深入]]
-- [[topic-並能完美融入你現有的任]]
-- [[topic-五花八門]]
-- [[topic-介面上]]
-- [[topic-他也提到]]
-

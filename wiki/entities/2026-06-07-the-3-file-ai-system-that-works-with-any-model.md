@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-07-the-3-file-ai-system-that-works-with-any-model
 created: 2026-06-14
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-the-3-file-ai-system-that-works-with-any-model.md"]
 confidence: medium
----# The 3-File AI System That Works With ANY MODEL
+
+---
+
+# The 3-File AI System That Works With ANY MODEL
 
 ## Summary
 
@@ -16,17 +20,3 @@ confidence: medium
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[openai]]
-- [[topic-並透過靈活的文件結構實]]
-- [[topic-內含連結]]
-- [[topic-內容已截斷]]
-- [[topic-原始內容]]
-- [[topic-原文連結]]
-- [[topic-可持續性]]
-- [[topic-地圖]]
-- [[topic-媒體]]
-- [[topic-工具]]
-

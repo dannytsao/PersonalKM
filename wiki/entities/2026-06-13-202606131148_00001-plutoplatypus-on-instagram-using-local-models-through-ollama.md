@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-13-202606131148_00001-plutoplatypus-on-instagram-using-local-models-through-ollama
 created: 2026-06-14
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606131148_00001-plutoplatypus-on-instagram-using-local-models-through-ollama.md"]
 confidence: medium
+
 ---
+
+
 
 ## Summary
 
@@ -16,17 +20,3 @@ confidence: medium
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[artificialintelligence]]
-- [[dataprivacy]]
-- [[qippv]]
-- [[rag]]
-- [[topic-備或基礎設施中]]
-- [[topic-內含連結]]
-- [[topic-原始內容]]
-- [[topic-原文連結]]
-- [[topic-可實現]]
-- [[topic-同時保持資料層的私密性]]
-

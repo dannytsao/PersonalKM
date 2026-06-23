@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-08-releases-·-fathah-hermes-desktop
 created: 2026-06-14
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-releases-\u00b7-fathah-hermes-desktop.md"]
 confidence: medium
+
 ---
+
+
 
 ## Summary
 
@@ -16,17 +20,3 @@ confidence: medium
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[github]]
-- [[topic-作為]]
-- [[topic-允許用戶貢獻代碼並參與]]
-- [[topic-原文連結]]
-- [[topic-摘要]]
-- [[topic-的桌面伴侶]]
-- [[topic-的桌面應用程式]]
-- [[topic-該專案托管於]]
-- [[topic-這是一個名為]]
-- [[topic-開發]]
-

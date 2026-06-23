@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-08-github-fathah-hermes-desktop-desktop-companion-for-hermes-..
 created: 2026-06-14
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-github-fathah-hermes-desktop-desktop-companion-for-hermes-...md"]
 confidence: medium
+
 ---
+
+
 
 ## Summary
 
@@ -17,17 +21,3 @@ Hermes Desktop 是一款由 Nous Research 推出的官方原生圖形介面（GU
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[docker]]
-- [[github]]
-- [[openai]]
-- [[openrouter]]
-- [[topic-一鍵式引導安裝]]
-- [[topic-下載各平台的安裝檔]]
-- [[topic-不會造成資料衝突]]
-- [[topic-且各平台間保有]]
-- [[topic-並將資料統一儲存於]]
-- [[topic-並能派發複雜工作給多個]]
-

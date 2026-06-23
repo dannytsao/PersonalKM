@@ -1,4 +1,5 @@
 ---
+
 title: 2026-06-18-202606181656_00001-practical-tips-on-how-to-use-claudecode-by-boris-cherny-2-3
 created: 2026-06-23
 updated: 2026-06-23
@@ -6,7 +7,10 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-18-202606181656_00001-practical-tips-on-how-to-use-claudecode-by-boris-cherny-2-3.md"]
 confidence: medium
+
 ---
+
+
 
 ## Summary
 
@@ -16,17 +20,3 @@ confidence: medium
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
-
-## Related Entities
-
-- [[anthropic]]
-- [[claudecode]]
-- [[github]]
-- [[huxu]]
-- [[jetbrains]]
-- [[topic-且不涉及代碼上傳或模型]]
-- [[topic-且兼容所有]]
-- [[topic-修復錯誤等複雜任務]]
-- [[topic-內含連結]]
-- [[topic-內容已截斷]]
-
