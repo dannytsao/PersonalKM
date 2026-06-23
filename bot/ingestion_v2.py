@@ -1,44 +1,94 @@
 """
-Enhanced Ingestion System with LLM-Wiki Integration
-Processes raw/ → wiki/ with index.md and log.md maintenance
+LLM-Wiki v2 Ingestion Pipeline
+==============================
+Integrated pipeline: Phase 1 (MiniMax) + Phase 2 (Summarization) + Phase 3 (Dedup) + Phase 4 (Wikilinks)
+
+Data flow:
+    raw/*.md → ingest_raw_to_wiki()
+        ├── ContentQualityChecker (filter low-quality)
+        ├── categorize_note() (entities vs concepts)
+        ├── detect_entity_mentions() (Phase 2: extract entity names)
+        ├── EntityRegistry.find_entity_match() (Phase 3: dedup check)
+        ├── summarize_content() (Phase 2: MiniMax or fallback)
+        ├── distill_to_markdown() (Phase 2: wiki format)
+        ├── write_to_wiki() (create or merge)
+        ├── WikilinkManager.add_bidirectional_links() (Phase 4)
+        └── IngestionHealthCheck (post-ingest validation)
+
+Usage:
+    from bot.ingestion_v2 import ingest_raw_to_wiki, ingest_file_v2
+    result = ingest_raw_to_wiki(Path('/path/to/vault'))
 """
-import json
+
 import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict, Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Import helper classes
-try:
-    from bot.ingestion_wiki_helpers import (
-        WikiSchema, WikiIndex, WikiLog, WikiPage, 
-        find_related_pages, integrate_wikilinks
-    )
-except ImportError:
-    from ingestion_wiki_helpers import (
-        WikiSchema, WikiIndex, WikiLog, WikiPage,
-        find_related_pages, integrate_wikilinks
-    )
-
-# Only import OpenAI if needed
-try:
-    from openai import OpenAI
-except ImportError:
-    OpenAI = None
+from bot.entity_dedup import EntityRegistry, normalize_entity_name
+from bot.llm_clients import get_llm_client, get_llm_info
+from bot.llm_summarizer import summarize_content, distill_to_markdown, detect_entity_mentions, _strip_frontmatter, _slugify
+from bot.wikilinks import WikilinkManager
 
 logger = logging.getLogger(__name__)
 
-# Initialize OpenAI with API key from environment
-if OpenAI:
-    api_key = os.getenv("OPENAI_API_KEY")
-    client = OpenAI(api_key=api_key) if api_key else None
-else:
-    client = None
+# Lazy-initialized singletons (built once per vault, reused across files)
+_vault_registry: Dict[Path, EntityRegistry] = {}
+_vault_wikilinks: Dict[Path, WikilinkManager] = {}
 
-MODEL = "gpt-4o-mini"
 
-# Configuration
+def _get_registry(wiki_path: Path) -> EntityRegistry:
+    """Get or create EntityRegistry for a vault."""
+    if wiki_path not in _vault_registry:
+        _vault_registry[wiki_path] = EntityRegistry(wiki_path)
+    return _vault_registry[wiki_path]
+
+
+def _get_wikilinks(wiki_path: Path) -> WikilinkManager:
+    """Get or create WikilinkManager for a vault."""
+    if wiki_path not in _vault_wikilinks:
+        registry = _get_registry(wiki_path)
+        _vault_wikilinks[wiki_path] = WikilinkManager(wiki_path, registry)
+    return _vault_wikilinks[wiki_path]
+
+
+# ─────────────────────────────────────────────────────────────
+# Content Quality Filtering
+# ─────────────────────────────────────────────────────────────
+
+LOW_QUALITY_PATTERNS = [
+    "wait loading",
+    "404",
+    "page not found",
+    "just a moment",
+    "checking your browser",
+    "enable javascript",
+    "sign in to",
+    "login to",
+    "subscribe to",
+    "subscription required",
+    "paywall",
+    "advertisement",
+]
+
+
+def is_low_quality(content: str) -> Tuple[bool, str]:
+    """Return (True, reason) if content is low-quality."""
+    lower = content.lower()
+    for pattern in LOW_QUALITY_PATTERNS:
+        if pattern in lower:
+            return True, f"Matched low-quality pattern: {pattern!r}"
+    if len(content.strip()) < 50:
+        return True, "Content too short (< 50 chars)"
+    return False, ""
+
+
+# ─────────────────────────────────────────────────────────────
+# Category Detection
+# ─────────────────────────────────────────────────────────────
+
 DEVOPS_KEYWORDS = [
     "docker", "kubernetes", "k8s", "container", "helm",
     "terraform", "cloudformation", "ansible", "vagrant",
@@ -62,330 +112,289 @@ AI_KEYWORDS = [
 
 
 def categorize_note(content: str) -> Tuple[str, List[str]]:
-    """Determine if note is DevOps/AI and return category."""
-    content_lower = content.lower()
-    
-    is_devops = any(kw in content_lower for kw in DEVOPS_KEYWORDS)
-    is_ai = any(kw in content_lower for kw in AI_KEYWORDS)
-    
+    """Determine if note is entity (AI/DevOps) or concept (general)."""
+    lower = content.lower()
     categories = []
-    if is_devops:
+    if any(kw in lower for kw in DEVOPS_KEYWORDS):
         categories.append("devops")
-    if is_ai:
+    if any(kw in lower for kw in AI_KEYWORDS):
         categories.append("ai")
-    
     if not categories:
         categories.append("general")
-    
-    return "concepts" if categories == ["general"] else "entities", categories
+    return "entities" if categories != ["general"] else "concepts", categories
 
 
-def extract_entities_ai(content: str, categories: List[str]) -> dict:
-    """Use AI to extract entities from note."""
-    if not client:
-        logger.warning("OpenAI client not available, using basic extraction")
-        return {"entities": [], "relationships": [], "wiki_path": "concepts/general"}
+# ─────────────────────────────────────────────────────────────
+# Title Extraction
+# ─────────────────────────────────────────────────────────────
+
+def extract_title(raw_path: Path, content: str, max_len: int = 80) -> str:
+    """Extract a clean title from filename or content."""
+    # Try first meaningful line (non-frontmatter, non-heading)
+    body = _strip_frontmatter(content)
+    for line in body.split("\n")[:20]:
+        line = line.strip()
+        if not line:
+            continue
+        # Skip markdown headings
+        if line.startswith("#"):
+            line = line.lstrip("#").strip()
+        # Skip frontmatter-like lines
+        if line.startswith("---") or ":" in line or line.isupper():
+            continue
+        # Skip very short or very long lines
+        if 5 < len(line) < max_len:
+            return _slugify(line)
     
+    # Fall back to filename
+    name = raw_path.stem
+    # Strip date prefixes
+    import re
+    name = re.sub(r"^\d{4}-\d{2}-\d{2}[-_]", "", name)
+    name = re.sub(r"^\d{10,}[-_]", "", name)
+    name = name.replace("-", " ").replace("_", " ")
+    return name.strip() or "untitled"
+
+
+# ─────────────────────────────────────────────────────────────
+# Core Ingestion Step
+# ─────────────────────────────────────────────────────────────
+
+def ingest_file_v2(
+    raw_path: Path,
+    wiki_path: Path,
+    *,
+    skip_llm: bool = False,
+) -> Tuple[bool, Dict[str, Any]]:
+    """
+    Process a single raw file through the v2 pipeline.
+    
+    Returns (success, result_dict).
+    result_dict keys: action, page_path, entity, merged, outbound_links, backlinks
+    """
     try:
-        prompt = f"""Extract key entities from this {', '.join(categories)} note.
-
-Return JSON with:
-- entities: [list of frameworks, tools, versions, concepts]
-- relationships: [list of related concepts]
-- summary: brief summary (one line)
-- wiki_path: suggested path like "entities/docker" or "entities/kubernetes"
-
-Content:
-{content[:1000]}
-
-Respond ONLY with JSON:"""
-        
-        response = client.chat.completions.create(
-            model=MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=300,
-        )
-        
-        msg_content = response.choices[0].message.content
-        output = msg_content.strip() if msg_content else ""
-        start = output.find('{')
-        end = output.rfind('}') + 1
-        
-        if start < 0 or end <= start:
-            return {"entities": [], "relationships": [], "wiki_path": "concepts/general"}
-        
-        return json.loads(output[start:end])
+        content = raw_path.read_text(encoding="utf-8")
     except Exception as e:
-        logger.error(f"AI extraction failed: {e}")
-        return {"entities": [], "relationships": [], "wiki_path": "concepts/general"}
+        return False, {"error": f"Cannot read file: {e}"}
 
+    # 1. Quality filter
+    low_quality, reason = is_low_quality(content)
+    if low_quality:
+        return False, {"error": f"Low-quality content: {reason}"}
 
-def build_llmwiki_frontmatter(
-    title: str,
-    page_type: str,
-    categories: List[str],
-    entities: List[str],
-    summary: str,
-    source_path: Path,
-    schema: WikiSchema
-) -> dict:
-    """Build LLM-Wiki compliant frontmatter."""
-    
-    # Map categories to tags
-    tags = []
-    
-    # Add domain tags (always include primary domain)
-    if "devops" in categories:
-        tags.append("tech")
-        tags.append("container")
-    if "ai" in categories:
-        tags.append("tech")
-        tags.append("ai-llm")
-    if not tags:
-        tags.append("general")
-    
-    # Validate tags against schema
-    valid_tags, _ = schema.validate_tags(tags)
-    if not valid_tags:
-        valid_tags = ["tech"]
-    
-    return {
-        "title": title,
-        "created": datetime.now().strftime("%Y-%m-%d"),
-        "updated": datetime.now().strftime("%Y-%m-%d"),
-        "type": page_type,
-        "tags": valid_tags,
-        "sources": [str(source_path)],
-        "confidence": "medium",
-        "contested": False,
-        "contradictions": [],
+    # 2. Categorize
+    subfolder, categories = categorize_note(content)
+    page_type = subfolder.rstrip("s")  # "entities" → "entity"
+
+    # 3. Strip frontmatter for clean body
+    body = _strip_frontmatter(content)
+
+    # 4. Detect entity mentions in body (before summarization distorts it)
+    detected_entities = detect_entity_mentions(body)
+    logger.debug(f"Detected entities in {raw_path.name}: {detected_entities[:5]}")
+
+    # 5. Summarize (MiniMax or fallback)
+    if skip_llm:
+        summary_result = None
+    else:
+        summary_result = summarize_content(body, page_type=page_type)
+
+    # 6. Distill to wiki markdown
+    if summary_result:
+        distilled = distill_to_markdown(summary_result, page_type=page_type)
+        confidence = summary_result.get("confidence", "medium")
+    else:
+        # Fallback: use first paragraph
+        paras = [p.strip() for p in body.split("\n\n") if p.strip()]
+        summary_text = paras[0] if paras else body[:500]
+        distilled = f"## Summary\n\n{summary_text}\n"
+        confidence = "low"
+
+    # 7. Build title
+    title = extract_title(raw_path, content)
+
+    # 8. Entity deduplication — find matching existing page
+    registry = _get_registry(wiki_path)
+    match = registry.find_entity_match(title)
+    entity_slug = normalize_entity_name(title)
+
+    wiki_category_path = wiki_path / subfolder
+    wiki_category_path.mkdir(parents=True, exist_ok=True)
+
+    action = "unknown"
+    page_path: Optional[Path] = None
+
+    if match:
+        # 8a. Merge: update existing entity page
+        action = "merged"
+        page_path = match
+        existing_content = page_path.read_text(encoding="utf-8")
+        existing_body = _strip_frontmatter(existing_content)
+
+        # Append new distilled content to existing body
+        timestamp = datetime.now().strftime("%Y-%m-%d")
+        merged_body = existing_body.rstrip() + f"\n\n---\n\n## {title} ({timestamp})\n\n{distilled}\n"
+
+        # Read full file, replace only body
+        if existing_content.startswith("---"):
+            parts = existing_content.split("---", 2)
+            new_content = f"---\n{parts[1]}\n---\n\n{merged_body}"
+        else:
+            new_content = merged_body
+
+        # Update frontmatter
+        import re
+        new_content = re.sub(r'^updated: .+$', f'updated: {timestamp}', new_content, flags=re.MULTILINE)
+
+        # Add source to sources list if not already present
+        raw_path_str = str(raw_path)
+        if raw_path_str not in new_content:
+            new_content = re.sub(
+                r'(^sources:.*)$',
+                r'\1\n  - ' + raw_path_str,
+                new_content,
+                flags=re.MULTILINE,
+            )
+
+        page_path.write_text(new_content, encoding="utf-8")
+        logger.info(f"✅ MERGED {raw_path.name} → {match.relative_to(wiki_path)}")
+
+    else:
+        # 8b. Create new page
+        action = "created"
+        dest_name = f"{datetime.now().strftime('%Y-%m-%d')}-{entity_slug}.md"
+        page_path = wiki_category_path / dest_name
+
+        # Build frontmatter
+        raw_path_str = str(raw_path)
+        frontmatter = f"""---
+title: {title}
+created: {datetime.now().strftime("%Y-%m-%d")}
+updated: {datetime.now().strftime("%Y-%m-%d")}
+type: {page_type}
+tags: {categories}
+sources:
+  - {raw_path_str}
+confidence: {confidence}
+---
+
+{distilled}
+"""
+        page_path.write_text(frontmatter, encoding="utf-8")
+        logger.info(f"✅ CREATED {raw_path.name} → {subfolder}/{dest_name}")
+
+    # 9. Bidirectional wikilinks
+    wm = _get_wikilinks(wiki_path)
+    link_result = wm.add_bidirectional_links(page_path, detected_entities)
+    outbound = link_result.get("outbound", 0)
+    backlinks = link_result.get("backlinks", 0)
+
+    # 10. Delete raw file after successful processing
+    try:
+        raw_path.unlink()
+    except Exception as e:
+        logger.warning(f"Could not delete raw file {raw_path}: {e}")
+
+    return True, {
+        "action": action,
+        "page_path": str(page_path.relative_to(wiki_path)) if page_path else None,
+        "entity": entity_slug,
+        "confidence": confidence,
+        "outbound_links": outbound,
+        "backlinks": backlinks,
+        "detected_entities": detected_entities[:10],
     }
 
 
-def organize_note_to_wiki(
-    raw_path: Path,
-    wiki_path: Path,
-    schema: WikiSchema,
-    wiki_index: WikiIndex,
-    wiki_log: WikiLog
-) -> Tuple[bool, Optional[str]]:
-    """Move note from raw/ to wiki/ with LLM-Wiki organization."""
-    try:
-        content = raw_path.read_text()
-        
-        # Categorize
-        subfolder, categories = categorize_note(content)
-        
-        # Extract entities and metadata
-        extraction = extract_entities_ai(content, categories)
-        entities = extraction.get("entities", [])
-        summary = extraction.get("summary", WikiPage.extract_body_summary(content))
-        
-        # Create title from filename
-        title = raw_path.stem
-        
-        # Determine destination
-        wiki_category_path = wiki_path / subfolder
-        wiki_category_path.mkdir(parents=True, exist_ok=True)
-        
-        dest_name = f"{title}.md"
-        dest_path = wiki_category_path / dest_name
-        
-        # Build llm-wiki frontmatter
-        fm = build_llmwiki_frontmatter(title, subfolder.rstrip('s'), categories, entities, summary, raw_path, schema)
-        
-        # Add frontmatter to content
-        fm_str = WikiPage.build_frontmatter(fm)
-        full_content = f"{fm_str}\n\n{content}\n"
-        
-        # Write to wiki
-        dest_path.write_text(full_content)
-        logger.info(f"✅ Organized {raw_path.name} → {subfolder}/{title}")
-        
-        # Update index.md
-        rel_path = f"{subfolder}/{title}"
-        wiki_index.add_entry(subfolder.capitalize(), rel_path, summary, overwrite=True)
-        
-        # Add wikilinks to related pages
-        if entities:
-            integrate_wikilinks(wiki_path, subfolder, title, entities[:5])
-        
-        # Log the action
-        wiki_log.append("ingest", title, [f"Type: {subfolder}", f"Categories: {', '.join(categories)}"])
-        
-        # Remove from raw
-        raw_path.unlink()
-        
-        return True, rel_path
-        
-    except Exception as e:
-        logger.error(f"Failed to organize {raw_path}: {e}")
-        return False, None
-
-
-def build_knowledge_graph(wiki_path: Path) -> str:
-    """Generate knowledge graph markdown (backward compatible)."""
-    try:
-        graph_md = f"""# 📊 Knowledge Graph
-
-Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}
-
-"""
-        
-        # Index entities
-        entities_path = wiki_path / "entities"
-        if entities_path.exists():
-            files = list(entities_path.glob("*.md"))
-            
-            graph_md += f"""## 🔗 Entities ({len(files)} files)
-
-"""
-            for f in sorted(files):
-                name = f.stem
-                graph_md += f"- **{name}**\n"
-            
-            graph_md += "\n"
-        
-        # Index concepts
-        concepts_path = wiki_path / "concepts"
-        if concepts_path.exists():
-            files = list(concepts_path.glob("*.md"))
-            
-            graph_md += f"""## 💡 Concepts ({len(files)} files)
-
-"""
-            for f in sorted(files):
-                name = f.stem
-                graph_md += f"- {name}\n"
-            
-            graph_md += "\n"
-        
-        graph_md += f"""---
-Last updated: {datetime.now().isoformat()}
-"""
-        
-        return graph_md
-        
-    except Exception as e:
-        logger.error(f"Graph generation failed: {e}")
-        return "# Knowledge Graph\n\n(generation failed)"
-
+# ─────────────────────────────────────────────────────────────
+# Batch Ingestion
+# ─────────────────────────────────────────────────────────────
 
 def ingest_raw_to_wiki(vault_path: Path) -> dict:
-    """Main ingestion: process raw/ and organize to wiki/."""
-    try:
-        raw_path = vault_path / "raw"
-        wiki_path = vault_path / "wiki"
-        
-        if not raw_path.exists():
-            logger.warning("raw/ folder does not exist")
-            return {"status": "error", "message": "raw/ folder not found", "processed": 0}
-        
-        # Initialize wiki helpers
-        schema = WikiSchema(wiki_path / "SCHEMA.md")
-        wiki_index = WikiIndex(wiki_path / "index.md")
-        wiki_log = WikiLog(wiki_path / "log.md")
-        
-        # Process all files in raw/
-        raw_files = list(raw_path.glob("*.md"))
-        processed = 0
-        failed = 0
-        created_pages = []
-        
-        logger.info(f"Starting ingestion: {len(raw_files)} files in raw/")
-        
-        for note_file in raw_files:
-            success, page_path = organize_note_to_wiki(note_file, wiki_path, schema, wiki_index, wiki_log)
-            if success:
-                processed += 1
-                if page_path:
-                    created_pages.append(page_path)
-            else:
-                failed += 1
-        
-        # Save updated index
-        wiki_index.save()
-        
-        # Log batch operation
-        if created_pages:
-            wiki_log.append("ingest_batch", f"{processed} notes processed", 
-                          [f"Created: {', '.join(created_pages[:5])}" + 
-                           (f" (+{len(created_pages)-5} more)" if len(created_pages) > 5 else "")])
-        
-        # Build knowledge graph (backward compatible)
-        graph_content = build_knowledge_graph(wiki_path)
-        graph_path = wiki_path / "knowledge-graph.md"
-        graph_path.write_text(graph_content)
-        
-        result = {
-            "status": "success",
-            "processed": processed,
-            "failed": failed,
-            "total": len(raw_files),
-            "created_pages": created_pages,
-            "timestamp": datetime.now().isoformat(),
-            "graph_updated": True,
-            "index_updated": True,
-            "log_updated": True,
+    """
+    Main v2 ingestion: process all files in vault_path/raw/
+    
+    Returns:
+        dict with keys: status, processed, failed, trashed, total,
+                        results (list of per-file results),
+                        llm_info, health_check
+    """
+    from bot.ingestion_health_check import IngestionHealthCheck
+
+    raw_path = vault_path / "raw"
+    wiki_path = vault_path / "wiki"
+
+    if not raw_path.exists():
+        return {
+            "status": "error",
+            "message": f"raw/ folder not found at {raw_path}",
+            "processed": 0,
         }
-        
-        logger.info(f"✅ Ingestion complete: {processed} processed, {failed} failed")
-        return result
-        
-    except Exception as e:
-        logger.error(f"Ingestion failed: {e}")
-        return {"status": "error", "message": str(e), "processed": 0}
 
+    # Check LLM availability
+    llm_client = get_llm_client()
+    llm_info = get_llm_info()
+    skip_llm = llm_info.provider == "none"
 
-def generate_ingestion_report(vault_path: Path, result: dict) -> str:
-    """Generate markdown report of ingestion."""
-    report = f"""# Weekly Ingestion Report
-Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}
+    logger.info(f"LLM provider: {llm_info.provider} | Model: {llm_info.default_model} | Skip-LLM: {skip_llm}")
 
-## Summary
-- Status: {result.get('status', 'unknown')}
-- Processed: {result.get('processed', 0)}
-- Failed: {result.get('failed', 0)}
-- Total: {result.get('total', 0)}
+    # Scan raw files
+    raw_files = sorted(raw_path.glob("**/*.md"))
+    logger.info(f"Found {len(raw_files)} files in raw/")
 
-## Pages Created
-"""
-    
-    created = result.get('created_pages', [])
-    if created:
-        for page in created[:10]:
-            report += f"- `{page}`\n"
-        if len(created) > 10:
-            report += f"- ... and {len(created) - 10} more\n"
-    else:
-        report += "(None)\n"
-    
-    report += f"""
-## Infrastructure Updates
-- index.md: Updated ✅
-- log.md: Updated ✅
-- knowledge-graph.md: Updated ✅
+    processed = 0
+    failed = 0
+    trashed = 0
+    results = []
 
-## Details
-```json
-{json.dumps(result, indent=2)}
-```
+    for raw_file in raw_files:
+        # Quick quality check before reading full content
+        try:
+            content_preview = raw_file.read_text(encoding="utf-8", errors="ignore")[:500].lower()
+        except Exception:
+            content_preview = ""
 
-## What Happened
-1. Scanned raw/ folder
-2. Extracted entities from each note using AI
-3. Built LLM-Wiki frontmatter (tags, sources, confidence)
-4. Categorized and moved to wiki/ (entities/ or concepts/)
-5. Added wikilinks between related pages
-6. Updated index.md with page catalog
-7. Appended to log.md audit trail
-8. Built knowledge-graph.md
-9. Committed changes to Git
+        low_quality, reason = is_low_quality(content_preview)
+        if low_quality:
+            # Archive instead of delete
+            rel_path = raw_file.relative_to(raw_path)
+            archive_path = vault_path / "archive" / rel_path
+            archive_path.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                raw_file.rename(archive_path)
+            except Exception:
+                pass
+            trashed += 1
+            results.append({"file": str(rel_path), "status": "trashed", "reason": reason})
+            continue
 
-Next ingestion: 1 week
+        success, result = ingest_file_v2(raw_file, wiki_path, skip_llm=skip_llm)
+        if success:
+            processed += 1
+        else:
+            failed += 1
+        results.append({"file": raw_file.name, "status": "success" if success else "failed", **result})
 
----
-*Integrated with Karpathy LLM-Wiki pattern for knowledge compilation and cross-referencing.*
-"""
-    return report
+    # Validate wikilinks
+    wm = _get_wikilinks(wiki_path)
+    broken = wm.validate_links()
+    total_broken = sum(len(v) for v in broken.values())
+
+    # Run health check
+    health = IngestionHealthCheck(vault_path)
+    health_report = health.run_all_checks()
+
+    return {
+        "status": "success" if failed == 0 else "partial",
+        "processed": processed,
+        "failed": failed,
+        "trashed": trashed,
+        "total": len(raw_files),
+        "results": results,
+        "llm_provider": llm_info.provider,
+        "llm_model": llm_info.default_model,
+        "skip_llm": skip_llm,
+        "broken_wikilinks": total_broken,
+        "health_check": health_report,
+        "timestamp": datetime.now().isoformat(),
+    }
