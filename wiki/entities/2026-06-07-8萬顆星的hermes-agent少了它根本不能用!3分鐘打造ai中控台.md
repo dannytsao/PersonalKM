@@ -11,6 +11,7 @@ tags:
 sources:
   - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-8萬顆星的hermes-agent少了它根本不能用!3分鐘打造ai中控台.md
 confidence: medium
+contested: false
 
 ---
 

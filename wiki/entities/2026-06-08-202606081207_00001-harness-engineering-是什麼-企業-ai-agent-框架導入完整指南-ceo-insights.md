@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-202606081207_00001-harness-engineering-\u662f\u4ec0\u9ebc-\u4f01\u696d-ai-agent-\u6846\u67b6\u5c0e\u5165\u5b8c\u6574\u6307\u5357-ceo-insights.md"]
 confidence: medium
+contested: false
 
 ---
 

@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-12-202606120619_00001-\u6c88\u91cd\u5b97-ai-esg-\u6578\u4f4d\u8f49\u578b-(@jackshenaiadvisor)-on-threads.md"]
 confidence: medium
+contested: false
 
 ---
 

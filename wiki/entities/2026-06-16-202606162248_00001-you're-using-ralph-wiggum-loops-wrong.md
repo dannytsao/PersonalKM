@@ -7,6 +7,7 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/General/2026-06-16-202606162248_00001-you're-using-ralph-wiggum-loops-wrong.md"]
 confidence: medium
+contested: false
 
 ---
 

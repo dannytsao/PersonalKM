@@ -7,6 +7,7 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-14-202606142044_00002-github-farion1231-cc-switch-a-cross-platform-desktop-all-in.md"]
 confidence: medium
+contested: false
 
 ---
 

@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-hermes-agent-tutorial-for-beginners-(full-step-by-step-setup.md"]
 confidence: medium
+contested: false
 
 ---
 

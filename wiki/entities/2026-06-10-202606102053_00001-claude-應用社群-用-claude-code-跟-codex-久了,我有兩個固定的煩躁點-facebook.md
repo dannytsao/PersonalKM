@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606102053_00001-claude-\u61c9\u7528\u793e\u7fa4-\u7528-claude-code-\u8ddf-codex-\u4e45\u4e86,\u6211\u6709\u5169\u500b\u56fa\u5b9a\u7684\u7169\u8e81\u9ede-facebook.md"]
 confidence: medium
+contested: false
 
 ---
 

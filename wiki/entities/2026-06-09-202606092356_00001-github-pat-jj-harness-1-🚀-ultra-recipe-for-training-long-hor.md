@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-09-202606092356_00001-github-pat-jj-harness-1-\ud83d\ude80-ultra-recipe-for-training-long-hor.md"]
 confidence: medium
+contested: false
 
 ---
 

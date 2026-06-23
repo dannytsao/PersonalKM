@@ -6,6 +6,7 @@ type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-\u52d5\u5340\u52d5\u8da8-blocktempo-\u6700\u6709\u5f71\u97ff\u529b\u7684\u5340\u584a\u93c8\u65b0\u805e\u5a92\u9ad4-(\u6bd4\u7279\u5e63,-\u52a0\u5bc6\u8ca8\u5e63).md"]
 confidence: medium
+contested: false
 ---
 
 ## Summary

@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-how-claude-code-works-claude-code-docs.md"]
 confidence: medium
+contested: false
 
 ---
 

@@ -7,6 +7,7 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-18-202606181656_00001-practical-tips-on-how-to-use-claudecode-by-boris-cherny-2-3-4-5-6-7.md"]
 confidence: medium
+contested: false
 
 ---
 

@@ -12,6 +12,7 @@ tags:
 sources:
   - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-build-an-ai-second-brain-knowledge-base-(step-by-step).md
 confidence: medium
+contested: false
 
 ---
 

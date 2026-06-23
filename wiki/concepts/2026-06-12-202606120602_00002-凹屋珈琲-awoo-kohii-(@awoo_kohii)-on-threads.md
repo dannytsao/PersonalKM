@@ -6,6 +6,7 @@ type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Food/2026-06-12-202606120602_00002-\u51f9\u5c4b\u73c8\u7432-awoo-kohii-(@awoo_kohii)-on-threads.md"]
 confidence: medium
+contested: false
 ---
 
 ## Summary

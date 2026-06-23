@@ -6,6 +6,7 @@ type: concept
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-16-202606161427_00001-idea-worth-to-think-if-the-tag-of-obsidian-can-auto-gen-muti.md"]
 confidence: medium
+contested: false
 ---
 
 ## Summary

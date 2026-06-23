@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-github-fathah-hermes-desktop-desktop-companion-for-hermes-...md"]
 confidence: medium
+contested: false
 
 ---
 

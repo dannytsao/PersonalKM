@@ -6,6 +6,7 @@ type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-202606081207_00001-o'reilly-media-technology-and-business-training.md"]
 confidence: medium
+contested: false
 ---
 
 ## Summary

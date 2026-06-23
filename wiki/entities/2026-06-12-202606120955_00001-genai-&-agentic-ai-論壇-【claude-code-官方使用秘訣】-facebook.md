@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-12-202606120955_00001-genai-&-agentic-ai-\u8ad6\u58c7-\u3010claude-code-\u5b98\u65b9\u4f7f\u7528\u79d8\u8a23\u3011-facebook.md"]
 confidence: medium
+contested: false
 
 ---
 

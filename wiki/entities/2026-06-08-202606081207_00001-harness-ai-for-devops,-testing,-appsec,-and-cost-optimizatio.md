@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-202606081207_00001-harness-ai-for-devops,-testing,-appsec,-and-cost-optimizatio.md"]
 confidence: medium
+contested: false
 
 ---
 

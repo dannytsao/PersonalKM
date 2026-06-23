@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-12-202606120612_00001-\u672a\u4f86\u5546\u52d9-(@futurecommerce_official)-on-threads.md"]
 confidence: medium
+contested: false
 
 ---
 

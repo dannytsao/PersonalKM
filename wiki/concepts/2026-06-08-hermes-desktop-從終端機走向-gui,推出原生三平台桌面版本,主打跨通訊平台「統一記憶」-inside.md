@@ -6,6 +6,7 @@ type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-hermes-desktop-\u5f9e\u7d42\u7aef\u6a5f\u8d70\u5411-gui,\u63a8\u51fa\u539f\u751f\u4e09\u5e73\u53f0\u684c\u9762\u7248\u672c,\u4e3b\u6253\u8de8\u901a\u8a0a\u5e73\u53f0\u300c\u7d71\u4e00\u8a18\u61b6\u300d-inside.md"]
 confidence: medium
+contested: false
 ---
 
 ## Summary

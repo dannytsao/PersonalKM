@@ -7,6 +7,7 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-16-202606161426_00001-ai-agent\u57fa\u672c\u529fep01-\u7528agent\u4f86\u5b78\u7fd2agent_\u4e00\u500b-github-repo,\u8907\u88fd\u6211\u7684\u6574\u5957-ai-\u5de5\u4f5c\u6d41\u5230.md"]
 confidence: medium
+contested: false
 
 ---
 

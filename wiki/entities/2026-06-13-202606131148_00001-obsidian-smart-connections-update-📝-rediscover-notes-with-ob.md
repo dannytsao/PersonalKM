@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606131148_00001-obsidian-smart-connections-update-\ud83d\udcdd-rediscover-notes-with-ob.md"]
 confidence: medium
+contested: false
 
 ---
 

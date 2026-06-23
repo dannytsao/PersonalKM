@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-the-3-file-ai-system-that-works-with-any-model.md"]
 confidence: medium
+contested: false
 
 ---
 

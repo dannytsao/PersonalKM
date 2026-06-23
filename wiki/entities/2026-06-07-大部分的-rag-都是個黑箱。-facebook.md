@@ -11,6 +11,7 @@ tags:
 sources:
   - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-大部分的-rag-都是個黑箱。-facebook.md
 confidence: medium
+contested: false
 
 ---
 

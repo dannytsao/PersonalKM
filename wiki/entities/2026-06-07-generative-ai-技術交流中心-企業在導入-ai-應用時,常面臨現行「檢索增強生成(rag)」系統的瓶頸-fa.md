@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-generative-ai-\u6280\u8853\u4ea4\u6d41\u4e2d\u5fc3-\u4f01\u696d\u5728\u5c0e\u5165-ai-\u61c9\u7528\u6642,\u5e38\u9762\u81e8\u73fe\u884c\u300c\u6aa2\u7d22\u589e\u5f37\u751f\u6210(rag)\u300d\u7cfb\u7d71\u7684\u74f6\u9838-fa.md"]
 confidence: medium
+contested: false
 
 ---
 

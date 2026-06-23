@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-gemma-4-12b-on-a-16gb-mac-mini-is-surprisingly-capable.md"]
 confidence: medium
+contested: false
 
 ---
 

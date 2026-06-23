@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-the-ralph-loop-a-practical-pattern-for-reliable-ai-agents-(a.md"]
 confidence: medium
+contested: false
 
 ---
 

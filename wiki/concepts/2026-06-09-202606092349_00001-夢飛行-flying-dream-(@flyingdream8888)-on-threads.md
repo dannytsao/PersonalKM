@@ -6,6 +6,7 @@ type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Food/2026-06-09-202606092349_00001-\u5922\u98db\u884c-flying-dream-(@flyingdream8888)-on-threads.md"]
 confidence: medium
+contested: false
 ---
 
 ## Summary

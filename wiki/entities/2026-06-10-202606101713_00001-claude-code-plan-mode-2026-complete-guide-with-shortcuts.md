@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-claude-code-plan-mode-2026-complete-guide-with-shortcuts.md"]
 confidence: medium
+contested: false
 
 ---
 

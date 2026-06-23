@@ -6,6 +6,7 @@ type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-202606081207_00001-github-deusyu-harness-engineering-harness-engineering-\u5b66\u4e60\u6307\u5357-\u2014.md"]
 confidence: medium
+contested: false
 ---
 
 ## Summary

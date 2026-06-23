@@ -6,6 +6,7 @@ type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-hyperframes\u6559\u7a0b-\u7528\u8fd9\u5957\u65b9\u6cd5,\u8ba9-codex-\u526a\u89c6\u9891\u6548\u679c\u4ee5\u53ca\u6548\u7387\u7ffb\u500d.md"]
 confidence: medium
+contested: false
 ---# Hyperframes教程：用这套方法，让 Codex 剪视频效果以及效率翻倍
 
 ## Summary

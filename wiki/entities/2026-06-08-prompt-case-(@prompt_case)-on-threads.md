@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-prompt-case-(@prompt_case)-on-threads.md"]
 confidence: medium
+contested: false
 
 ---
 

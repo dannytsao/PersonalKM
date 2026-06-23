@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-genai-&-agentic-ai-\u8ad6\u58c7-google-\u628a\u6574\u500b\u5de5\u7a0b\u6559\u80b2\u5718\u968a\u88c1\u6389\u4e86\u2014\u2014\u9019\u4e0d\u53ea\u662f\u4e00\u6b21\u88c1\u54e1,\u9019\u662f\u4e00\u500b\u8a0a\u865f-f.md"]
 confidence: medium
+contested: false
 
 ---
 

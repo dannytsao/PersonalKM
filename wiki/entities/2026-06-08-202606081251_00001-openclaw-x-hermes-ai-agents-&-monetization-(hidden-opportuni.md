@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-202606081251_00001-openclaw-x-hermes-ai-agents-&-monetization-(hidden-opportuni.md"]
 confidence: medium
+contested: false
 
 ---
 

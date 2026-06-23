@@ -6,6 +6,7 @@ type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-google-ai-mode-share.md"]
 confidence: medium
+contested: false
 ---
 
 ## Summary

@@ -6,6 +6,7 @@ type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-hermes-\u684c\u9762\u7248app\u4e0a\u7dda!\u514d\u7d42\u7aef-mit-\u958b\u6e90\u3001\u652f\u63f4-macos\u3001windows-\u8207-linux.md"]
 confidence: medium
+contested: false
 ---
 
 ## Summary

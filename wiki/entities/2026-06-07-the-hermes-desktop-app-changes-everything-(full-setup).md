@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-the-hermes-desktop-app-changes-everything-(full-setup).md"]
 confidence: medium
+contested: false
 
 ---
 

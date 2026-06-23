@@ -7,6 +7,7 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-17-202606170659_00001-gemma-4-12b-+-hermes-agent-build-your-own-ai-assistant.md"]
 confidence: medium
+contested: false
 
 ---
 

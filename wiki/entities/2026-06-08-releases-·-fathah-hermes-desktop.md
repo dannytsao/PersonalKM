@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-releases-\u00b7-fathah-hermes-desktop.md"]
 confidence: medium
+contested: false
 
 ---
 

@@ -7,6 +7,7 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-18-202606181656_00001-anthropic-\u7684\u6280\u8853\u5718\u968a\u6210\u54e1\u3001\u540c\u6642\u4e5f\u662f-claude-code-\u7684\u5275\u4f5c\u8005-boris-cherny-\u6240\u5e36\u4f86\u7684\u5be6\u7528\u6280.md"]
 confidence: medium
+contested: false
 
 ---
 

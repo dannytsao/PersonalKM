@@ -7,6 +7,7 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-14-202606141220_00001-\u300copenchamber\u300dvs-code-\u5ef6\u4f38\u6a21\u7d44(extension)\u63a8\u85a6,\u63d0\u5347-opencode-\u958b\u767c\u9ad4\u9a57-face.md"]
 confidence: medium
+contested: false
 
 ---
 

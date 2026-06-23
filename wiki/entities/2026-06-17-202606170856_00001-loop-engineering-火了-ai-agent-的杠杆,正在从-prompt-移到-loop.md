@@ -7,6 +7,7 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-17-202606170856_00001-loop-engineering-\u706b\u4e86-ai-agent-\u7684\u6760\u6746,\u6b63\u5728\u4ece-prompt-\u79fb\u5230-loop.md"]
 confidence: medium
+contested: false
 
 ---
 

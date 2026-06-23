@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606131148_00001-github-martwozniak-ollama-obsidian-integration-this-plugin-i.md"]
 confidence: medium
+contested: false
 
 ---
 

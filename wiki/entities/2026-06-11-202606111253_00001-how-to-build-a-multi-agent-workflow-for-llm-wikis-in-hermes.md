@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-11-202606111253_00001-how-to-build-a-multi-agent-workflow-for-llm-wikis-in-hermes.md"]
 confidence: medium
+contested: false
 
 ---
 

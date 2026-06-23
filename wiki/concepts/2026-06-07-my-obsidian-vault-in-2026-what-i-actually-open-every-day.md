@@ -6,6 +6,7 @@ type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-my-obsidian-vault-in-2026-what-i-actually-open-every-day.md"]
 confidence: medium
+contested: false
 ---# My Obsidian Vault in 2026 - What I Actually Open Every Day
 
 ## Summary

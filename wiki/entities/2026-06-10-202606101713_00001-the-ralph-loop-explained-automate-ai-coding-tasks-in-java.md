@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-the-ralph-loop-explained-automate-ai-coding-tasks-in-java.md"]
 confidence: medium
+contested: false
 
 ---
 

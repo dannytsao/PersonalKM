@@ -7,6 +7,7 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-21-202606211804_00001-teamorouter-budget-llm-gateway-for-claude-code-and-codex-2.md"]
 confidence: medium
+contested: false
 
 ---
 

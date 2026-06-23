@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-my-full-claude-cowork-setup-(steal-my-workflows!).md"]
 confidence: medium
+contested: false
 
 ---
 

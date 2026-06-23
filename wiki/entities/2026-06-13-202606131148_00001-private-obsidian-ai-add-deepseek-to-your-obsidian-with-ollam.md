@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606131148_00001-private-obsidian-ai-add-deepseek-to-your-obsidian-with-ollam.md"]
 confidence: medium
+contested: false
 
 ---
 

@@ -7,6 +7,7 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-21-202606211804_00001-github-anthropics-claude-code-claude-code-is-an-agentic-codi.md"]
 confidence: medium
+contested: false
 
 ---
 
@@ -23,4 +24,3 @@ confidence: medium
 
 ## See also
 
-- [[2026-06-23-test-wikilinks]]

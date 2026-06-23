@@ -7,6 +7,7 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-23-202606231026_00001-\u5728\u770b-lenny-\u8a2a-fiona-fung-\u9019\u96c6,fiona-fung-\u662f-ai-\u7814\u767c\u516c\u53f8-anthropic-\u65d7\u4e0b\u6838\u5fc3.md"]
 confidence: medium
+contested: false
 
 ---
 

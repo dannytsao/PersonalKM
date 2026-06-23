@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-202606081207_00001-github-ai-boost-awesome-harness-engineering-awesome-list-for.md"]
 confidence: medium
+contested: false
 
 ---
 

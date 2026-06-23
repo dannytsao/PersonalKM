@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-nous-research-\u63a8\u51fa-hermes-desktop-\u516c\u6e2c\u7248-ai-agent-\u544a\u5225\u7d42\u7aef\u6a5f\u6642\u4ee3.md"]
 confidence: medium
+contested: false
 
 ---
 

@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-202606081207_00001-continuous-deployment-&-delivery-software-for-devops-teams-o.md"]
 confidence: medium
+contested: false
 
 ---
 

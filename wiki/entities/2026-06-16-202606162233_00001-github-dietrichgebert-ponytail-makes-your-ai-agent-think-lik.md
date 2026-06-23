@@ -7,6 +7,7 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-16-202606162233_00001-github-dietrichgebert-ponytail-makes-your-ai-agent-think-lik.md"]
 confidence: medium
+contested: false
 
 ---
 

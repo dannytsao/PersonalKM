@@ -7,6 +7,7 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-18-202606180937_00001-openai-codex-cli-\u958b\u653e\u652f\u63f4\u7b2c\u4e09\u65b9\u6a21\u578b!deepseek\u3001claude\u3001gemini\u3001ollama-\u90fd\u80fd\u7528.md"]
 confidence: medium
+contested: false
 
 ---
 

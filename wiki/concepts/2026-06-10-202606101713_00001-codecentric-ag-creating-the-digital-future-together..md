@@ -6,6 +6,7 @@ type: concept
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-codecentric-ag-creating-the-digital-future-together..md"]
 confidence: medium
+contested: false
 ---
 
 ## Summary

@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-i-built-an-ai-second-brain-using-obsidian-+-claude-(copy-me).md"]
 confidence: medium
+contested: false
 
 ---
 

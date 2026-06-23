@@ -7,6 +7,7 @@ type: entitie
 tags: ["tech"]
 sources: ["raw/Tech/2026-06-21-202606211804_00001-\u5c0d\u65bc\u5728-codex-desktop-\u8207-claude-code-desktop-(-)-\u9019\u985e\u958b\u767c\u8005-agent-\u5de5\u5177\u4e2d\u4f7f.md"]
 confidence: medium
+contested: false
 
 ---
 

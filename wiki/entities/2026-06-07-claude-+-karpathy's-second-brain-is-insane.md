@@ -11,6 +11,7 @@ tags:
 sources:
   - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-claude-+-karpathy's-second-brain-is-insane.md
 confidence: medium
+contested: false
 
 ---
 

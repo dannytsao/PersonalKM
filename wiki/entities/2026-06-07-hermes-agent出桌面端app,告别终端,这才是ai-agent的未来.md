@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-hermes-agent\u51fa\u684c\u9762\u7aefapp,\u544a\u522b\u7ec8\u7aef,\u8fd9\u624d\u662fai-agent\u7684\u672a\u6765.md"]
 confidence: medium
+contested: false
 
 ---
 

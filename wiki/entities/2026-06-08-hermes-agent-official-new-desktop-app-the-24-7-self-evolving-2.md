@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-hermes-agent-official-new-desktop-app-the-24-7-self-evolving-2.md"]
 confidence: medium
+contested: false
 
 ---
 

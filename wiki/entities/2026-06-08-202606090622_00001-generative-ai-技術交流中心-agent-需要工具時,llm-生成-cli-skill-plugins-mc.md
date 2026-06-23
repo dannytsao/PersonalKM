@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-202606090622_00001-generative-ai-\u6280\u8853\u4ea4\u6d41\u4e2d\u5fc3-agent-\u9700\u8981\u5de5\u5177\u6642,llm-\u751f\u6210-cli-skill-plugins-mc.md"]
 confidence: medium
+contested: false
 
 ---
 

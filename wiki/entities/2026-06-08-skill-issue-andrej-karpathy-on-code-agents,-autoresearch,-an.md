@@ -7,6 +7,7 @@ type: entity
 tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-skill-issue-andrej-karpathy-on-code-agents,-autoresearch,-an.md"]
 confidence: medium
+contested: false
 
 ---
 
