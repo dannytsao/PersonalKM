@@ -1,20 +1,15 @@
-
-
 title: 2026-06-07-build-an-ai-second-brain-knowledge-base-(step-by-step)
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags:
-  - tech
-  - ArtificialIntelligence
-  - secondbrain
-  - wiki
-sources:
-  - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-build-an-ai-second-brain-knowledge-base-(step-by-step).md
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
+sources:  - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-build-an-ai-second-brain-knowledge-base-(step-by-step).md
 confidence: medium
 contested: false
-
 ---
+
 
 # Build An AI Second Brain Knowledge Base (Step-By-Step)
 

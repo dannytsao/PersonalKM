@@ -1,15 +1,15 @@
-
-
 title: 2026-06-08-official-hermes-desktop-is-finally-here
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-official-hermes-desktop-is-finally-here.md"]
 confidence: medium
 contested: false
-
 ---
+
 
 # Official Hermes Desktop Is FINALLY Here
 

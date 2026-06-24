@@ -1,19 +1,15 @@
-
-
 title: 2026-06-07-大部分的-rag-都是個黑箱。-facebook
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags:
-  - tech
-  - ArtificialIntelligence
-  - RAG
-sources:
-  - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-大部分的-rag-都是個黑箱。-facebook.md
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
+sources:  - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-大部分的-rag-都是個黑箱。-facebook.md
 confidence: medium
 contested: false
-
 ---
+
 
 
 

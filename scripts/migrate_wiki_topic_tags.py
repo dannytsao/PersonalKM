@@ -55,30 +55,28 @@ def migrate_frontmatter(content: str, topic: str = DEFAULT_TOPIC) -> str:
     Replace tags + type blocks with topic + clean tags + subfolder-based type.
     Uses a multi-line regex to strip the entire tags: [...] block safely.
     """
-    if not content.startswith("---"):
+    # Handle files that start with a bare \n instead of ---\n
+    fm_start = content.find("\ntitle:")
+    if fm_start == -1:
+        return content
+    body_start = content.find("\n---\n", fm_start)
+    if body_start == -1:
         return content
 
-    parts = content.split("---", 2)
-    if len(parts) < 3:
-        return content
-
-    fm = parts[1]
-    body = parts[2]
+    fm = content[fm_start + 1:body_start]
+    body = content[body_start + 5:]
 
     subfolder = "entities" if topic in TOPIC_ENTITIES else "concepts"
     page_type = subfolder.rstrip("s")
 
     # ── Remove entire tags: [...] block (single-line OR multi-line YAML list) ──
-    # Match 'tags:' then all following indented lines starting with '  - '
     fm = re.sub(
         r'^tags:\s*\[.*?\](\n(?:  - .+?\n)*)',
         r'tags: []\n',
         fm,
         flags=re.MULTILINE | re.DOTALL,
     )
-    # Single-line tags: [...]
     fm = re.sub(r'^tags: \[.*?\]', 'tags: []', fm, flags=re.MULTILINE)
-    # Multi-line tags block: tags:\n  - item\n  - item\n  ...
     fm = re.sub(
         r'^tags:\n((?:  - [^\n]*\n)+)',
         r'tags: []\n',
@@ -105,10 +103,7 @@ def migrate_frontmatter(content: str, topic: str = DEFAULT_TOPIC) -> str:
         flags=re.MULTILINE,
     )
 
-    # ── Clean up: remove orphaned list items that belonged to removed tags: block ──
-    # Only removes lines that are direct children of a now-removed 'tags:' key.
-    # We do this by finding 'tags: []' and removing the immediately-following
-    # indented block (if any) that wasn't consumed by the regex above.
+    # ── Clean up orphaned list items ──
     fm = re.sub(
         r'^(tags: \[\])$\n((?:  - [^\n]*\n)+)',
         r'\1\n',
@@ -116,15 +111,14 @@ def migrate_frontmatter(content: str, topic: str = DEFAULT_TOPIC) -> str:
         flags=re.MULTILINE,
     )
 
-    # Clean up empty lines that resulted from removed content
+    # Clean up empty lines
     fm = re.sub(r'\n\n\n+', '\n\n', fm)
 
-    # ── Fix: if sources: is now on its own line with no value, remove it ──
-    # (happens when the sources list was consumed above)
+    # ── Fix orphaned sources: ──
     fm = re.sub(r'^sources:\s*$\n((?:  - [^\n]*\n)*)', r'sources:\1', fm, flags=re.MULTILINE)
     fm = re.sub(r'^sources:\s*$', '', fm, flags=re.MULTILINE)
 
-    return "---\n" + fm.strip() + "\n---\n\n" + body
+    return fm.strip() + "\n---\n\n" + body
 
 
 def migrate_with_llm(content: str, vault_path: Path) -> str:

@@ -1,15 +1,15 @@
-
-
 title: 2026-06-07-the-3-file-ai-system-that-works-with-any-model
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-the-3-file-ai-system-that-works-with-any-model.md"]
 confidence: medium
 contested: false
-
 ---
+
 
 # The 3-File AI System That Works With ANY MODEL
 

@@ -1,15 +1,15 @@
-
-
 title: 2026-06-10-202606100622_00001-the-biggest-lie-you've-been-told-about-hermes-agent
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/General/2026-06-10-202606100622_00001-the-biggest-lie-you've-been-told-about-hermes-agent.md"]
 confidence: medium
 contested: false
-
 ---
+
 
 
 

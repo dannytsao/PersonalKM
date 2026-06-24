@@ -1,15 +1,15 @@
-
-
 title: 2026-06-07-my-full-claude-cowork-setup-(steal-my-workflows!)
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-my-full-claude-cowork-setup-(steal-my-workflows!).md"]
 confidence: medium
 contested: false
-
 ---
+
 
 # My Full Claude Cowork Setup (steal my workflows!)
 
