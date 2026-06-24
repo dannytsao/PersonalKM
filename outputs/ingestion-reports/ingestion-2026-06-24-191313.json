@@ -1,0 +1,133 @@
+{
+  "status": "success",
+  "processed": 4,
+  "failed": 0,
+  "trashed": 0,
+  "total": 4,
+  "results": [
+    {
+      "file": "2026-06-24-202606240606_00001-日出日落時間·方位地圖-hinode.md",
+      "status": "success",
+      "action": "created",
+      "page_path": "concepts/2026-06-24-hinode.md",
+      "entity": "hinode",
+      "confidence": "low",
+      "outbound_links": 0,
+      "backlinks": 0,
+      "detected_entities": [
+        "topic-並以地圖形式直觀展示",
+        "topic-使用者可點擊地圖上的任",
+        "topic-內含連結",
+        "topic-全球今天的日出日落時間",
+        "topic-即可查看該地的日出日落",
+        "topic-原始內容",
+        "topic-原文連結",
+        "topic-在地圖上一目了然",
+        "topic-媒體",
+        "topic-平台"
+      ]
+    },
+    {
+      "file": "2026-06-24-202606240606_00001-有位台南車友前天來訊,說昨天要搭高鐵北上,會參考我之前分享的路線騎淡江大橋。-本來想說昨天是夏至會很熱,看了他騎完臉書的.md",
+      "status": "success",
+      "action": "created",
+      "page_path": "concepts/2026-06-24-log-id.md",
+      "entity": "log-id",
+      "confidence": "low",
+      "outbound_links": 0,
+      "backlinks": 0,
+      "detected_entities": [
+        "topic-一直到油車口",
+        "topic-不是查日落位置",
+        "topic-不管在哪裡都可以精準的",
+        "topic-並推薦該網站作為拍攝日",
+        "topic-並觀賞夏至時分夕陽落在",
+        "topic-但印象中紅樹林站自行車",
+        "topic-但認真的說",
+        "topic-作者利用線上太陽軌跡工",
+        "topic-依照網站預判",
+        "topic-內含連結"
+      ]
+    },
+    {
+      "file": "2026-06-24-202606240559_00001-日本-sakana-ai-今天發布-fugu——不做更大的模型,做讓所有模型一起工作的模型-今天(6月22日),東京的.md",
+      "status": "success",
+      "action": "created",
+      "page_path": "concepts/2026-06-24-log-id.md",
+      "entity": "log-id",
+      "confidence": "low",
+      "outbound_links": 0,
+      "backlinks": 1,
+      "detected_entities": [
+        "anthropic",
+        "claudecode",
+        "fuguultra",
+        "gpt-5-5",
+        "jensenhuang",
+        "livecodebench",
+        "openai",
+        "topic-一個回答",
+        "topic-一款不追求更大模型",
+        "topic-一起來聊聊"
+      ]
+    },
+    {
+      "file": "2026-06-24-202606240648_00001-claude-一直忘規則、不了解你-這四個設定一次解決.md",
+      "status": "success",
+      "action": "created",
+      "page_path": "concepts/2026-06-24-claude.md",
+      "entity": "claude",
+      "confidence": "low",
+      "outbound_links": 0,
+      "backlinks": 0,
+      "detected_entities": [
+        "topic-一個助理",
+        "topic-一個是全局",
+        "topic-一個是公司統一的讓所",
+        "topic-一樣",
+        "topic-一段時間之後",
+        "topic-一直忘規則",
+        "topic-一種是當你的",
+        "topic-上下文的空間是非常稀缺",
+        "topic-上山玩被塞的太滿",
+        "topic-上網搜尋別人的"
+      ]
+    }
+  ],
+  "llm_provider": "none",
+  "llm_model": "none",
+  "skip_llm": true,
+  "broken_wikilinks": 27,
+  "health_check": {
+    "status": "degraded",
+    "checks_passed": 16,
+    "checks_failed": 2,
+    "warnings": 0,
+    "details": {
+      "passed": [
+        "Raw folder empty ✅",
+        "Wiki/entities/ exists ✅",
+        "Wiki/concepts/ exists ✅",
+        "Wiki/sources/ exists ✅",
+        "Wiki/index.md exists ✅",
+        "Wiki/log.md exists ✅",
+        "Wiki/knowledge-graph.md exists ✅",
+        "Wiki/SCHEMA.md exists ✅",
+        "Wiki/QUICKREF.md exists ✅",
+        "Wiki files created: 372 ✅",
+        "Entities: 213 ✅",
+        "Concepts: 159 ✅",
+        "index.md structure valid ✅",
+        "log.md has 379 entries ✅",
+        "knowledge-graph.md valid ✅",
+        "Wikilinks found in samples: 1 ✅"
+      ],
+      "failed": [
+        "No frontmatter: 2026-06-21-202606211804_00001-teamorouter-budget-llm-gateway-for-claude-code-and-codex.md",
+        "Frontmatter issues in 1/5 samples"
+      ],
+      "warnings": []
+    }
+  },
+  "timestamp": "2026-06-24T19:13:13.380582"
+}

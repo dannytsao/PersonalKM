@@ -1,4 +1,4 @@
----
+
 title: 2026-06-23-202606231027_00001-genai-&-agentic-ai-論壇-💊💊💊-claudecode-fionafung-ai-pilled-💊💊💊
 created: 2026-06-23
 updated: 2026-06-23
@@ -23,3 +23,7 @@ contested: false
 
 - Full content preserved in wiki page
 - Source file archived in raw/ directory
+
+## See also
+
+- [[2026-06-24-log-id]]
