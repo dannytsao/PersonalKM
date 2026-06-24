@@ -66,15 +66,12 @@ def note_target_dir(note: LinkNote, fallback_dir: str) -> str:
 
 
 def render_note(note: LinkNote) -> str:
-    safe_summary = note.summary.replace("\n", " ").strip()
-    needs_review = "true" if note.needs_review else "false"
-    needs_local_worker = "true" if note.needs_local_worker else "false"
-    location_city_line = f"location_city: {note.location_city}\n" if note.location_city else ""
-    log_id_line = f"log_id: {note.log_id}\n" if note.log_id else ""
-    content_type_line = f"content_type: {note.content_type}\n" if note.content_type else ""
-    worker_error_line = f"worker_error: {note.worker_error}\n" if note.worker_error else ""
-    worker_processed_at_line = f"worker_processed_at: {note.worker_processed_at}\n" if note.worker_processed_at else ""
-    worker_name_line = f"worker_name: {note.worker_name}\n" if note.worker_name else ""
+    """Render a raw note as pure markdown body (no YAML frontmatter).
+
+    YAML was previously written here but was stripped during ingestion.
+    Now we write only the body — the title + content that flows into
+    ingestion_v2.py which generates the real LLM-Wiki frontmatter.
+    """
     log_id_section = f"## Log ID\n{note.log_id}\n\n" if note.log_id else ""
     body = note.body_markdown.strip()
     if not body:
@@ -85,27 +82,6 @@ def render_note(note: LinkNote) -> str:
             f"{note.url}"
         )
     return (
-        "---\n"
-        f"tags: [{note.tag}]\n"
-        "source: LINE\n"
-        f"date: {note.captured_on.isoformat()}\n"
-        f"{log_id_line}"
-        f"url: {note.url}\n"
-        f"platform: {note.platform}\n"
-        f"{content_type_line}"
-        f"extraction_status: {note.extraction_status}\n"
-        f"needs_review: {needs_review}\n"
-        f"needs_local_worker: {needs_local_worker}\n"
-        f"worker_status: {note.worker_status}\n"
-        f"worker_type: {note.worker_type}\n"
-        f"worker_retry_count: {note.worker_retry_count}\n"
-        f"{worker_error_line}"
-        f"{worker_processed_at_line}"
-        f"{worker_name_line}"
-        f"{location_city_line}"
-        f"summary: {safe_summary}\n"
-        "status: unread\n"
-        "---\n\n"
         f"# {note.title}\n\n"
         f"{log_id_section}"
         f"{body}\n"

@@ -7,7 +7,13 @@ def test_slugify_keeps_readable_chinese_title():
     assert slugify("台北 美食 / Coffee?") == "台北-美食-coffee"
 
 
-def test_render_note_matches_obsidian_template():
+def test_render_note_outputs_pure_markdown_no_frontmatter():
+    """Raw notes should be pure markdown body — no YAML frontmatter.
+
+    YAML frontmatter was removed from raw/ notes because it was fully
+    stripped during ingestion anyway. The real frontmatter is generated
+    by ingestion_v2.py when raw/ → wiki/.
+    """
     note = LinkNote(
         title="Example",
         url="https://example.com",
@@ -18,95 +24,21 @@ def test_render_note_matches_obsidian_template():
 
     rendered = render_note(note)
 
-    assert "tags: [技術]" in rendered
-    assert "source: LINE" in rendered
-    assert "platform: web" in rendered
-    assert "extraction_status: ok" in rendered
-    assert "needs_review: false" in rendered
-    assert "needs_local_worker: false" in rendered
-    assert "worker_status: not_required" in rendered
-    assert "worker_type: none" in rendered
-    assert "worker_retry_count: 0" in rendered
-    assert "status: unread" in rendered
+    # No YAML frontmatter
+    assert not rendered.startswith("---")
+    assert "tags:" not in rendered
+    assert "source:" not in rendered
+    assert "platform:" not in rendered
+    assert "status:" not in rendered
+
+    # Title heading
+    assert rendered.startswith("# Example\n\n")
+
+    # Content present
     assert "## 原文連結\nhttps://example.com" in rendered
 
 
-def test_render_note_includes_pending_worker_metadata():
-    note = LinkNote(
-        title="YouTube",
-        url="https://youtu.be/example",
-        summary="需要本機補強。",
-        category="tech",
-        captured_on=date(2026, 6, 10),
-        platform="youtube",
-        extraction_status="partial",
-        needs_review=True,
-        needs_local_worker=True,
-        worker_status="pending",
-        worker_type="omnichannel_md",
-        worker_retry_count=1,
-        worker_error="yt_dlp_not_installed",
-    )
-
-    rendered = render_note(note)
-
-    assert "needs_local_worker: true" in rendered
-    assert "worker_status: pending" in rendered
-    assert "worker_type: omnichannel_md" in rendered
-    assert "worker_retry_count: 1" in rendered
-    assert "worker_error: yt_dlp_not_installed" in rendered
-
-
-def test_render_note_includes_content_type_when_present():
-    note = LinkNote(
-        title="Example",
-        url="https://example.com",
-        summary="摘要",
-        category="general",
-        captured_on=date(2026, 5, 31),
-        content_type="webpage",
-    )
-
-    rendered = render_note(note)
-
-    assert "content_type: webpage" in rendered
-
-
-def test_render_note_includes_blocked_platform_metadata():
-    note = LinkNote(
-        title="Instagram Reel",
-        url="https://www.instagram.com/reel/abc/",
-        summary="需要直接開啟查看。",
-        category="general",
-        captured_on=date(2026, 5, 31),
-        platform="instagram",
-        extraction_status="blocked",
-        needs_review=True,
-    )
-
-    rendered = render_note(note)
-
-    assert "platform: instagram" in rendered
-    assert "extraction_status: blocked" in rendered
-    assert "needs_review: true" in rendered
-
-
-def test_render_note_includes_location_city_when_present():
-    note = LinkNote(
-        title="Cafe",
-        url="https://example.com",
-        summary="店名：Cafe；地址：臺北市中山區中山北路三段181號",
-        category="food",
-        captured_on=date(2026, 5, 31),
-        location_city="臺北市",
-    )
-
-    rendered = render_note(note)
-
-    assert "location_city: 臺北市" in rendered
-
-
-def test_render_note_includes_log_id_metadata_and_section():
+def test_render_note_with_log_id():
     note = LinkNote(
         title="Example",
         url="https://example.com",
@@ -118,26 +50,44 @@ def test_render_note_includes_log_id_metadata_and_section():
 
     rendered = render_note(note)
 
-    assert "log_id: 202606081147_00001" in rendered
+    # Log ID section (markdown, not frontmatter key)
     assert "## Log ID\n202606081147_00001" in rendered
+    # No frontmatter key-value
+    assert "log_id:" not in rendered
 
 
-def test_render_note_uses_custom_body_markdown():
+def test_render_note_with_body_markdown():
+    """Custom body_markdown overrides default body."""
     note = LinkNote(
         title="YouTube",
         url="https://youtu.be/example",
         summary="一句話重點。",
         category="tech",
         captured_on=date(2026, 5, 31),
-        platform="youtube",
         body_markdown="## 一句話重點\n一句話重點。\n\n## 核心摘要\n詳細內容。",
     )
 
     rendered = render_note(note)
 
-    assert "summary: 一句話重點。" in rendered
     assert "## 一句話重點\n一句話重點。" in rendered
     assert "## 核心摘要\n詳細內容。" in rendered
+    assert "# YouTube\n\n" in rendered
+    # No YAML
+    assert "summary:" not in rendered
+
+
+def test_render_note_without_body_uses_summary_fallback():
+    note = LinkNote(
+        title="No Body",
+        url="https://example.com",
+        summary="Summary fallback",
+        category="tech",
+        captured_on=date(2026, 6, 1),
+    )
+
+    rendered = render_note(note)
+
+    assert "## 摘要\nSummary fallback\n\n## 原文連結\nhttps://example.com" in rendered
 
 
 def test_note_filename_uses_date_and_title():
