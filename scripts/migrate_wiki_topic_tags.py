@@ -56,15 +56,28 @@ def migrate_frontmatter(content: str, topic: str = DEFAULT_TOPIC) -> str:
     Uses a multi-line regex to strip the entire tags: [...] block safely.
     """
     # Handle files that start with a bare \n instead of ---\n
+    # Find where frontmatter key-value pairs start
     fm_start = content.find("\ntitle:")
     if fm_start == -1:
         return content
     body_start = content.find("\n---\n", fm_start)
     if body_start == -1:
-        return content
+        # Try: \n---\n# heading (no blank line between --- and first heading)
+        body_start = content.find("\n---\n#", fm_start)
+        if body_start == -1:
+            # Try: \n---# heading (--- immediately before heading)
+            body_start = content.find("\n---#", fm_start)
+            if body_start == -1:
+                return content
+            body_sep = "\n---#"
+        else:
+            body_sep = "\n---\n#"
+    else:
+        body_sep = "\n---\n"
 
+    sep_len = len(body_sep)
     fm = content[fm_start + 1:body_start]
-    body = content[body_start + 5:]
+    body = content[body_start + sep_len:]
 
     subfolder = "entities" if topic in TOPIC_ENTITIES else "concepts"
     page_type = subfolder.rstrip("s")
@@ -118,7 +131,9 @@ def migrate_frontmatter(content: str, topic: str = DEFAULT_TOPIC) -> str:
     fm = re.sub(r'^sources:\s*$\n((?:  - [^\n]*\n)*)', r'sources:\1', fm, flags=re.MULTILINE)
     fm = re.sub(r'^sources:\s*$', '', fm, flags=re.MULTILINE)
 
-    return fm.strip() + "\n---\n\n" + body
+    # Strip leading space after \n---# case
+    body = body.lstrip(" ") if body_sep == "\n---#" else body
+    return fm.strip() + body_sep + "\n" + body
 
 
 def migrate_with_llm(content: str, vault_path: Path) -> str:
