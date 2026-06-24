@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-14-202606142044_00002-github-farion1231-cc-switch-a-cross-platform-desktop-all-in
 created: 2026-06-23
 updated: 2026-06-23
-type: entitie
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["raw/Tech/2026-06-14-202606142044_00002-github-farion1231-cc-switch-a-cross-platform-desktop-all-in.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 
 

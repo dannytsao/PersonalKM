@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-07-i-built-an-ai-second-brain-using-obsidian-+-claude-(copy-me)
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-i-built-an-ai-second-brain-using-obsidian-+-claude-(copy-me).md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 # I Built an AI Second Brain Using Obsidian + Claude (Copy Me)
 

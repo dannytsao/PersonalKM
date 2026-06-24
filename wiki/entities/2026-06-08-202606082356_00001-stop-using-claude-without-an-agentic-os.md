@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-08-202606082356_00001-stop-using-claude-without-an-agentic-os
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-202606082356_00001-stop-using-claude-without-an-agentic-os.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 # Stop Using Claude Without an Agentic OS
 

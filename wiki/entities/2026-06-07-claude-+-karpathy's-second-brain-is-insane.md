@@ -1,19 +1,17 @@
 ---
-
 title: 2026-06-07-claude-+-karpathy's-second-brain-is-insane
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags:
-  - tech
-  - secondbrain
-  - ArtificialIntelligence
-sources:
-  - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-claude-+-karpathy's-second-brain-is-insane.md
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
+sources:  - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-claude-+-karpathy's-second-brain-is-insane.md
 confidence: medium
 contested: false
-
 ---
+
+
 
 # Claude + Karpathy's Second Brain is INSANE
 

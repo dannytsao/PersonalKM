@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-16-202606161425_00002-graphify-+-obsidian-+-claude-code-=-cheat-code
 created: 2026-06-23
 updated: 2026-06-23
-type: entitie
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["raw/Tech/2026-06-16-202606161425_00002-graphify-+-obsidian-+-claude-code-=-cheat-code.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 
 

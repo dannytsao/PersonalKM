@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-17-202606170856_00001-loop-engineering-火了-ai-agent-的杠杆,正在从-prompt-移到-loop
 created: 2026-06-23
 updated: 2026-06-23
-type: entitie
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["raw/Tech/2026-06-17-202606170856_00001-loop-engineering-\u706b\u4e86-ai-agent-\u7684\u6760\u6746,\u6b63\u5728\u4ece-prompt-\u79fb\u5230-loop.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 
 

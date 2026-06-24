@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-10-202606101713_00001-the-ralph-loop-explained-automate-ai-coding-tasks-in-java
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-the-ralph-loop-explained-automate-ai-coding-tasks-in-java.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 # The Ralph Loop Explained: Automate AI Coding Tasks in Java
 

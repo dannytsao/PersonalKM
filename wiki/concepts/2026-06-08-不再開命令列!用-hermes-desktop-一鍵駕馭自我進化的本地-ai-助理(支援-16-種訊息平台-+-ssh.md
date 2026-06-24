@@ -2,12 +2,16 @@
 title: 2026-06-08-不再開命令列!用-hermes-desktop-一鍵駕馭自我進化的本地-ai-助理(支援-16-種訊息平台-+-ssh
 created: 2026-06-14
 updated: 2026-06-23
+topic: Tech-Trends-&-Insights
+
+tags: []
 type: concept
-tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-\u4e0d\u518d\u958b\u547d\u4ee4\u5217!\u7528-hermes-desktop-\u4e00\u9375\u99d5\u99ad\u81ea\u6211\u9032\u5316\u7684\u672c\u5730-ai-\u52a9\u7406(\u652f\u63f4-16-\u7a2e\u8a0a\u606f\u5e73\u53f0-+-ssh.md"]
 confidence: medium
 contested: false
 ---
+
+
 
 ## Summary
 

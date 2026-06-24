@@ -2,12 +2,16 @@
 title: 2026-06-08-google-ai-mode-share
 created: 2026-06-14
 updated: 2026-06-23
+topic: Tech-Trends-&-Insights
+
+tags: []
 type: concept
-tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-google-ai-mode-share.md"]
 confidence: medium
 contested: false
 ---
+
+
 
 ## Summary
 

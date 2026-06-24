@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-17-202606170659_00001-gemma-4-12b-+-hermes-agent-build-your-own-ai-assistant
 created: 2026-06-23
 updated: 2026-06-23
-type: entitie
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["raw/Tech/2026-06-17-202606170659_00001-gemma-4-12b-+-hermes-agent-build-your-own-ai-assistant.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 
 

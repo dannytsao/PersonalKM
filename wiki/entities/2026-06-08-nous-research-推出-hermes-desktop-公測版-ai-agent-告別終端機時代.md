@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-08-nous-research-推出-hermes-desktop-公測版-ai-agent-告別終端機時代
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-nous-research-\u63a8\u51fa-hermes-desktop-\u516c\u6e2c\u7248-ai-agent-\u544a\u5225\u7d42\u7aef\u6a5f\u6642\u4ee3.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 
 

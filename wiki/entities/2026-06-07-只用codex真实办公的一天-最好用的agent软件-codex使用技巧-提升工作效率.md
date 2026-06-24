@@ -1,19 +1,17 @@
 ---
-
 title: 2026-06-07-只用codex真实办公的一天-最好用的agent软件-codex使用技巧-提升工作效率
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags:
-  - tech
-  - agent
-  - codex
-sources:
-  - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-只用codex真实办公的一天-最好用的agent软件-codex使用技巧-提升工作效率.md
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
+sources:  - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-只用codex真实办公的一天-最好用的agent软件-codex使用技巧-提升工作效率.md
 confidence: medium
 contested: false
-
 ---
+
+
 
 # 只用codex真实办公的一天|最好用的agent软件|codex使用技巧|提升工作效率
 

@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-13-202606131148_00001-obsidian-and-ollama-free-local-ai-powered-pkm
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606131148_00001-obsidian-and-ollama-free-local-ai-powered-pkm.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 # Obsidian and Ollama - Free Local AI Powered PKM
 

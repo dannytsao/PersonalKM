@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-09-202606092353_00001-prompt-case-(@prompt_case)-on-threads
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-09-202606092353_00001-prompt-case-(@prompt_case)-on-threads.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 
 

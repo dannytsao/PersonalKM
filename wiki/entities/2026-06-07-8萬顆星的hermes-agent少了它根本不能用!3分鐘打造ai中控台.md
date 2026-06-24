@@ -1,19 +1,17 @@
 ---
-
 title: 2026-06-07-8萬顆星的hermes-agent少了它根本不能用!3分鐘打造ai中控台
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags:
-  - tech
-  - agent
-  - hermes
-sources:
-  - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-8萬顆星的hermes-agent少了它根本不能用!3分鐘打造ai中控台.md
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
+sources:  - /Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-8萬顆星的hermes-agent少了它根本不能用!3分鐘打造ai中控台.md
 confidence: medium
 contested: false
-
 ---
+
+
 
 
 

@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-08-【aigc实战课-109】榨干你的plus会员!在comfyui调用gpt会员生图,无需api,几乎免费!
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-\u3010aigc\u5b9e\u6218\u8bfe-109\u3011\u69a8\u5e72\u4f60\u7684plus\u4f1a\u5458!\u5728comfyui\u8c03\u7528gpt\u4f1a\u5458\u751f\u56fe,\u65e0\u9700api,\u51e0\u4e4e\u514d\u8d39!.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 # 【AIGC实战课 109】榨干你的plus会员！在ComfyUI调用GPT会员生图，无需API，几乎免费！
 

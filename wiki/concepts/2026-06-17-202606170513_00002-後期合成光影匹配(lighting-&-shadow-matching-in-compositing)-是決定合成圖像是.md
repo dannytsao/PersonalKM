@@ -2,12 +2,16 @@
 title: 2026-06-17-202606170513_00002-後期合成光影匹配(lighting-&-shadow-matching-in-compositing)-是決定合成圖像是
 created: 2026-06-23
 updated: 2026-06-23
+topic: Tech-Trends-&-Insights
+
+tags: []
 type: concept
-tags: ["tech"]
 sources: ["raw/Photography/2026-06-17-202606170513_00002-\u5f8c\u671f\u5408\u6210\u5149\u5f71\u5339\u914d(lighting-&-shadow-matching-in-compositing)-\u662f\u6c7a\u5b9a\u5408\u6210\u5716\u50cf\u662f.md"]
 confidence: medium
 contested: false
 ---
+
+
 
 ## Summary
 

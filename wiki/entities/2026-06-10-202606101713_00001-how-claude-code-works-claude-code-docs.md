@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-10-202606101713_00001-how-claude-code-works-claude-code-docs
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-10-202606101713_00001-how-claude-code-works-claude-code-docs.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 
 

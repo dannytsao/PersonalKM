@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-08-releases-·-fathah-hermes-desktop
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-releases-\u00b7-fathah-hermes-desktop.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 
 

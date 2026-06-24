@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-11-202606111253_00001-how-to-build-a-multi-agent-workflow-for-llm-wikis-in-hermes
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-11-202606111253_00001-how-to-build-a-multi-agent-workflow-for-llm-wikis-in-hermes.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 # How to Build a Multi-Agent Workflow for LLM Wikis in Hermes Kanban
 

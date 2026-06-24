@@ -2,12 +2,16 @@
 title: 2026-06-08-https-post.m.smzdm.com-p-ak8prew9
 created: 2026-06-14
 updated: 2026-06-23
+topic: Tech-Trends-&-Insights
+
+tags: []
 type: concept
-tags: ["tech"]
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/General/2026-06-08-https-post.m.smzdm.com-p-ak8prew9.md"]
 confidence: medium
 contested: false
 ---
+
+
 
 ## Summary
 

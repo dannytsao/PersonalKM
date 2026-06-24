@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-08-202606081207_00001-continuous-deployment-&-delivery-software-for-devops-teams-o
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-08-202606081207_00001-continuous-deployment-&-delivery-software-for-devops-teams-o.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 
 

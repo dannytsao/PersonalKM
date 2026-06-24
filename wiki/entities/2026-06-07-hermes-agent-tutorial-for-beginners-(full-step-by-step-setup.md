@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-07-hermes-agent-tutorial-for-beginners-(full-step-by-step-setup
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-07-hermes-agent-tutorial-for-beginners-(full-step-by-step-setup.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 # Hermes Agent Tutorial for Beginners (Full Step-by-Step Setup)
 

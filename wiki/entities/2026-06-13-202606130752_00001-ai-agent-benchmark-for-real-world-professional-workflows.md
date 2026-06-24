@@ -1,15 +1,17 @@
 ---
-
 title: 2026-06-13-202606130752_00001-ai-agent-benchmark-for-real-world-professional-workflows
 created: 2026-06-14
 updated: 2026-06-23
-type: entity
-tags: ["tech"]
+topic: Tech-Trends-&-Insights
+
+tags: []
+type: concept
 sources: ["/Users/dannytsao/Documents/PersonalKM/raw/Tech/2026-06-13-202606130752_00001-ai-agent-benchmark-for-real-world-professional-workflows.md"]
 confidence: medium
 contested: false
-
 ---
+
+
 
 
 
