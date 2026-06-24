@@ -12,8 +12,6 @@ from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
 
 from bot.config import get_settings
 from bot.git_store import commit_and_push, ensure_vault
-from bot.hermes_enrich import enrich_note
-from bot.knowledge_decay import analyze_on_capture
 from bot.line import LineTextEvent, extract_urls, mark_message_as_read, text_message_events_from_webhook, verify_line_signature
 from bot.link_processor import parse_line_message_part, process_line_message_context, process_url, should_capture_line_message_context
 from bot.notes import write_note
@@ -35,10 +33,8 @@ async def save_note(settings, vault_path, note, log_id: str = "") -> None:
     if log_id:
         note = replace(note, log_id=log_id)
     note_path = write_note(vault_path, "raw", note)
-    await asyncio.to_thread(enrich_note, note_path)
-    await asyncio.to_thread(analyze_on_capture, note_path)
     await asyncio.to_thread(commit_and_push, settings, note_path)
-    logger.info("✅ Captured and enriched LINE note into raw/ → %s", note_path.relative_to(vault_path))
+    logger.info("✅ Captured LINE note into raw/ → %s", note_path.relative_to(vault_path))
 
 
 def line_parts_path(vault_path: Path) -> Path:
