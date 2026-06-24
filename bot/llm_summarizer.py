@@ -26,6 +26,12 @@ SYSTEM_PROMPT = """You are a knowledge curator for a personal wiki.
 Your task is to distill raw notes into concise, structured wiki entries.
 
 RULES:
+- Classify the PRIMARY topic of this note from the 5 options ONLY:
+  AI-Agent-&-Tools | Automation-Workflows | PKM-&-System-Design | Tech-Trends-&-Insights | Personal-Interests
+- topic: choose EXACTLY ONE that best represents the core subject
+- tags: capture CROSS-TOPIC attributes — tools, techniques, technologies, years, personal action states
+  (e.g. docker, claude, llm, 2025, to-read, recall — NOT a second topic label)
+  A note can have 0 tags if nothing cross-topic applies.
 - Extract key facts only — no fluff, no repetition
 - Use English for entity names (e.g., "Claude Code" not "克勞德代碼")
 - Normalize entity names to plain English identifiers (lowercase, hyphens)
@@ -44,6 +50,7 @@ CONTENT:
 
 Respond ONLY with this JSON (no markdown, no code fences):
 {{
+  "topic": "AI-Agent-&-Tools | Automation-Workflows | PKM-&-System-Design | Tech-Trends-&-Insights | Personal-Interests",
   "summary": "3-5 sentence summary in English",
   "key_facts": [
     "{{fact 1 — specific and concrete}}",
@@ -53,7 +60,7 @@ Respond ONLY with this JSON (no markdown, no code fences):
   "entities_mentioned": ["entity-name-1", "entity-name-2"],
   "related_concepts": ["concept-name-1"],
   "confidence": "high|medium|low",
-  "tags": ["relevant", "tags"]
+  "tags": ["relevant", "cross-topic", "tags"]
 }}"""
 
 CONCEPT_USER_PROMPT = """Distill this concept/guide note into a wiki entry.
@@ -65,6 +72,7 @@ CONTENT:
 
 Respond ONLY with this JSON (no markdown, no code fences):
 {{
+  "topic": "AI-Agent-&-Tools | Automation-Workflows | PKM-&-System-Design | Tech-Trends-&-Insights | Personal-Interests",
   "summary": "3-5 sentence summary explaining this concept",
   "key_facts": [
     "{{practical fact 1 — how to apply it}}",
@@ -74,7 +82,7 @@ Respond ONLY with this JSON (no markdown, no code fences):
   "prerequisites": ["prereq-concept-1"],
   "related_tools": ["tool-name-1"],
   "confidence": "high|medium|low",
-  "tags": ["relevant", "tags"]
+  "tags": ["relevant", "cross-topic", "tags"]
 }}"""
 
 
@@ -397,6 +405,7 @@ def _parse_json_response(text: str, fallback_content: str, page_type: str, sourc
 
         # Validate and sanitize
         return {
+            "topic": str(parsed.get("topic", "Tech-Trends-&-Insights")),
             "summary": str(parsed.get("summary", ""))[:300],
             "key_facts": [str(f) for f in parsed.get("key_facts", [])[:10]],
             "entities_mentioned": [str(e) for e in parsed.get("entities_mentioned", [])[:10]],
@@ -453,6 +462,7 @@ def _fallback_summarize(content: str, page_type: str, source: Optional[str]) -> 
     summary_text = summary_text[:300] if summary_text else "Summary unavailable."
 
     return {
+        "topic": "Tech-Trends-&-Insights",
         "summary": summary_text,
         "key_facts": [
             "Full content preserved in wiki page",

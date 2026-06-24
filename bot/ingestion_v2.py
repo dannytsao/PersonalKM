@@ -6,10 +6,9 @@ Integrated pipeline: Phase 1 (MiniMax) + Phase 2 (Summarization) + Phase 3 (Dedu
 Data flow:
     raw/*.md → ingest_raw_to_wiki()
         ├── ContentQualityChecker (filter low-quality)
-        ├── categorize_note() (entities vs concepts)
+        ├── summarize_content() (LLM: topic + tags + summary)
         ├── detect_entity_mentions() (Phase 2: extract entity names)
         ├── EntityRegistry.find_entity_match() (Phase 3: dedup check)
-        ├── summarize_content() (Phase 2: MiniMax or fallback)
         ├── distill_to_markdown() (Phase 2: wiki format)
         ├── write_to_wiki() (create or merge)
         ├── WikilinkManager.add_bidirectional_links() (Phase 4)
@@ -86,42 +85,16 @@ def is_low_quality(content: str) -> Tuple[bool, str]:
 
 
 # ─────────────────────────────────────────────────────────────
-# Category Detection
+# Topic Options
 # ─────────────────────────────────────────────────────────────
 
-DEVOPS_KEYWORDS = [
-    "docker", "kubernetes", "k8s", "container", "helm",
-    "terraform", "cloudformation", "ansible", "vagrant",
-    "github actions", "gitlab ci", "jenkins", "circleci",
-    "prometheus", "grafana", "elk", "datadog", "newrelic",
-    "aws", "gcp", "azure", "digitalocean", "heroku",
-    "nginx", "apache", "load balancer", "cdn", "vpc",
-    "ci/cd", "devops", "infrastructure", "deployment",
+TOPIC_OPTIONS = [
+    "AI-Agent-&-Tools",
+    "Automation-Workflows",
+    "PKM-&-System-Design",
+    "Tech-Trends-&-Insights",
+    "Personal-Interests",
 ]
-
-AI_KEYWORDS = [
-    "gpt", "claude", "llm", "large language model",
-    "transformer", "bert", "rag", "retrieval",
-    "pytorch", "tensorflow", "keras", "huggingface",
-    "openai", "anthropic", "mistral", "llama",
-    "fine-tune", "quantization", "qlora", "lora",
-    "embeddings", "vector", "semantic search",
-    "prompt", "chain of thought", "reasoning",
-    "agent", "tool use", "function calling",
-]
-
-
-def categorize_note(content: str) -> Tuple[str, List[str]]:
-    """Determine if note is entity (AI/DevOps) or concept (general)."""
-    lower = content.lower()
-    categories = []
-    if any(kw in lower for kw in DEVOPS_KEYWORDS):
-        categories.append("devops")
-    if any(kw in lower for kw in AI_KEYWORDS):
-        categories.append("ai")
-    if not categories:
-        categories.append("general")
-    return "entities" if categories != ["general"] else "concepts", categories
 
 
 # ─────────────────────────────────────────────────────────────
@@ -182,42 +155,46 @@ def ingest_file_v2(
     if low_quality:
         return False, {"error": f"Low-quality content: {reason}"}
 
-    # 2. Categorize
-    subfolder, categories = categorize_note(content)
-    page_type = subfolder.rstrip("s")  # "entities" → "entity"
-
-    # 3. Strip frontmatter for clean body
+    # 2. Strip frontmatter for clean body
     body = _strip_frontmatter(content)
 
-    # 4. Detect entity mentions in body (before summarization distorts it)
+    # 3. Detect entity mentions in body (before summarization distorts it)
     detected_entities = detect_entity_mentions(body)
     logger.debug(f"Detected entities in {raw_path.name}: {detected_entities[:5]}")
 
-    # 5. Summarize (MiniMax or fallback)
+    # 4. Summarize (MiniMax or fallback) — page_type guides LLM prompt style
+    page_type = "entity"  # entity vs concept drives prompt template
     if skip_llm:
         summary_result = None
     else:
         summary_result = summarize_content(body, page_type=page_type)
 
-    # 6. Distill to wiki markdown
+    # 5. Distill to wiki markdown
     if summary_result:
         distilled = distill_to_markdown(summary_result, page_type=page_type)
+        topic = summary_result.get("topic", "Tech-Trends-&-Insights")
+        tags = summary_result.get("tags", [])
         confidence = summary_result.get("confidence", "medium")
     else:
         # Fallback: use first paragraph
         paras = [p.strip() for p in body.split("\n\n") if p.strip()]
         summary_text = paras[0] if paras else body[:500]
         distilled = f"## Summary\n\n{summary_text}\n"
+        topic = "Tech-Trends-&-Insights"
+        tags = []
         confidence = "low"
 
-    # 7. Build title
+    # 6. Build title
     title = extract_title(raw_path, content)
 
-    # 8. Entity deduplication — find matching existing page
+    # 7. Entity deduplication — find matching existing page
     registry = _get_registry(wiki_path)
     match = registry.find_entity_match(title)
     entity_slug = normalize_entity_name(title)
 
+    # 8. Subfolder based on topic (entities/ for AI+Automation, concepts/ for rest)
+    topic_entities = {"AI-Agent-&-Tools", "Automation-Workflows"}
+    subfolder = "entities" if topic in topic_entities else "concepts"
     wiki_category_path = wiki_path / subfolder
     wiki_category_path.mkdir(parents=True, exist_ok=True)
 
@@ -271,8 +248,9 @@ def ingest_file_v2(
 title: {title}
 created: {datetime.now().strftime("%Y-%m-%d")}
 updated: {datetime.now().strftime("%Y-%m-%d")}
+topic: {topic}
+tags: {tags}
 type: {page_type}
-tags: {categories}
 sources:
   - {raw_path_str}
 confidence: {confidence}
