@@ -91,11 +91,10 @@ def run_phase_a(vault_path: Path) -> dict:
     Pull latest from GitHub, run ingest_raw_to_wiki, push wiki/ changes.
     Returns a result dict.
     """
-    # Add bot/ to sys.path so we can import bot modules
-    repo_root = Path(__file__).parent.parent
-    bot_path = repo_root / "bot"
-    if str(bot_path) not in sys.path:
-        sys.path.insert(0, str(bot_path))
+    # Add repo root to sys.path so 'bot' package is importable
+    repo_root = Path(__file__).parent.parent.resolve()
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
 
     # Pull latest so we have all raw files that Render/Render cron pushed
     try:
