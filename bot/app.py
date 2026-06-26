@@ -15,6 +15,7 @@ from bot.git_store import commit_and_push, ensure_vault
 from bot.line import LineTextEvent, extract_urls, mark_message_as_read, text_message_events_from_webhook, verify_line_signature
 from bot.link_processor import parse_line_message_part, process_line_message_context, process_url, should_capture_line_message_context
 from bot.notes import write_note
+from bot.notification import notify as send_notification
 
 
 app = FastAPI(title="Personal KM LINE Link Bot")
@@ -27,6 +28,46 @@ LINE_LOG_TIMEZONE = ZoneInfo("Asia/Taipei")
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+async def run_immediate_ingestion(vault_path: Path) -> None:
+    """
+    Phase A: Immediately ingest all raw files after LINE capture.
+    Runs in background — failures are logged but do NOT block the webhook response.
+    """
+    from bot.ingestion_v2 import ingest_raw_to_wiki
+
+    try:
+        logger.info("🚀 Phase A: Starting immediate ingestion...")
+        result = await asyncio.to_thread(ingest_raw_to_wiki, vault_path)
+
+        processed = result.get("processed", 0)
+        failed = result.get("failed", 0)
+        status = result.get("status", "unknown")
+
+        logger.info(
+            f"Phase A complete: status={status}, processed={processed}, failed={failed}"
+        )
+
+        if status in ("success", "partial"):
+            send_notification(
+                title="✅ Ingestion Complete",
+                message=f"Processed: {processed} | Failed: {failed}",
+                success=True,
+            )
+        else:
+            send_notification(
+                title="❌ Ingestion Failed",
+                message=result.get("message", "Unknown error"),
+                success=False,
+            )
+    except Exception as e:
+        logger.exception(f"Phase A ingestion crashed: {e}")
+        send_notification(
+            title="❌ Ingestion Crashed",
+            message=str(e),
+            success=False,
+        )
 
 
 async def save_note(settings, vault_path, note, log_id: str = "") -> None:
@@ -127,7 +168,7 @@ async def mark_line_event_as_read(settings, event: LineTextEvent) -> None:
         logger.exception("Failed to mark LINE message as read")
 
 
-async def capture_line_messages(events: list[LineTextEvent]) -> None:
+async def capture_line_messages(events: list[LineTextEvent], background_tasks: BackgroundTasks) -> None:
     settings = get_settings()
     logger.info("Processing %s LINE message(s)", len(events))
 
@@ -165,6 +206,9 @@ async def capture_line_messages(events: list[LineTextEvent]) -> None:
 
         if saved_any_note:
             await mark_line_event_as_read(settings, event)
+
+    # Phase A: Immediately ingest all captured raw files
+    background_tasks.add_task(run_immediate_ingestion, vault_path)
 
 
 async def capture_urls(urls: list[tuple[str, str]]) -> None:
@@ -211,6 +255,6 @@ async def line_webhook(
         logger.info("LINE webhook received no capturable text or URLs")
         return {"ok": True, "accepted": 0}
 
-    background_tasks.add_task(capture_line_messages, events)
+    background_tasks.add_task(capture_line_messages, events, background_tasks)
     logger.info("Accepted %s LINE message(s) for background processing", len(events))
     return {"ok": True, "accepted": len(events)}
