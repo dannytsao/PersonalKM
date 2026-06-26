@@ -62,7 +62,17 @@ async def run_immediate_ingestion(vault_path: Path) -> None:
     Phase A: Immediately ingest all raw files after LINE capture.
     Runs in background — failures are logged but do NOT block the webhook response.
     """
+    from bot.config import get_settings
+    from bot.git_store import run_git
     from bot.ingestion_v2 import ingest_raw_to_wiki
+
+    settings = get_settings()
+
+    # Pull latest: save_note already pushed raw/ changes, we need them locally
+    try:
+        run_git(["pull", "--ff-only", "origin", settings.vault_branch], vault_path, settings)
+    except Exception as e:
+        logger.warning(f"Phase A: git pull failed (may be up-to-date): {e}")
 
     try:
         logger.info("🚀 Phase A: Starting immediate ingestion...")
