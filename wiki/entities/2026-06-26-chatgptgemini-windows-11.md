@@ -1,4 +1,6 @@
 ---
+
+
 title: chatgptgemini-windows-11
 created: 2026-06-26
 updated: 2026-06-26
@@ -6,8 +8,12 @@ topic: AI-Agent-&-Tools
 tags: ['to-read', 'line-capture', 'windows-11', 'prompts']
 type: entity
 sources:
+  - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-24-202606242324_00001-chatgpt、gemini-也能幫你檢查-windows-11-電腦健康狀況!完整做法與提示詞一次看-電腦王阿達.md
+  - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-24-202606242324_00001-chatgpt、gemini-也能幫你檢查-windows-11-電腦健康狀況!完整做法與提示詞一次看-電腦王阿達-2.md
   - /tmp/personal-km-vault/raw/Tech/2026-06-24-202606242324_00001-chatgpt、gemini-也能幫你檢查-windows-11-電腦健康狀況!完整做法與提示詞一次看-電腦王阿達.md
 confidence: medium
+
+
 ---
 
 ## Summary
@@ -29,4 +35,12 @@ An article from 電腦王阿達 describes how to use ChatGPT and Gemini as AI as
 - [[windows-11]]
 
 **Source:** ^# ChatGPT、Gemini 也能幫你檢查 Windows 11 電腦健康狀況！完整做法與提示詞一次看 - 電腦王阿達  ## Log ID 202606242324_00001  ## 摘要 本文介紹如何利用 ChatGPT 與 Gemini 兩款 AI 工具來檢查 Windows 11 電腦的健康狀況，並提供完整的操作步驟與提示詞，方便使用者輕鬆維護電腦性能。  ## 重點 - 本文介紹如...
+
+---
+
+## chatgptgemini-windows-11 (2026-06-26)
+
+## Summary
+
+# ChatGPT、Gemini 也能幫你檢查 Windows 11 電腦健康狀況！完整做法與提示詞一次看 - 電腦王阿達
 

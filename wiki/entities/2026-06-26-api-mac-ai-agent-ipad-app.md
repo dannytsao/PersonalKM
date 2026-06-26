@@ -1,4 +1,5 @@
 ---
+
 title: api-mac-ai-agent-ipad-app
 created: 2026-06-26
 updated: 2026-06-26
@@ -6,8 +7,10 @@ topic: AI-Agent-&-Tools
 tags: ['apple-silicon', 'local-llm', 'ai-agent', 'mac', '2026']
 type: entity
 sources:
+  - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-26-202606261658_00001-蘋果官方教學-不用-api、不用訂閱,三步驟在-mac-上用本地端模型跑-ai-agent-開發-ipad-app-電腦.md
   - /tmp/personal-km-vault/raw/Tech/2026-06-26-202606261658_00001-蘋果官方教學-不用-api、不用訂閱,三步驟在-mac-上用本地端模型跑-ai-agent-開發-ipad-app-電腦.md
 confidence: medium
+
 ---
 
 ## Summary
@@ -30,4 +33,12 @@ Apple has published an official tutorial showing developers how to run local AI 
 - [[ai-agent]]
 
 **Source:** ^# 蘋果官方教學：不用 API、不用訂閱，三步驟在 Mac 上用本地端模型跑 AI Agent 開發 iPad App - 電腦王阿達  ## Log ID 202606261658_00001  ## 摘要 蘋果官方教學介紹如何在 Mac 上使用本地端模型，無需 API 或訂閱，即可開發 AI Agent 以運行 iPad App。此方法利用 Apple Silicon 的強大效能，確保資料完全...
+
+---
+
+## api-mac-ai-agent-ipad-app (2026-06-26)
+
+## Summary
+
+# 蘋果官方教學：不用 API、不用訂閱，三步驟在 Mac 上用本地端模型跑 AI Agent 開發 iPad App - 電腦王阿達
 

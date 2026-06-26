@@ -1,4 +1,5 @@
 ---
+
 title: poyin-chen-motion-designer-taiwan
 created: 2026-06-26
 updated: 2026-06-26
@@ -6,8 +7,10 @@ topic: Personal-Interests
 tags: ['motion-design', 'taiwan', 'design-portfolio', 'to-read']
 type: entity
 sources:
+  - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/General/2026-06-26-202606261451_00001-poyin-chen-motion-designer-動態設計師,-taiwan.md
   - /tmp/personal-km-vault/raw/General/2026-06-26-202606261451_00001-poyin-chen-motion-designer-動態設計師,-taiwan.md
 confidence: high
+
 ---
 
 ## Summary
@@ -30,4 +33,12 @@ PoYin Chen (陳柏尹) is a motion designer based in Taiwan whose portfolio span
 - [[golden-horse-awards]]
 
 **Source:** ^# PoYin Chen | Motion Designer 動態設計師, Taiwan  ## Log ID 202606261451_00001  ## 摘要 PoYin Chen 是來自台灣的動態設計師，專長於金鐘、金曲、金馬典禮包裝、角色動畫與品牌動態設計。其作品集與Showreel可在個人網站查看。  ## 重點 - PoYin Chen 是來自台灣的動態設計師，專長於金鐘、金曲、金馬典...
+
+---
+
+## poyin-chen-motion-designer-taiwan (2026-06-26)
+
+## Summary
+
+# PoYin Chen | Motion Designer 動態設計師, Taiwan
 
