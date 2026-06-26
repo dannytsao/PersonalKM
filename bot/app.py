@@ -251,8 +251,10 @@ async def capture_line_messages(events: list[LineTextEvent], background_tasks: B
         if saved_any_note:
             await mark_line_event_as_read(settings, event)
 
-    # Phase A: Immediately ingest all captured raw files
-    background_tasks.add_task(run_immediate_ingestion, vault_path)
+    # Phase A: Immediately ingest all captured raw files (SYNCHRONOUS —
+    # must complete before webhook returns 200, otherwise Render deploy
+    # kills the background task before it finishes)
+    await run_immediate_ingestion(vault_path)
 
 
 async def capture_urls(urls: list[tuple[str, str]]) -> None:
