@@ -30,6 +30,33 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+# ── Helpers ────────────────────────────────────────────────────────────────
+
+def _commit_and_push_wiki(vault_path: Path) -> None:
+    """
+    Commit and push any wiki/ changes created by ingest_raw_to_wiki().
+    Runs after ingest so Phase A captures the full pipeline:
+      raw/ → (ingest) → wiki/entities → (this) → git push
+    """
+    import os
+    from bot.config import get_settings
+    from bot.git_store import run_git
+
+    settings = get_settings()
+    wiki_path = vault_path / "wiki"
+
+    # Check if there are any changes in wiki/
+    status = run_git(["status", "--porcelain", "wiki/"], vault_path, settings)
+    if not status.strip():
+        logger.debug("No wiki changes to commit")
+        return
+
+    run_git(["add", "wiki/"], vault_path, settings)
+    run_git(["commit", "-m", "🤖 Auto: ingest raw → wiki entities"], vault_path, settings)
+    run_git(["push", "origin", settings.vault_branch], vault_path, settings)
+    logger.info("Pushed wiki/ changes to GitHub")
+
+
 async def run_immediate_ingestion(vault_path: Path) -> None:
     """
     Phase A: Immediately ingest all raw files after LINE capture.
@@ -48,6 +75,13 @@ async def run_immediate_ingestion(vault_path: Path) -> None:
         logger.info(
             f"Phase A complete: status={status}, processed={processed}, failed={failed}"
         )
+
+        # Push wiki entities (ingest_raw_to_wiki writes to wiki/ but doesn't git push)
+        if processed > 0:
+            try:
+                _commit_and_push_wiki(vault_path)
+            except Exception as e:
+                logger.warning(f"Phase A: failed to push wiki changes: {e}")
 
         if status in ("success", "partial"):
             send_notification(
