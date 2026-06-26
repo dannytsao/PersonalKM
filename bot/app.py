@@ -251,10 +251,10 @@ async def capture_line_messages(events: list[LineTextEvent], background_tasks: B
         if saved_any_note:
             await mark_line_event_as_read(settings, event)
 
-    # Phase A: Immediately ingest all captured raw files (SYNCHRONOUS —
-    # must complete before webhook returns 200, otherwise Render deploy
-    # kills the background task before it finishes)
-    await run_immediate_ingestion(vault_path)
+    # NOTE: Phase A (ingest_raw_to_wiki) moved to Mac Mini cron job.
+    # See scripts/ingest_wiki.py + run_mac_mini_phase_a.sh
+    # LINE → raw/ → GitHub is handled here; wiki entities are
+    # processed asynchronously by the Mac Mini every hour.
 
 
 async def capture_urls(urls: list[tuple[str, str]]) -> None:
