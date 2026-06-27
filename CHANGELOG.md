@@ -6,13 +6,21 @@ All completed implementation reports, one-time analyses, and delivery summaries 
 
 ### Fixed
 
+- **Health check false failures** (`bot/ingestion_health_check.py`):
+  - Removed `sources/` from `required_dirs` (dir never existed)
+  - Moved `contested:`/`confidence:` to `optional_quality_fields` (per SCHEMA.md)
+  - Made `knowledge-graph.md` optional (not in SCHEMA.md)
+  - Health check now returns `healthy` with 0 failed checks
+
+  Commit: `fb40fa9` — "fix(health-check): align with actual SCHEMA.md"
+
+### Changed
+
 - **CJK slug bug in `extract_title()`** (`bot/ingestion_v2.py`) — `extract_title()` was using `_slugify` from `llm_summarizer.py` which strips all non-ASCII characters. For CJK titles this produced empty strings → filenames like `2026-06-27-.md`. Fixed by replacing `_slugify` with `normalize_entity_name` from `entity_dedup.py` which preserves CJK characters.
 
   Commit: `2d040b8` — "fix: use normalize_entity_name for title extraction (preserve CJK)"
 
 - **Empty-slug files cleaned up** — `wiki/entities/2026-06-27-.md` and `wiki/concepts/2026-06-27-.md` were renamed to proper CJK slugs. Duplicate entity/concept entries from the double-processing run were deduplicated.
-
-### Changed
 
 - **Ingestion routing confirmed working** — Phase A manual run processed 55 raw files. Routing to `wiki/entities/` (specific entities, places, people) and `wiki/concepts/` (topics, ideas, how-to) is functioning correctly. Both destinations use `normalize_entity_name` for slug generation.
 - Phase A vault is clean (no dirty-repo skip conditions), ready for next hourly launchd trigger.
