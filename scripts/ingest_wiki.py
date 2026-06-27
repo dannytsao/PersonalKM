@@ -76,7 +76,7 @@ def _commit_and_push_wiki(vault_path: Path) -> None:
         logger.debug("No wiki changes to commit")
         return
 
-    run_git(["add", "wiki/"], vault_path)
+    run_git(["add", "--all"], vault_path)
     run_git(["commit", "-m", "🤖 Auto: ingest raw → wiki entities"], vault_path)
     run_git(["push", "origin", "main"], vault_path)
     logger.info("Pushed wiki/ changes to GitHub")
@@ -98,7 +98,7 @@ def run_phase_a(vault_path: Path) -> dict:
 
     # Pull latest so we have all raw files that Render/Render cron pushed
     try:
-        run_git(["pull", "--ff-only", "origin", "main"], vault_path)
+        run_git(["pull", "--rebase", "origin", "main"], vault_path)
         logger.info("Pulled latest from GitHub")
     except Exception as e:
         logger.warning(f"git pull failed (may be up-to-date): {e}")
