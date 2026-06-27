@@ -1,6 +1,7 @@
 ---
 
 
+
 title: ai-sakana-fugu-fable-5mythos-5
 created: 2026-06-26
 updated: 2026-06-27
@@ -11,6 +12,7 @@ sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-26-202606261759_00001-日本-ai-新創團隊發表-sakana-fugu,能力號稱已追上-fable-5、mythos-5-模型-電腦王阿達.md
   - /tmp/personal-km-vault/raw/Tech/2026-06-26-202606261759_00001-日本-ai-新創團隊發表-sakana-fugu,能力號稱已追上-fable-5、mythos-5-模型-電腦王阿達.md
 confidence: medium
+
 
 
 ---
