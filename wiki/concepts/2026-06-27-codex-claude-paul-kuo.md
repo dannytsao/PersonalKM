@@ -1,0 +1,16 @@
+---
+title: codex-claude-paul-kuo
+created: 2026-06-27
+updated: 2026-06-27
+topic: Tech-Trends-&-Insights
+tags: []
+type: entity
+sources:
+  - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-27-202606270600_00001-我讓-codex-挑-claude-的錯,但不照它說了算-—-paul-kuo.md
+confidence: low
+---
+
+## Summary
+
+# 我讓 codex 挑 Claude 的錯，但不照它說了算 — Paul Kuo
+

@@ -1,8 +1,9 @@
 ---
 
+
 title: poyin-chen-motion-designer-taiwan
 created: 2026-06-26
-updated: 2026-06-26
+updated: 2026-06-27
 topic: Personal-Interests
 tags: ['motion-design', 'taiwan', 'design-portfolio', 'to-read']
 type: entity
@@ -10,6 +11,7 @@ sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/General/2026-06-26-202606261451_00001-poyin-chen-motion-designer-動態設計師,-taiwan.md
   - /tmp/personal-km-vault/raw/General/2026-06-26-202606261451_00001-poyin-chen-motion-designer-動態設計師,-taiwan.md
 confidence: high
+
 
 ---
 
@@ -36,7 +38,7 @@ PoYin Chen (陳柏尹) is a motion designer based in Taiwan whose portfolio span
 
 ---
 
-## poyin-chen-motion-designer-taiwan (2026-06-26)
+## poyin-chen-motion-designer-taiwan (2026-06-27)
 
 ## Summary
 

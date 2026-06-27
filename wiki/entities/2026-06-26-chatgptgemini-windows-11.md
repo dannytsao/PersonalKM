@@ -1,9 +1,11 @@
 ---
 
 
+
+
 title: chatgptgemini-windows-11
 created: 2026-06-26
-updated: 2026-06-26
+updated: 2026-06-27
 topic: AI-Agent-&-Tools
 tags: ['to-read', 'line-capture', 'windows-11', 'prompts']
 type: entity
@@ -12,6 +14,8 @@ sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-24-202606242324_00001-chatgpt、gemini-也能幫你檢查-windows-11-電腦健康狀況!完整做法與提示詞一次看-電腦王阿達-2.md
   - /tmp/personal-km-vault/raw/Tech/2026-06-24-202606242324_00001-chatgpt、gemini-也能幫你檢查-windows-11-電腦健康狀況!完整做法與提示詞一次看-電腦王阿達.md
 confidence: medium
+
+
 
 
 ---
@@ -38,7 +42,7 @@ An article from 電腦王阿達 describes how to use ChatGPT and Gemini as AI as
 
 ---
 
-## chatgptgemini-windows-11 (2026-06-26)
+## chatgptgemini-windows-11 (2026-06-27)
 
 ## Summary
 
