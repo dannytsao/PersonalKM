@@ -27,6 +27,8 @@ from pathlib import Path
 from typing import Optional, Tuple, List, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import yaml
+
 from bot.entity_dedup import EntityRegistry, normalize_entity_name, canonical_slug_from_name
 from bot.llm_clients import get_llm_client, get_llm_info
 from bot.llm_summarizer import summarize_content, distill_to_markdown, detect_entity_mentions, _strip_frontmatter
@@ -301,13 +303,14 @@ def ingest_file_v2(
         action = "created"
         page_path = wiki_category_path / f"{canonical_slug}.md"
         if not page_path.exists():
+            tags_yaml = yaml.dump(tags, default_flow_style=True).strip()
             text = f"""---
 title: {title}
 canonical: true
 created: {timestamp}
 updated: {timestamp}
 topic: {topic}
-tags: {tags}
+tags: {tags_yaml}
 type: {page_type}
 sources:
   - {raw_path_str}
@@ -346,12 +349,13 @@ confidence: {confidence}
         dest_name = f"{timestamp}-{entity_slug}.md"
         page_path = wiki_category_path / dest_name
 
+        tags_yaml = yaml.dump(tags, default_flow_style=True).strip()
         frontmatter = f"""---
 title: {title}
 created: {timestamp}
 updated: {timestamp}
 topic: {topic}
-tags: {tags}
+tags: {tags_yaml}
 type: {page_type}
 sources:
   - {raw_path_str}
