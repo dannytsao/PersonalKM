@@ -459,6 +459,15 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
     broken = wm.validate_links()
     total_broken = sum(len(v) for v in broken.values())
 
+    # Regenerate knowledge graph with Mermaid visualization
+    try:
+        from bot.knowledge_graph import build_knowledge_graph as _build_kg
+        kg_content = _build_kg(wiki_path)
+        (wiki_path / "knowledge-graph.md").write_text(kg_content, encoding="utf-8")
+        logger.info("Knowledge graph regenerated (Mermaid)")
+    except Exception as e:
+        logger.warning("Knowledge graph regeneration skipped: %s", e)
+
     # Run health check
     health = IngestionHealthCheck(vault_path)
     health_report = health.run_all_checks()

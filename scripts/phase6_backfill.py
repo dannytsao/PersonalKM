@@ -497,43 +497,11 @@ def run_phase6(vault_path: Path, dry_run: bool = False) -> dict:
 
 
 def _update_knowledge_graph(wiki_path: Path, registry: EntityRegistry) -> None:
-    """Update knowledge-graph.md with canonical entity index."""
-    entities_dir = wiki_path / "entities"
-    concepts_dir = wiki_path / "concepts"
-
-    lines = ["# Knowledge Graph", "", f"Last updated: {datetime.now().isoformat()}", ""]
-
-    # Canonical entities
-    lines.append("## Canonical Entities")
-    lines.append("")
-    for slug in sorted(CANONICAL_ENTITIES):
-        path = entities_dir / f"{slug}.md"
-        if path.exists():
-            lines.append(f"- [[{slug}]]")
-    lines.append("")
-
-    # Other entity pages (date-prefixed)
-    other_entities = [f for f in entities_dir.glob("*.md") if not is_canonical_slug(f.stem)]
-    if other_entities:
-        lines.append(f"## Other Entity Pages ({len(other_entities)})")
-        lines.append("")
-        for f in sorted(other_entities):
-            lines.append(f"- [[{f.stem}]]")
-        lines.append("")
-
-    # Concept pages
-    concepts = sorted(concepts_dir.glob("*.md"))
-    lines.append(f"## Concepts ({len(concepts)})")
-    lines.append("")
-    for f in concepts:
-        lines.append(f"- [[{f.stem}]]")
-    lines.append("")
-
-    lines.append("---")
-    lines.append(f"Total pages: {len(other_entities) + len(concepts) + len(CANONICAL_ENTITIES)}")
-
-    (wiki_path / "knowledge-graph.md").write_text("\n".join(lines), encoding="utf-8")
-    logger.info("Updated knowledge-graph.md")
+    """Update knowledge-graph.md with Mermaid visualization + node index."""
+    from bot.knowledge_graph import build_knowledge_graph
+    md = build_knowledge_graph(wiki_path)
+    (wiki_path / "knowledge-graph.md").write_text(md, encoding="utf-8")
+    logger.info("Updated knowledge-graph.md (Mermaid)")
 
 
 def _update_index(wiki_path: Path, registry: EntityRegistry) -> None:
