@@ -130,6 +130,65 @@ def extract_title(raw_path: Path, content: str, max_len: int = 80) -> str:
 
 
 # ─────────────────────────────────────────────────────────────
+# Page Type Classification
+# ─────────────────────────────────────────────────────────────
+
+# Keywords that strongly indicate a CONCEPT (topic/method/how-to) page
+# vs an ENTITY (named product, tool, company, person) page
+_CONCEPT_KEYWORDS = [
+    "how to", "tutorial", "教學", "教您", "步驟", "方法",
+    "guide", "introduction to", "overview of", "what is", "什麼是",
+    "comparison", "比較", "vs ", " versus ", "difference between",
+    "review", "心得", "開箱", "教學", "使用心得",
+    "最佳化", "優化", "設定", "配置",
+    "setup", "install", "configuration", "getting started",
+    "understanding", "explained", "原理", "概念",
+]
+
+# Keywords that strongly indicate an ENTITY page
+_ENTITY_KEYWORDS = [
+    "announced", "released", "launched", "update",
+    "公司", "產品", "發表", "推出", "更新",
+    "version", "beta", "release notes", "changelog",
+    "pricing", "價格", "收費",
+    "api", "sdk", "library", "framework",
+]
+
+
+def _classify_page_type(body: str) -> str:
+    """
+    Classify whether content should be treated as 'entity' or 'concept'.
+
+    Heuristic-based (no LLM call needed):
+    - Concept: how-to, tutorials, comparisons, explainers, personal reviews
+    - Entity: product launches, company news, pricing, API/tool releases
+
+    SCHEMA:
+      entities/ = people, products, organizations, specific named tools
+      concepts/ = topics, methods, techniques, how-to guides
+    """
+    lower = body.lower()
+
+    concept_score = sum(1 for kw in _CONCEPT_KEYWORDS if kw in lower)
+    entity_score = sum(1 for kw in _ENTITY_KEYWORDS if kw in lower)
+
+    # Strong concept signals
+    if concept_score >= 2 and entity_score == 0:
+        return "concept"
+    if concept_score >= 3:
+        return "concept"
+
+    # Strong entity signals
+    if entity_score >= 2 and concept_score == 0:
+        return "entity"
+    if entity_score >= 3:
+        return "entity"
+
+    # Default: entity (specific named tools/articles → entities/ is safer)
+    return "entity"
+
+
+# ─────────────────────────────────────────────────────────────
 # Core Ingestion Step
 # ─────────────────────────────────────────────────────────────
 
@@ -162,8 +221,9 @@ def ingest_file_v2(
     detected_entities = detect_entity_mentions(body)
     logger.debug(f"Detected entities in {raw_path.name}: {detected_entities[:5]}")
 
-    # 4. Summarize (MiniMax or fallback) — page_type guides LLM prompt style
-    page_type = "entity"  # entity vs concept drives prompt template
+    # 4. Classify page_type BEFORE summarization (drives prompt template)
+    #    Heuristic: how-to/process content → concept, named tools/companies → entity
+    page_type = _classify_page_type(body)
     if skip_llm:
         summary_result = None
     else:
@@ -192,9 +252,11 @@ def ingest_file_v2(
     match = registry.find_entity_match(title)
     entity_slug = normalize_entity_name(title)
 
-    # 8. Subfolder based on topic (entities/ for AI+Automation, concepts/ for rest)
-    topic_entities = {"AI-Agent-&-Tools", "Automation-Workflows"}
-    subfolder = "entities" if topic in topic_entities else "concepts"
+    # 8. Route to entities/ or concepts/ based on page_type
+    #    SCHEMA: entities/ = people, products, organizations, specific named tools
+    #             concepts/ = topics, methods, techniques, how-to guides
+    #    page_type from _classify_page_type: "entity" or "concept"
+    subfolder = "entities" if page_type == "entity" else "concepts"
     wiki_category_path = wiki_path / subfolder
     wiki_category_path.mkdir(parents=True, exist_ok=True)
 

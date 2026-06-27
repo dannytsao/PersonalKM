@@ -108,8 +108,9 @@ def normalize_entity_name(name: str) -> str:
     name = re.sub(r'([a-zA-Z0-9])([\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af])', r'\1-\2', name)  # latin → CJK boundary
     name = re.sub(r'([\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af])([a-zA-Z0-9])', r'\1-\2', name)  # CJK → latin boundary
 
-    # Remove all non-alphanumeric and non-hyphen chars
-    name = re.sub(r'[^a-z0-9\-]', '', name)
+    # Remove all non-alphanumeric and non-hyphen chars EXCEPT CJK
+    # (preserve CJK so slugs like 五星飯店南洋吃到飽 remain meaningful)
+    name = re.sub(r'[^a-z0-9\-\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]', '', name)
 
     # Collapse multiple hyphens
     name = re.sub(r'-+', '-', name)
