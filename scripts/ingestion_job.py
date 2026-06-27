@@ -37,18 +37,11 @@ except ImportError as e:
 
 
 def get_vault_path() -> Path:
-    """Get vault path from environment or use default."""
-    vault_path_str = os.getenv("VAULT_PATH")
-    if not vault_path_str:
-        logger.error("VAULT_PATH environment variable not set")
-        sys.exit(1)
-
-    vault_path = Path(vault_path_str)
-    if not vault_path.exists():
-        logger.error(f"Vault path does not exist: {vault_path}")
-        sys.exit(1)
-
-    return vault_path
+    """Get vault path, cloning if needed (Render ephemeral disk)."""
+    from bot.config import get_settings
+    from bot.git_store import ensure_vault
+    settings = get_settings()
+    return ensure_vault(settings)
 
 
 def save_ingestion_result(vault_path: Path, result: dict) -> Path:

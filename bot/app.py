@@ -37,7 +37,8 @@ async def query_vault(q: str = "", top_k: int = 10) -> dict:
         return {"error": "Missing 'q' parameter (e.g. /query?q=hermes+agent)"}
     from bot.query_engine import query_wiki
     settings = get_settings()
-    result = query_wiki(q, settings.vault_path, top_k=top_k, use_llm=False)
+    vault_path = await asyncio.to_thread(ensure_vault, settings)
+    result = query_wiki(q, vault_path, top_k=top_k, use_llm=False)
     return result
 
 
