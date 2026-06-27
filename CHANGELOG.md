@@ -2,6 +2,38 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
+## 2026-06-28
+
+### Added
+
+- **Capture propagation** (`bot/ingestion_v2.py`): `_propagate_to_entity_pages()` — after each ingest, appends a capture excerpt to every canonical entity page mentioned in the body (1 capture → 10–15 entity page updates). Idempotent: skips duplicates.
+
+- **Sanity check & repair** (`scripts/sanity_check.py`): repair-first vault health checker. Scans all `wiki/entities/` + `wiki/concepts/` pages, repairs fixable frontmatter issues (missing `---` delimiter, nested bracket tags, empty sources, extra non-schema fields), warns on structural problems (type mismatch, auto-promoted stubs). Never deletes files. Idempotent. 73 pages scanned: 57 fixes applied, 41 warnings remain.
+
+- **Query interface** (`scripts/query_wiki.py`): CLI with `--no-llm`, `--json`, `--top-k`, `-i` (interactive REPL) flags. Hybrid search (title exact/prefix/token, frontmatter, body mentions, entity registry); ranked scoring; LLM synthesis with `[[wikilink]]` citations.
+
+- **Web query endpoint**: `GET /query?q=...` on FastAPI (`bot/app.py`), deployed on Render.
+
+### Fixed
+
+- **Render `/query` endpoint**: Added `ensure_vault()` call before search — previously failed with `wiki/ not found` on cold start because vault wasn't cloned.
+
+- **Ingestion cron on Render** (`scripts/ingestion_job.py`): `get_vault_path()` now uses `ensure_vault()` instead of requiring directory to pre-exist — fixes cold-start failure on ephemeral disk.
+
+- **Dirty repo blocking all launchd jobs**: `scripts/ingest_wiki.py` and `bot/app.py` changed `git add wiki/` → `git add --all` so raw file deletions are committed. Changed `git pull --ff-only` → `git pull --rebase` to handle divergent history gracefully. Worker repo cleaned and synced.
+
+- **Root cause — frontmatter cascading bugs**:
+  - `bot/ingestion_v2.py` (lines 310/354): replaced `f"tags: {tags}"` with `yaml.dump(tags)` — stops Python repr (single-quoted) being written to YAML, which caused the cascading nested-bracket bug.
+  - `bot/entity_dedup.py`: added `if not source_path: return` guard in `add_source_to_frontmatter()` — prevents writing `sources: [""]`.
+  - `bot/entity_dedup.py`: fixed `_append_capture()` regex to handle block-style sources (was silently dropping the add) and empty inline `sources: []` → `sources: ["new"]`.
+
+- **Schedule job status verified**: All 5 jobs (Phase A/B/Omnichannel launchd, Render web + cron) confirmed healthy. Last exit codes all 0.
+
+### Changed
+
+- `ensure_vault` now called in `/query` endpoint and ingestion cron for Render ephemeral disk robustness.
+- `git add --all` replaces `git add wiki/` in both `scripts/ingest_wiki.py` and `bot/app.py` to capture raw file deletions.
+
 ## 2026-06-27
 
 ### Fixed
