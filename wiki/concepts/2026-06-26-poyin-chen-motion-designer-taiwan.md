@@ -2,6 +2,7 @@
 
 
 
+
 title: poyin-chen-motion-designer-taiwan
 created: 2026-06-26
 updated: 2026-06-27
@@ -12,10 +13,9 @@ sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/General/2026-06-26-202606261451_00001-poyin-chen-motion-designer-動態設計師,-taiwan.md
   - /tmp/personal-km-vault/raw/General/2026-06-26-202606261451_00001-poyin-chen-motion-designer-動態設計師,-taiwan.md
 confidence: high
-
-
-
+wikilink_processed: 2026-06-27T10:23:58
 ---
+
 
 ## Summary
 

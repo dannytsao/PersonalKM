@@ -2,6 +2,8 @@
 
 
 
+
+
 title: cloudflare-temporary-accounts-ai-agent
 created: 2026-06-26
 updated: 2026-06-27
@@ -12,10 +14,10 @@ sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-26-202606260009_00001-cloudflare-推出-temporary-accounts-服務-ai-agent-一鍵部署、一鍵認領,部署不刪檔.md
   - /tmp/personal-km-vault/raw/Tech/2026-06-26-202606260009_00001-cloudflare-推出-temporary-accounts-服務-ai-agent-一鍵部署、一鍵認領,部署不刪檔.md
 confidence: medium
-
-
-
+wikilink_processed: 2026-06-27T10:13:43
 ---
+
+
 
 ## Summary
 
@@ -37,10 +39,10 @@ Cloudflare launched a Temporary Accounts service aimed at simplifying AI Agent d
 **Source:** ^# Cloudflare 推出 Temporary Accounts 服務：AI Agent 一鍵部署、一鍵認領，部署不刪檔 - 電腦王阿達  ## Log ID 202606260009_00001  ## 摘要 Cloudflare 推出 Temporary Accounts 服務，簡化 AI Agent 的部署與認領流程，免除繁瑣的 OAuth 授權、API Token 複製貼上及多因子驗證...
 
 ---
+- Related: [[2026-06-26-cloudflare-temporary-accounts-ai-agent]]
 
 ## cloudflare-temporary-accounts-ai-agent (2026-06-27)
 
 ## Summary
 
 # Cloudflare 推出 Temporary Accounts 服務：AI Agent 一鍵部署、一鍵認領，部署不刪檔 - 電腦王阿達
-

@@ -2,6 +2,7 @@
 
 
 
+
 title: codex-bug-ssd
 created: 2026-06-26
 updated: 2026-06-27
@@ -12,10 +13,9 @@ sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-26-202606261828_00001-codex-被發現有一個嚴重-bug,可能讓-ssd-寫入壽命不到一年就耗盡(附自檢方法)-電腦王阿達.md
   - /tmp/personal-km-vault/raw/Tech/2026-06-26-202606261828_00001-codex-被發現有一個嚴重-bug,可能讓-ssd-寫入壽命不到一年就耗盡(附自檢方法)-電腦王阿達.md
 confidence: medium
-
-
-
+wikilink_processed: 2026-06-27T10:04:06
 ---
+
 
 ## Summary
 
