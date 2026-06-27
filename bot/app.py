@@ -30,6 +30,17 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/query")
+async def query_vault(q: str = "", top_k: int = 10) -> dict:
+    """Search the vault with natural language. Returns JSON with matched pages."""
+    if not q:
+        return {"error": "Missing 'q' parameter (e.g. /query?q=hermes+agent)"}
+    from bot.query_engine import query_wiki
+    settings = get_settings()
+    result = query_wiki(q, settings.vault_path, top_k=top_k, use_llm=False)
+    return result
+
+
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 def _commit_and_push_wiki(vault_path: Path) -> None:
