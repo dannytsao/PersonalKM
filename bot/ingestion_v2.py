@@ -28,7 +28,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from bot.entity_dedup import EntityRegistry, normalize_entity_name
 from bot.llm_clients import get_llm_client, get_llm_info
-from bot.llm_summarizer import summarize_content, distill_to_markdown, detect_entity_mentions, _strip_frontmatter, _slugify
+from bot.llm_summarizer import summarize_content, distill_to_markdown, detect_entity_mentions, _strip_frontmatter
+from bot.entity_dedup import normalize_entity_name
 from bot.wikilinks import WikilinkManager
 
 logger = logging.getLogger(__name__)
@@ -117,7 +118,7 @@ def extract_title(raw_path: Path, content: str, max_len: int = 80) -> str:
             continue
         # Skip very short or very long lines
         if 5 < len(line) < max_len:
-            return _slugify(line)
+            return normalize_entity_name(line)
     
     # Fall back to filename
     name = raw_path.stem
