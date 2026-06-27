@@ -2,6 +2,7 @@
 
 
 
+
 title: harness-engineering-for-coding-agent-users
 created: 2026-06-27
 updated: 2026-06-27
@@ -13,7 +14,9 @@ sources:
 confidence: low
 wikilink_processed: 2026-06-27T09:41:34
 
+
 ---
+
 
 
 
@@ -32,3 +35,4 @@ wikilink_processed: 2026-06-27T09:41:34
 ## See also
 
 - [[2026-06-27-developers-digest-ai-development-tutorials-tools-open-source]]
+- [[2026-06-27-glm-52deepseek-4qwen-37minimax-m3]]
