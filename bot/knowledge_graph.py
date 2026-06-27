@@ -78,15 +78,22 @@ def _collect_edges(pages: dict) -> set:
     return edges
 
 
+def _link_path(slug: str, info: dict) -> str:
+    """Build vault-relative path for a wiki page."""
+    prefix = "entities" if info["type"] == "entity" else "concepts"
+    return f"{prefix}/{slug}.md"
+
+
 def _build_mermaid(pages: dict, edges: set) -> str:
     entity_slugs = sorted(s for s, i in pages.items() if i["type"] == "entity")
     concept_slugs = sorted(s for s, i in pages.items() if i["type"] == "concept")
 
     lines = [
         "```mermaid",
-        "flowchart LR",
-        '    classDef entity fill:#e1f5fe,stroke:#01579b,stroke-width:2px;',
-        '    classDef concept fill:#fff3e0,stroke:#e65100,stroke-width:1px;',
+        "%%{init: {'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'curve': 'basis', 'padding': 15}}}%%",
+        "flowchart TD",
+        '    classDef entity fill:#e1f5fe,stroke:#01579b,stroke-width:2px,cursor:pointer;',
+        '    classDef concept fill:#fff3e0,stroke:#e65100,stroke-width:1px,cursor:pointer;',
         "",
         "    subgraph Entities",
     ]
@@ -95,7 +102,9 @@ def _build_mermaid(pages: dict, edges: set) -> str:
         nid = _safe_id(slug)
         label = pages[slug]["label"]
         label_escaped = label.replace('"', "'")
+        link = _link_path(slug, pages[slug])
         lines.append(f'        {nid}["{label_escaped}"]')
+        lines.append(f"        click {nid} \"{link}\" \"Open {label_escaped}\"")
         lines.append(f"        class {nid} entity")
 
     lines.append("    end")
@@ -106,7 +115,9 @@ def _build_mermaid(pages: dict, edges: set) -> str:
         nid = _safe_id(slug)
         label = pages[slug]["label"]
         label_escaped = label.replace('"', "'")
+        link = _link_path(slug, pages[slug])
         lines.append(f'        {nid}["{label_escaped}"]')
+        lines.append(f"        click {nid} \"{link}\" \"Open {label_escaped}\"")
         lines.append(f"        class {nid} concept")
     lines.append("    end")
     lines.append("")
@@ -159,7 +170,7 @@ def build_knowledge_graph(wiki_path: Path, title: str = "Knowledge Graph") -> st
         "",
         f"Last updated: {datetime.now().isoformat()}",
         "",
-        "> Mermaid flowchart — entities are blue, concepts are orange. Edges represent wikilink references.",
+        "> Mermaid flowchart (TD layout) — click a node to open the page. Entities are blue, concepts are orange. Edges are wikilinks. Zoom: scroll, Pan: drag background.",
         "",
     ]
 
