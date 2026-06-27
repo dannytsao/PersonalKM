@@ -26,10 +26,9 @@ from pathlib import Path
 from typing import Optional, Tuple, List, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from bot.entity_dedup import EntityRegistry, normalize_entity_name
+from bot.entity_dedup import EntityRegistry, normalize_entity_name, canonical_slug_from_name
 from bot.llm_clients import get_llm_client, get_llm_info
 from bot.llm_summarizer import summarize_content, distill_to_markdown, detect_entity_mentions, _strip_frontmatter
-from bot.entity_dedup import normalize_entity_name
 from bot.wikilinks import WikilinkManager
 
 logger = logging.getLogger(__name__)
@@ -250,6 +249,10 @@ def ingest_file_v2(
     match = registry.find_entity_match(title)
     entity_slug = normalize_entity_name(title)
 
+    # Phase 6: Check if this should be a canonical entity page
+    canonical_slug = canonical_slug_from_name(title)
+    use_canonical = canonical_slug is not None
+
     # 8. Route to entities/ or concepts/ based on page_type
     #    SCHEMA: entities/ = people, products, organizations, specific named tools
     #             concepts/ = topics, methods, techniques, how-to guides
@@ -260,6 +263,8 @@ def ingest_file_v2(
 
     action = "unknown"
     page_path: Optional[Path] = None
+    timestamp = datetime.now().strftime("%Y-%m-%d")
+    raw_path_str = str(raw_path)
 
     if match:
         # 8a. Merge: update existing entity page
@@ -268,23 +273,17 @@ def ingest_file_v2(
         existing_content = page_path.read_text(encoding="utf-8")
         existing_body = _strip_frontmatter(existing_content)
 
-        # Append new distilled content to existing body
-        timestamp = datetime.now().strftime("%Y-%m-%d")
         merged_body = existing_body.rstrip() + f"\n\n---\n\n## {title} ({timestamp})\n\n{distilled}\n"
 
-        # Read full file, replace only body
         if existing_content.startswith("---"):
             parts = existing_content.split("---", 2)
             new_content = f"---\n{parts[1]}\n---\n\n{merged_body}"
         else:
             new_content = merged_body
 
-        # Update frontmatter
         import re
         new_content = re.sub(r'^updated: .+$', f'updated: {timestamp}', new_content, flags=re.MULTILINE)
 
-        # Add source to sources list if not already present
-        raw_path_str = str(raw_path)
         if raw_path_str not in new_content:
             new_content = re.sub(
                 r'(^sources:.*)$',
@@ -296,18 +295,60 @@ def ingest_file_v2(
         page_path.write_text(new_content, encoding="utf-8")
         logger.info(f"✅ MERGED {raw_path.name} → {match.relative_to(wiki_path)}")
 
-    else:
-        # 8b. Create new page
+    elif use_canonical:
+        # Phase 6: Create new canonical entity page (no date prefix)
         action = "created"
-        dest_name = f"{datetime.now().strftime('%Y-%m-%d')}-{entity_slug}.md"
+        page_path = wiki_category_path / f"{canonical_slug}.md"
+        if not page_path.exists():
+            text = f"""---
+title: {title}
+canonical: true
+created: {timestamp}
+updated: {timestamp}
+topic: {topic}
+tags: {tags}
+type: {page_type}
+sources:
+  - {raw_path_str}
+confidence: {confidence}
+---
+
+{distilled}
+"""
+            page_path.write_text(text, encoding="utf-8")
+            logger.info(f"✅ CANONICAL CREATED {raw_path.name} → {subfolder}/{canonical_slug}.md")
+        else:
+            # Merge into existing canonical page
+            action = "merged"
+            existing = page_path.read_text(encoding="utf-8")
+            body = _strip_frontmatter(existing)
+            merged = body.rstrip() + f"\n\n---\n\n### {title} ({timestamp})\n\n{distilled}\n"
+            if existing.startswith("---"):
+                parts = existing.split("---", 2)
+                new_content = f"---\n{parts[1]}\n---\n\n{merged}"
+            else:
+                new_content = merged
+            new_content = re.sub(r'^updated: .+$', f'updated: {timestamp}', new_content, flags=re.MULTILINE)
+            if raw_path_str not in new_content:
+                new_content = re.sub(
+                    r'(^sources:\s*.*)$',
+                    lambda m: m.group(0).rstrip(']') + f', "{raw_path_str}"]' if m.group(0).strip().endswith(']') else m.group(0) + f'\n  - {raw_path_str}',
+                    new_content,
+                    flags=re.MULTILINE,
+                )
+            page_path.write_text(new_content, encoding="utf-8")
+            logger.info(f"✅ CANONICAL MERGED {raw_path.name} → {subfolder}/{canonical_slug}.md")
+
+    else:
+        # 8b. Create new date-prefixed page (legacy behavior)
+        action = "created"
+        dest_name = f"{timestamp}-{entity_slug}.md"
         page_path = wiki_category_path / dest_name
 
-        # Build frontmatter
-        raw_path_str = str(raw_path)
         frontmatter = f"""---
 title: {title}
-created: {datetime.now().strftime("%Y-%m-%d")}
-updated: {datetime.now().strftime("%Y-%m-%d")}
+created: {timestamp}
+updated: {timestamp}
 topic: {topic}
 tags: {tags}
 type: {page_type}

@@ -1,31 +1,24 @@
 """
-Entity Deduplication for PersonalKM LLM-Wiki v2
+Entity Deduplication for PersonalKM LLM-Wiki v2 (Phase 6)
 
-Prevents duplicate wiki pages: when a new capture arrives about an entity
-that already has a wiki page, merge into the existing page instead of
-creating a new file.
+Phase 6 adds canonical entity support. Instead of only indexing filename stems
+(which produces entries like "hermes-agent-learn-ai"), we now define a set of
+canonical entity names. When a new capture arrives about a canonical entity,
+it merges into the canonical page (e.g., entities/hermes-agent.md) instead of
+creating another date-prefixed page.
 
 Usage:
-    from bot.entity_dedup import EntityRegistry
+    from bot.entity_dedup import EntityRegistry, CANONICAL_ENTITIES
 
     registry = EntityRegistry(Path('wiki'))
-    print(f'Indexed {registry.count()} entities')
+    match = registry.find_entity_match('Hermes Agent')
+    # → Path('wiki/entities/hermes-agent.md') if canonical page exists
 
     result = registry.update_or_create(
-        entity_name='Claude Code',
+        entity_name='Hermes Agent',
         new_content='...',
-        source_path='/path/to/raw/file.md',
     )
-    print(f'Action: {result["action"]} → {result["path"]}')
-
-Exit Condition:
-    from bot.entity_dedup import EntityRegistry
-    from pathlib import Path
-    registry = EntityRegistry(Path('wiki'))
-    print(f'Indexed: {registry.count()} entities')
-    match = registry.find_entity_match('claude-code')
-    print(f'claude-code → {match}')
-    # Should find existing file even with different naming
+    # → merges into entities/hermes-agent.md
 """
 
 import logging
@@ -35,6 +28,84 @@ from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Phase 6: Canonical Entity Definitions
+#
+# When a capture's title matches one of these (via normalized comparison),
+# the pipeline writes TO the canonical page (no date prefix) instead of
+# creating a date-prefixed page. Subsequent captures about the same entity
+# merge into the canonical page.
+# ---------------------------------------------------------------------------
+
+CANONICAL_ENTITIES: dict[str, str] = {
+    # slug → display name
+    "hermes-agent": "Hermes Agent",
+    "hermes-os": "Hermes OS",
+    "claude-code": "Claude Code",
+    "codex": "Codex",
+    "cursor": "Cursor",
+    "chatgpt": "ChatGPT",
+    "gemini": "Gemini",
+    "cloudflare": "Cloudflare",
+    "anthropic": "Anthropic",
+    "sakana-ai": "Sakana AI",
+    "sakana-fugu": "Sakana Fugu",
+    "glm-5-2": "GLM 5.2",
+    "z-ai": "Z.AI",
+    "cometapi": "CometAPI",
+    "deepseek": "DeepSeek",
+    "qwen": "Qwen",
+    "minimax-m3": "MiniMax M3",
+    "siliconflow": "SiliconFlow",
+    "openrouter": "OpenRouter",
+    "antigravity": "Antigravity",
+    "harness": "Harness",
+    "rc-astro": "RC Astro",
+    "mistral-ai": "Mistral AI",
+    "openclaw": "OpenClaw",
+    "anges-ai": "Anges AI",
+    "lushbinary": "LushBinary",
+    "apple-silicon": "Apple Silicon",
+    "motioner": "Motioner",
+    "github": "GitHub",
+    "poyin-chen": "PoYin Chen",
+    "paul-kuo": "Paul Kuo",
+    "newmobilelife": "newmobilelife",
+    "inside": "Inside",
+    "nous-research": "Nous Research",
+}
+
+
+def is_canonical_slug(slug: str) -> bool:
+    """Check if a slug is a known canonical entity name."""
+    return slug in CANONICAL_ENTITIES
+
+
+def canonical_slug_from_name(name: str) -> Optional[str]:
+    """
+    Given a raw entity name, return the canonical slug if it matches.
+    
+    Examples:
+        "Hermes Agent"          → "hermes-agent"
+        "hermes-agent-learn-ai"  → "hermes-agent" (contains canonical slug)
+        "Claude Code"           → "claude-code"
+        "random topic"          → None
+    """
+    normalized = normalize_entity_name(name)
+    if not normalized:
+        return None
+
+    # Direct match
+    if normalized in CANONICAL_ENTITIES:
+        return normalized
+
+    # Check if normalized name contains a canonical slug or vice versa
+    for slug in CANONICAL_ENTITIES:
+        if slug in normalized or normalized in slug:
+            return slug
+
+    return None
 
 # ---------------------------------------------------------------------------
 # Name normalization
@@ -298,7 +369,11 @@ class EntityRegistry:
     """
     Index of all existing entities in the wiki.
     
-    Built once per ingestion run. Provides O(1) lookup for entity names.
+    Phase 6: now supports canonical entity pages (no date prefix).
+    Canonical pages (e.g., entities/hermes-agent.md) are indexed by their
+    canonical slug AND by their filename. Date-prefixed pages are still
+    indexed for backward compatibility but will be merged into canonical
+    pages over time.
     """
 
     def __init__(self, wiki_root: Path):
@@ -312,36 +387,61 @@ class EntityRegistry:
         self.entities_dir = wiki_root / 'entities'
         self.concepts_dir = wiki_root / 'concepts'
 
-        # Map: normalized_name → file path
+        # Map: normalized_name → file path (includes both canonical + filename-based)
         self._name_to_path: dict[str, Path] = {}
         
         # Map: file path → normalized name
         self._path_to_name: dict[Path, str] = {}
+        
+        # Phase 6: canonical slug → canonical page path
+        self._canonical_to_path: dict[str, Path] = {}
 
         self._scan()
 
     def _scan(self) -> None:
-        """Scan wiki directories and build the name index."""
+        """Scan wiki directories and build the name index + canonical index."""
         count = 0
+        canonical_count = 0
         for directory in [self.entities_dir, self.concepts_dir]:
             if not directory.exists():
                 continue
             for filepath in directory.glob('*.md'):
-                name = extract_entity_name_from_path(filepath)
-                if name:
-                    self._name_to_path[name] = filepath
-                    self._path_to_name[filepath] = name
-                    count += 1
+                # Phase 6: detect canonical pages (no date prefix)
+                stem = filepath.stem
+                if is_canonical_slug(stem):
+                    self._canonical_to_path[stem] = filepath
+                    self._name_to_path[stem] = filepath
+                    self._path_to_name[filepath] = stem
+                    canonical_count += 1
+                else:
+                    # Legacy: index by filename stem (with normalization)
+                    name = extract_entity_name_from_path(filepath)
+                    if name:
+                        self._name_to_path[name] = filepath
+                        self._path_to_name[filepath] = name
+                count += 1
 
-        logger.info(f'EntityRegistry: indexed {count} entities from {self.wiki_root}')
+        logger.info(
+            f'EntityRegistry: indexed {count} total, '
+            f'{canonical_count} canonical from {self.wiki_root}'
+        )
 
     def count(self) -> int:
         """Return number of indexed entities."""
         return len(self._name_to_path)
 
+    def canonical_count(self) -> int:
+        """Return number of canonical entity pages."""
+        return len(self._canonical_to_path)
+
     def find_entity_match(self, name: str) -> Optional[Path]:
         """
         Find if an entity already exists in the wiki.
+        
+        Phase 6: checks in this order:
+        1. Canonical entities first (by slug match)
+        2. Direct filename-stem match
+        3. Fuzzy match on overlapping word parts
         
         Args:
             name: Entity name (raw, from filename, or LLM-extracted)
@@ -350,18 +450,24 @@ class EntityRegistry:
             Path to existing wiki file, or None if not found.
         """
         normalized = normalize_entity_name(name)
-        
-        # Direct match
+        if not normalized:
+            return None
+
+        # 1. Check canonical entities first (Phase 6)
+        canonical_slug = canonical_slug_from_name(name)
+        if canonical_slug and canonical_slug in self._canonical_to_path:
+            logger.debug(f'Canonical match: {name} → {canonical_slug}')
+            return self._canonical_to_path[canonical_slug]
+
+        # 2. Direct filename-stem match
         if normalized in self._name_to_path:
             return self._name_to_path[normalized]
         
-        # Partial match: check if any indexed name contains this name or vice versa
-        # e.g., "claude-code" matches "claude-code-ai" via fuzzy match
+        # 3. Partial match (fuzzy): check overlapping word parts
         name_parts = set(normalized.split('-'))
         
         for indexed_name, path in self._name_to_path.items():
             indexed_parts = set(indexed_name.split('-'))
-            # High overlap suggests same entity
             if len(name_parts) >= 2 and len(indexed_parts) >= 2:
                 overlap = len(name_parts & indexed_parts)
                 if overlap >= min(len(name_parts), len(indexed_parts)) * 0.6:
@@ -374,46 +480,91 @@ class EntityRegistry:
         """Return all indexed entity names (normalized)."""
         return list(self._name_to_path.keys())
 
+    def get_canonical_names(self) -> list[str]:
+        """Return all canonical entity slugs."""
+        return list(self._canonical_to_path.keys())
+
     def entity_exists(self, name: str) -> bool:
         """Return True if entity with this name exists."""
         return self.find_entity_match(name) is not None
+
+    def get_or_create_canonical_path(self, slug: str, page_type: str = 'entity') -> Path:
+        """
+        Get the path for a canonical entity page, creating it if it doesn't exist.
+        
+        This is the key Phase 6 method: instead of creating date-prefixed pages,
+        we create/reuse {canonical-slug}.md in the appropriate directory.
+        """
+        if slug in self._canonical_to_path:
+            return self._canonical_to_path[slug]
+
+        target_dir = self.entities_dir if page_type == 'entity' else self.concepts_dir
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        canonical_path = target_dir / f'{slug}.md'
+        self._canonical_to_path[slug] = canonical_path
+        self._name_to_path[slug] = canonical_path
+        self._path_to_name[canonical_path] = slug
+
+        return canonical_path
 
     def update_or_create(
         self,
         entity_name: str,
         new_content: str,
-        source_path: str,
+        source_path: str = '',
         page_type: str = 'entity',
+        use_canonical: bool = True,
     ) -> dict:
         """
         Merge new content into existing entity page, or create a new one.
+        
+        Phase 6: if use_canonical=True and the entity name matches a canonical
+        entity, writes to the canonical page (no date prefix) instead of
+        creating a date-prefixed page.
         
         Args:
             entity_name: Canonical name for the entity (from LLM or filename)
             new_content: Distilled wiki body content to add
             source_path: Path to the original raw source file
             page_type: 'entity' or 'concept'
+            use_canonical: If True, use canonical page when name matches
         
         Returns:
             dict with keys: action ('updated'|'created'|'noop'), path, entity_name
         """
-        import hashlib
         from datetime import datetime
         
-        # Find existing match
+        slug = normalize_entity_name(entity_name)
+        today = datetime.now().strftime('%Y-%m-%d')
+        
+        # Phase 6: Check for canonical match
+        canonical_slug = canonical_slug_from_name(entity_name) if use_canonical else None
+        
+        if canonical_slug and canonical_slug in self._canonical_to_path:
+            # --- MERGE into existing canonical page ---
+            existing_path = self._canonical_to_path[canonical_slug]
+            logger.info(f'Canonical merge: {entity_name} → {existing_path.name}')
+            
+            self._append_capture(existing_path, entity_name, new_content, source_path, today)
+            
+            return {
+                'action': 'updated',
+                'path': existing_path,
+                'entity_name': canonical_slug,
+                'source': source_path,
+            }
+
+        # Find existing match (non-canonical or canonical page to create)
         existing_path = self.find_entity_match(entity_name)
         
         if existing_path:
             # --- MERGE: update existing page ---
             logger.info(f'Entity deduplication: merge {entity_name} → {existing_path.name}')
             
-            # Add source to frontmatter
-            add_source_to_frontmatter(existing_path, source_path)
-            
-            # Add timestamped section to body
-            today = datetime.now().strftime('%Y-%m-%d')
-            section = f'Update from {today}\n\n{new_content}'
-            append_to_body(existing_path, f'Update {today}', new_content)
+            if source_path:
+                add_source_to_frontmatter(existing_path, source_path)
+            self._append_capture(existing_path, entity_name, new_content, source_path, today)
             
             return {
                 'action': 'updated',
@@ -422,49 +573,100 @@ class EntityRegistry:
                 'source': source_path,
             }
         
-        # --- CREATE: new entity page ---
+        # Phase 6: Create canonical page if name matches
+        if canonical_slug:
+            canonical_path = self.get_or_create_canonical_path(canonical_slug, page_type)
+            self._write_canonical_page(canonical_path, entity_name, new_content, source_path, today, page_type)
+            logger.info(f'Canonical create: {entity_name} → {canonical_path.name}')
+            return {
+                'action': 'created',
+                'path': canonical_path,
+                'entity_name': canonical_slug,
+                'source': source_path,
+            }
+        
+        # --- CREATE: new page (date-prefixed, legacy behavior) ---
         target_dir = self.entities_dir if page_type == 'entity' else self.concepts_dir
         target_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Generate filename from entity name
-        slug = normalize_entity_name(entity_name)
-        today = datetime.now().strftime('%Y-%m-%d')
         filename = f'{today}-{slug}.md'
         new_path = target_dir / filename
-        
-        # Handle collision
         if new_path.exists():
+            import hashlib
             filename = f'{today}-{slug}-{hashlib.md5(entity_name.encode()).hexdigest()[:6]}.md'
             new_path = target_dir / filename
         
-        # Create frontmatter + body
         content_lines = [
             '---',
             f'title: {entity_name}',
             f'created: {today}',
             f'updated: {today}',
             f'type: {page_type}',
-            f'sources: ["{source_path}"]',
+            f'sources: ["{source_path}"]' if source_path else 'sources: []',
             'confidence: medium',
             '---',
             '',
             new_content,
         ]
-        
         new_path.write_text('\n'.join(content_lines), encoding='utf-8')
-        
-        # Register in memory
         self._name_to_path[slug] = new_path
         self._path_to_name[new_path] = slug
-        
-        logger.info(f'Entity deduplication: created {new_path.name}')
         
         return {
             'action': 'created',
             'path': new_path,
-            'entity_name': entity_name,
+            'entity_name': slug,
             'source': source_path,
         }
+
+    def _append_capture(self, path: Path, title: str, content: str, source: str, date_str: str) -> None:
+        """Append a capture entry to an existing wiki page body."""
+        existing = path.read_text(encoding='utf-8')
+        if '---' in existing:
+            parts = existing.split('---', 2)
+            if len(parts) >= 3:
+                fm = parts[1]
+                body = parts[2]
+                
+                # Update updated date
+                fm = re.sub(r'^updated: .+$', f'updated: {date_str}', fm, flags=re.MULTILINE)
+                
+                # Add source if provided
+                if source and source not in existing:
+                    if 'sources:' in fm:
+                        fm = re.sub(
+                            r'(^sources:\s*.*)$',
+                            lambda m: m.group(0).rstrip(']') + f', "{source}"]' if m.group(0).strip().endswith(']') else m.group(0),
+                            fm,
+                            flags=re.MULTILINE,
+                        )
+                    else:
+                        fm += f'\nsources: ["{source}"]'
+                
+                body = body.rstrip() + f'\n\n---\n\n### {title} ({date_str})\n\n{content}\n'
+                path.write_text(f'---\n{fm}\n---\n\n{body}', encoding='utf-8')
+                return
+        
+        # No frontmatter — append directly
+        with path.open('a', encoding='utf-8') as f:
+            f.write(f'\n\n---\n\n### {title} ({date_str})\n\n{content}\n')
+
+    def _write_canonical_page(self, path: Path, title: str, content: str, source: str, date_str: str, page_type: str) -> None:
+        """Write initial content to a new canonical entity page."""
+        source_line = f'  - "{source}"' if source else '  - "initial"'
+        text = f"""---
+title: {title}
+canonical: true
+created: {date_str}
+updated: {date_str}
+type: {page_type}
+sources:
+{source_line}
+confidence: medium
+---
+
+{content}
+"""
+        path.write_text(text, encoding='utf-8')
 
     def suggest_entity_name(self, content_snippet: str, existing_names: list[str]) -> str:
         """
