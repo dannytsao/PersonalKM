@@ -63,7 +63,7 @@ def _commit_and_push_wiki(vault_path: Path) -> None:
         logger.debug("No wiki changes to commit")
         return
 
-    run_git(["add", "wiki/"], vault_path, settings)
+    run_git(["add", "--all"], vault_path, settings)
     run_git(["commit", "-m", "🤖 Auto: ingest raw → wiki entities"], vault_path, settings)
     run_git(["push", "origin", settings.vault_branch], vault_path, settings)
     logger.info("Pushed wiki/ changes to GitHub")
