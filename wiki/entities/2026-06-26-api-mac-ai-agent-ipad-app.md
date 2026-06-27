@@ -1,13 +1,13 @@
 ---
-
-
-
-
 title: api-mac-ai-agent-ipad-app
 created: 2026-06-26
 updated: 2026-06-27
 topic: AI-Agent-&-Tools
-tags: ['apple-silicon', 'local-llm', 'ai-agent', 'mac', '2026']
+tags:
+  - apple-silicon
+  - local-llm
+  - ai-agent
+  - mac
 type: entity
 sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-26-202606261658_00001-蘋果官方教學-不用-api、不用訂閱,三步驟在-mac-上用本地端模型跑-ai-agent-開發-ipad-app-電腦.md
