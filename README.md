@@ -1,7 +1,7 @@
 # PersonalKM — AI-Powered Second Brain
 
 **Status:** ✅ Phase A+B Stable (Phase A on Mac Mini, wikilinks on Mac Mini, Render = webhook only)
-**Last Updated:** 2026-06-26
+**Last Updated:** 2026-06-27
 
 LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每月報告追踪過時的技術知識。
 
