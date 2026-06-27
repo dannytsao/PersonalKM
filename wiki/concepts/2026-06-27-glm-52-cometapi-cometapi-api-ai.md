@@ -3,6 +3,7 @@
 
 
 
+
 title: glm-52-cometapi-cometapi-api-ai
 created: 2026-06-27
 updated: 2026-06-27
@@ -16,7 +17,9 @@ confidence: low
 
 
 
+
 ---
+
 
 
 
@@ -38,3 +41,4 @@ confidence: low
 - [[2026-06-27-quick-start-overview-zai-developer-document]]
 - [[2026-06-27-one-api-access-500-ai-models-cometapi]]
 - [[2026-06-27-glm-52]]
+- [[2026-06-27-glm-52deepseek-4qwen-37minimax-m3]]

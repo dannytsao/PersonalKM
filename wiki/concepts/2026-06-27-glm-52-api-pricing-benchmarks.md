@@ -6,6 +6,8 @@
 
 
 
+
+
 title: glm-52-api-pricing-benchmarks
 created: 2026-06-27
 updated: 2026-06-27
@@ -15,14 +17,11 @@ type: entity
 sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-26-202606262022_00001-glm-5.2-api-pricing-&-benchmarks.md
 confidence: low
-
-
-
-
-
-
+wikilink_processed: 2026-06-27T11:34:18
 
 ---
+
+
 
 
 
@@ -50,3 +49,4 @@ confidence: low
 - [[2026-06-27-lushbinary-your-ai-tech-partner]]
 - [[2026-06-27-glm-52]]
 - [[2026-06-27-developers-digest-ai-development-tutorials-tools-open-source]]
+- [[2026-06-27-glm-52deepseek-4qwen-37minimax-m3]]

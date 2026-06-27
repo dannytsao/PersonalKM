@@ -2,6 +2,7 @@
 
 
 
+
 title: hermes-agent-learn-ai
 created: 2026-06-26
 updated: 2026-06-27
@@ -12,10 +13,9 @@ sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-26-202606261701_00001-hermes-agent-新增-learn-指令-讓任何資料都能變成可重複使用的-ai-技能-電腦王阿達.md
   - /tmp/personal-km-vault/raw/Tech/2026-06-26-202606261701_00001-hermes-agent-新增-learn-指令-讓任何資料都能變成可重複使用的-ai-技能-電腦王阿達.md
 confidence: high
-
-
-
+wikilink_processed: 2026-06-27T11:43:17
 ---
+
 
 ## Summary
 
