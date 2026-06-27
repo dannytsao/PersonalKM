@@ -1,32 +1,32 @@
-# Wiki Index
+# Knowledge Graph
 
-Last updated: 2026-06-27T22:55:48.870850
+Last updated: 2026-06-27T22:55:48.869664
 
 ## Canonical Entities
 
-- [[anges-ai|Anges AI]]
-- [[antigravity|Antigravity]]
-- [[apple-silicon|Apple Silicon]]
-- [[chatgpt|ChatGPT]]
-- [[claude-code|Claude Code]]
-- [[cloudflare|Cloudflare]]
-- [[codex|Codex]]
-- [[cometapi|CometAPI]]
-- [[deepseek|DeepSeek]]
-- [[glm-5-2|GLM 5.2]]
-- [[harness|Harness]]
-- [[hermes-agent|Hermes Agent]]
-- [[inside|Inside]]
-- [[lushbinary|LushBinary]]
-- [[motioner|Motioner]]
-- [[newmobilelife|newmobilelife]]
-- [[openrouter|OpenRouter]]
-- [[poyin-chen|PoYin Chen]]
-- [[rc-astro|RC Astro]]
-- [[sakana-fugu|Sakana Fugu]]
-- [[siliconflow|SiliconFlow]]
+- [[anges-ai]]
+- [[antigravity]]
+- [[apple-silicon]]
+- [[chatgpt]]
+- [[claude-code]]
+- [[cloudflare]]
+- [[codex]]
+- [[cometapi]]
+- [[deepseek]]
+- [[glm-5-2]]
+- [[harness]]
+- [[hermes-agent]]
+- [[inside]]
+- [[lushbinary]]
+- [[motioner]]
+- [[newmobilelife]]
+- [[openrouter]]
+- [[poyin-chen]]
+- [[rc-astro]]
+- [[sakana-fugu]]
+- [[siliconflow]]
 
-## Other Entities (8)
+## Other Entity Pages (8)
 
 - [[2026-06-26-ai-sakana-fugu-fable-5mythos-5]]
 - [[2026-06-26-api-mac-ai-agent-ipad-app]]
@@ -72,4 +72,4 @@ Last updated: 2026-06-27T22:55:48.870850
 - [[2026-06-27-yahoo]]
 
 ---
-Total pages: 60
+Total pages: 73
