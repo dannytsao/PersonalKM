@@ -98,73 +98,90 @@ def _add_frontmatter_delimiter(text: str) -> str:
     return text
 
 
-def _flatten_nested_tags(fm_text: str) -> str:
-    """Replace ``tags: [['a','b']]`` with ``tags:\n  - a\n  - b``."""
-    # Match tags: [['...']]  (nested bracket list)
-    def _replace(m: re.Match) -> str:
-        indent = m.group(1)  # leading whitespace before 'tags:'
-        raw_list = m.group(2)
-        # Parse the inner list: ['a', 'b', 'c']
-        items = re.findall(r"'([^']*)'", raw_list)
+def _flatten_nested_tags(fm_text: str) -> (str, bool):
+    """Replace nested bracket tags like ``[['a','b']]`` with proper YAML list."""
+    changed = False
+
+    def _replace_tags(m: re.Match) -> str:
+        nonlocal changed
+        lead = m.group(1)    # ^ or \n before "tags:"
+        indent = m.group(2)  # whitespace before "tags:"
+        raw = m.group(3)     # content between [[ and ]]
+        items = re.findall(r"'([^']*)'", raw)
         if not items:
             return m.group(0)
-        yaml_list = "\n".join(f"{indent}  - {item}" for item in items)
-        return f"{indent}tags:\n{yaml_list}"
+        changed = True
+        rest = "tags:\n" + "\n".join(f"{indent}  - {item}" for item in items)
+        # Strip the trailing \n\s*$ that the regex consumed
+        return lead + indent + rest
 
-    return re.sub(
+    # Inline:  tags: [['a','b']]     (or  tags:\n  [['a','b']]  since \s* eats newlines)
+    fm_text = re.sub(
         r"(^|\n)(\s*)tags:\s*\[\[([^\]]*)\]\]\s*$",
-        _replace,
+        _replace_tags,
         fm_text,
         count=1,
         flags=re.MULTILINE,
     )
 
+    return fm_text, changed
+
 
 def _clean_sources(fm_text: str) -> (str, bool):
     """Remove empty-string entries from sources, and fix absolute paths to relative."""
     changed = False
+
+    def _parse_inline_list(text: str, indent: str) -> (str, bool):
+        """Convert ``[\\"a\\", \\"b\\"]`` into proper YAML list items."""
+        items = re.findall(r'"([^"]*)"', text)
+        items = [it for it in items if it.strip()]
+        if not items:
+            return f"{indent}sources: []", bool(re.findall(r'"([^"]*)"', text))
+        return f"{indent}sources:\n" + "\n".join(f'{indent}  - "{it}"' for it in items), True
+
     lines = fm_text.split("\n")
     new_lines: List[str] = []
     in_sources = False
     source_indent = ""
 
-    for line in lines:
+    for i, line in enumerate(lines):
         stripped = line.strip()
 
         if stripped.startswith("sources:"):
             in_sources = True
             source_indent = line[: len(line) - len(line.lstrip())]
-            # Inline sources:  sources: [""]  →  sources: []
-            m = re.match(r"(\s*)sources:\s*\[.*\]\s*", line)
-            if m:
-                # Parse inline list
-                inline_content = stripped[len("sources:"):].strip()
-                if inline_content.startswith("[") and inline_content.endswith("]"):
-                    items = re.findall(r'"([^"]*)"', inline_content)
-                    clean = [it for it in items if it.strip()]
-                    if clean:
-                        yaml = "\n".join(f'{source_indent}  - "{item}"' for item in clean)
-                        new_lines.append(yaml)
-                    else:
-                        new_lines.append(f"{source_indent}sources: []")
+
+            # Inline sources:  sources: [""] or sources: ["a", "b"]
+            inline_m = re.match(r"(\s*)sources:\s*(\[.*\])\s*", line)
+            if inline_m:
+                replacement, ch = _parse_inline_list(stripped, source_indent)
+                new_lines.append(replacement)
+                if ch:
                     changed = True
-                else:
-                    new_lines.append(line)
                 in_sources = False
-            else:
-                new_lines.append(line)
+                continue
+
+            new_lines.append(line)
             continue
 
         if in_sources:
+            # Indented bracket list:   [""]  or  ["a", "b"]
+            if stripped.startswith("[") and stripped.endswith("]"):
+                replacement, ch = _parse_inline_list(stripped, source_indent)
+                new_lines.append(replacement)
+                if ch:
+                    changed = True
+                in_sources = False
+                continue
+
+            # Standard YAML list item:  - "value"
             if stripped.startswith("-"):
-                # YAML list item
                 m = re.match(r'\s*-\s*"([^"]*)"', line)
                 if m:
                     val = m.group(1).strip()
                     if val == "":
                         changed = True
-                        continue  # skip empty source
-                    # Fix absolute paths → relative
+                        continue  # skip empty
                     fixed = _fix_source_path(val, source_indent)
                     if fixed != val:
                         changed = True
@@ -173,20 +190,24 @@ def _clean_sources(fm_text: str) -> (str, bool):
                         new_lines.append(line)
                 else:
                     new_lines.append(line)
-            elif stripped == "" or stripped.startswith("#"):
-                new_lines.append(line)
-            else:
-                # End of sources block
+                continue
+
+            # End of sources block (non-empty, non-indented line)
+            if stripped and not stripped.startswith("#"):
                 in_sources = False
                 new_lines.append(line)
+                continue
+
+            new_lines.append(line)
             continue
 
         new_lines.append(line)
 
-    # If sources block was entirely removed, write at least []
+    # Ensure sources key exists
     result = "\n".join(new_lines)
     if not re.search(r"^sources:", result, re.MULTILINE):
         result = result.rstrip("\n") + f"\nsources: []"
+        changed = True
 
     return result, changed
 
@@ -282,10 +303,9 @@ def check_and_repair(page: Path, check_only: bool = False) -> dict:
         result["warnings"].append(e)
 
     # ── 3. Repair tags (nested brackets) ──
-    fixed_fm = _flatten_nested_tags(fm)
-    if fixed_fm != fm:
+    fm, tags_changed = _flatten_nested_tags(fm)
+    if tags_changed:
         result["fixes"].append("Flattened nested bracket tags → proper YAML list")
-        fm = fixed_fm
 
     # ── 4. Clean sources ──
     fm, sources_changed = _clean_sources(fm)

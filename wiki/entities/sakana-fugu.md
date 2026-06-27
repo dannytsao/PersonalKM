@@ -6,11 +6,17 @@ updated: 2026-06-27
 type: entity
 topic: AI-Agent-&-Tools
 sources:
-  [""]
+sources: []
 tags:
-  [['multi-agent-systems', 'orchestration', '2026', 'japan', 'anthropic']]
+  - multi-agent-systems
+  - orchestration
+  - 2026
+  - japan
+  - anthropic
 confidence: medium
 ---
+
+
 
 # Sakana Fugu
 

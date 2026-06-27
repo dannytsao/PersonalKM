@@ -6,11 +6,17 @@ updated: 2026-06-27
 type: entity
 topic: AI-Agent-&-Tools
 sources:
-  [""]
+sources: []
 tags:
-  [['codex', 'ssd', 'bug', '2026', 'to-read']]
+  - codex
+  - ssd
+  - bug
+  - 2026
+  - to-read
 confidence: medium
 ---
+
+
 
 # Codex
 

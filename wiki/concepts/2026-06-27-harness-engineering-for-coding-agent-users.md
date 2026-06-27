@@ -1,8 +1,4 @@
 ---
-
-
-
-
 title: harness-engineering-for-coding-agent-users
 created: 2026-06-27
 updated: 2026-06-27
@@ -12,10 +8,8 @@ type: entity
 sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-27-202606270602_00001-harness-engineering-for-coding-agent-users.md
 confidence: low
-wikilink_processed: 2026-06-27T09:41:34
-
-
 ---
+
 
 
 

@@ -6,13 +6,13 @@ updated: 2026-06-27
 type: entity
 topic: AI-Agent-&-Tools
 sources:
-  - ""
 tags:
   - apple-silicon,local-llm,ai-agent,mac,2026
   - apple-silicon
   - ai-agent
 confidence: medium
 ---
+
 
 # Apple Silicon
 

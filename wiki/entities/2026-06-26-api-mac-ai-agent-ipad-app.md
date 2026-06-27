@@ -13,8 +13,8 @@ sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-26-202606261658_00001-蘋果官方教學-不用-api、不用訂閱,三步驟在-mac-上用本地端模型跑-ai-agent-開發-ipad-app-電腦.md
   - /tmp/personal-km-vault/raw/Tech/2026-06-26-202606261658_00001-蘋果官方教學-不用-api、不用訂閱,三步驟在-mac-上用本地端模型跑-ai-agent-開發-ipad-app-電腦.md
 confidence: medium
-wikilink_processed: 2026-06-27T13:01:52
 ---
+
 
 
 ## Summary

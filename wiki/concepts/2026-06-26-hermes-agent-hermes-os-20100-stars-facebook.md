@@ -1,8 +1,4 @@
 ---
-
-
-
-
 title: hermes-agent-hermes-os-20100-stars-facebook
 created: 2026-06-26
 updated: 2026-06-27
@@ -13,8 +9,8 @@ sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-26-202606261316_00001-hermes-agent-中文社群-【hermes-os-2.0-100-stars-之後,我想做的下一步】-faceb.md
   - /tmp/personal-km-vault/raw/Tech/2026-06-26-202606261316_00001-hermes-agent-中文社群-【hermes-os-2.0-100-stars-之後,我想做的下一步】-faceb.md
 confidence: medium
-wikilink_processed: 2026-06-27T10:11:46
 ---
+
 
 
 ## Summary

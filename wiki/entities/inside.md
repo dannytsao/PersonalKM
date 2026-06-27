@@ -6,11 +6,16 @@ updated: 2026-06-27
 type: entity
 topic: Tech-Trends-&-Insights
 sources:
-  [""]
+sources: []
 tags:
-  [['capture-failed', 'http-403', 'mistral', '2025']]
+  - capture-failed
+  - http-403
+  - mistral
+  - 2025
 confidence: medium
 ---
+
+
 
 # Inside
 

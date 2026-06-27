@@ -1,6 +1,4 @@
 ---
-
-
 title: antigravity-cliagy-antigravity
 created: 2026-06-27
 updated: 2026-06-27
@@ -10,8 +8,8 @@ type: entity
 sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-27-202606270549_00001-antigravity-cli(agy)快速上手-antigravity-速速上手.md
 confidence: low
-wikilink_processed: 2026-06-27T09:44:56
 ---
+
 
 
 ## Summary

@@ -6,11 +6,16 @@ updated: 2026-06-27
 type: entity
 topic: Personal-Interests
 sources:
-  [""]
+sources: []
 tags:
-  [['motion-design', 'design-learning', 'taiwan', 'to-explore']]
+  - motion-design
+  - design-learning
+  - taiwan
+  - to-explore
 confidence: medium
 ---
+
+
 
 # Motioner
 

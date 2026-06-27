@@ -6,11 +6,16 @@ updated: 2026-06-27
 type: entity
 topic: AI-Agent-&-Tools
 sources:
-  [""]
+sources: []
 tags:
-  [['to-read', 'line-capture', 'windows-11', 'prompts']]
+  - to-read
+  - line-capture
+  - windows-11
+  - prompts
 confidence: medium
 ---
+
+
 
 # ChatGPT
 
