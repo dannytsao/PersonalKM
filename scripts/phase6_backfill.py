@@ -267,12 +267,15 @@ def build_canonical_content(slug: str, aggregated: dict) -> str:
 
 
 def build_canonical_frontmatter(slug: str, aggregated: dict) -> str:
-    """Build frontmatter for a canonical entity page."""
+    """Build frontmatter for a canonical entity page (no dangling empty strings)."""
     display_name = CANONICAL_ENTITIES.get(slug, slug.replace("-", " ").title())
     today = datetime.now().strftime("%Y-%m-%d")
 
-    sources_str = ",\n  ".join(f'"{s}"' for s in aggregated["sources"][:10]) if aggregated["sources"] else ""
-    tags_str = ", ".join(aggregated["tags"][:10]) if aggregated["tags"] else ""
+    clean_sources = [s for s in aggregated["sources"][:10] if s]
+    clean_tags = [t for t in aggregated["tags"][:10] if t]
+
+    sources_yaml = "\n".join(f'  - "{s}"' for s in clean_sources) if clean_sources else "  []"
+    tags_yaml = ", ".join(clean_tags) if clean_tags else ""
 
     return f"""---
 title: {display_name}
@@ -282,9 +285,9 @@ updated: {today}
 type: entity
 topic: {aggregated["topic"]}
 sources:
-  [{sources_str}]
+{sources_yaml}
 tags:
-  [{tags_str}]
+  [{tags_yaml}]
 confidence: medium
 ---"""
 
@@ -432,6 +435,9 @@ def run_phase6(vault_path: Path, dry_run: bool = False) -> dict:
 
     logger.info(f"Canonical pages created: {canonical_created}, already exist: {canonical_updated}")
 
+    # Step 4.5: Create stubs for canonical entities that have mentions but no source page
+    stub_created = _create_missing_stubs(wiki_path, all_pages, dry_run=dry_run)
+
     # Step 5: Rebuild wikilinks for ALL pages using the canonical EntityRegistry
     if not dry_run:
         registry = EntityRegistry(wiki_path)
@@ -484,6 +490,7 @@ def run_phase6(vault_path: Path, dry_run: bool = False) -> dict:
         "total_pages": len(all_pages),
         "canonical_pages_created": canonical_created,
         "canonical_pages_existing": canonical_updated,
+        "stub_pages_created": stub_created if not dry_run else 0,
         "frontmatter_fixed": fm_fixed,
         "unclassified_pages": len(unclassified),
         "duration_seconds": duration,
@@ -494,6 +501,107 @@ def run_phase6(vault_path: Path, dry_run: bool = False) -> dict:
         logger.info(f"  {k}: {v}")
     logger.info("=" * 70)
     return summary
+
+
+def _create_missing_stubs(
+    wiki_path: Path,
+    all_pages: list[Path],
+    dry_run: bool = False,
+) -> int:
+    """Create stub pages for canonical entities that lack a page but are mentioned."""
+    entities_dir = wiki_path / "entities"
+
+    existing = {f.stem for f in entities_dir.glob("*.md") if is_canonical_slug(f.stem)}
+    missing = [s for s in CANONICAL_ENTITIES if s not in existing]
+    if not missing:
+        logger.info("No missing canonical stubs to create")
+        return 0
+
+    created = 0
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    for slug in sorted(missing):
+        display_name = CANONICAL_ENTITIES[slug]
+
+        # Find all pages that mention this entity
+        mention_sources = []
+        for page in all_pages:
+            try:
+                content = page.read_text(encoding="utf-8", errors="ignore")
+                body = _strip_frontmatter(content)
+                # Check for slug or display name in body
+                if slug.lower() in body.lower() or display_name.lower() in body.lower():
+                    # Grab first meaningful paragraph as context
+                    paras = [p.strip() for p in body.split("\n\n") if p.strip() and len(p.strip()) > 20]
+                    context = paras[0] if paras else f"Mentioned in {page.name}"
+                    mention_sources.append((page, context))
+            except Exception:
+                continue
+
+        if not mention_sources:
+            logger.info(f"  [SKIP]  {slug:20s} {display_name} — no mentions in any page (stub deferred)")
+            continue
+
+        # Build stub content
+        context = mention_sources[0][1][:300]
+        source_paths = [str(s[0].relative_to(wiki_path.parent)) for s in mention_sources[:5]]
+        source_yaml = "\n".join(f'  - "{s}"' for s in source_paths)
+
+        if dry_run:
+            logger.info(
+                f"  [DRY-RUN] Would create stub: entities/{slug}.md "
+                f"({len(mention_sources)} mentions, context: {context[:60]}...)"
+            )
+            continue
+
+        stub = f"""---
+title: {display_name}
+canonical: true
+created: {today}
+updated: {today}
+type: entity
+topic: Tech-Trends-&-Insights
+sources:
+{source_yaml}
+tags: []
+confidence: medium
+---
+
+# {display_name}
+
+{context}
+
+## Mentions
+
+"""
+        for page, ctx in mention_sources:
+            page_stem = page.stem
+            stub += f"- Mentioned in [[{page_stem}]]: {ctx[:200]}\n"
+
+        page_path = entities_dir / f"{slug}.md"
+        page_path.write_text(stub, encoding="utf-8")
+        created += 1
+        logger.info(f"  [STUB]   {slug:20s} {display_name} ← {len(mention_sources)} mentions")
+
+        # Add wikilinks from mentioning pages to this new stub
+        for page, _ in mention_sources:
+            try:
+                content = page.read_text(encoding="utf-8", errors="ignore")
+                link_text = f"[[{slug}]]"
+                if link_text not in content:
+                    # Add near the bottom (before final --- or at end)
+                    if content.rstrip().endswith("---"):
+                        content = content.rstrip() + f"\n\n{link_text}\n"
+                    else:
+                        content = content.rstrip() + f"\n\n---\n\n{link_text}\n"
+                    page.write_text(content, encoding="utf-8")
+                    logger.debug(f"    → added [[{slug}]] to {page.name}")
+            except Exception as e:
+                logger.warning(f"    → failed to add wikilink to {page.name}: {e}")
+
+    skipped = len(missing) - created
+    logger.info(f"Stub pages created: {created}, skipped (no mentions): {skipped}")
+    return created
 
 
 def _update_knowledge_graph(wiki_path: Path, registry: EntityRegistry) -> None:

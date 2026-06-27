@@ -362,13 +362,16 @@ confidence: {confidence}
         page_path.write_text(frontmatter, encoding="utf-8")
         logger.info(f"✅ CREATED {raw_path.name} → {subfolder}/{dest_name}")
 
-    # 9. Bidirectional wikilinks
+    # 9. Bidirectional wikilinks (Phase B: LLM-detected entities)
     wm = _get_wikilinks(wiki_path)
     link_result = wm.add_bidirectional_links(page_path, detected_entities)
     outbound = link_result.get("outbound", 0)
     backlinks = link_result.get("backlinks", 0)
 
-    # 10. Delete raw file after successful processing
+    # 10. Direct scan for canonical entity mentions in body (supplement)
+    _add_canonical_body_links(wiki_path, page_path, body)
+
+    # 11. Delete raw file after successful processing
     try:
         raw_path.unlink()
     except Exception as e:
@@ -472,6 +475,15 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
     health = IngestionHealthCheck(vault_path)
     health_report = health.run_all_checks()
 
+    # Auto-promote entities mentioned ≥3 times to stub pages
+    stubs_promoted = 0
+    try:
+        stubs_promoted = _auto_promote_entities(wiki_path)
+        if stubs_promoted > 0:
+            logger.info(f"Auto-promoted {stubs_promoted} entities to stub pages")
+    except Exception as e:
+        logger.warning("Auto-promotion skipped: %s", e)
+
     return {
         "status": "success" if failed == 0 else "partial",
         "processed": processed,
@@ -484,5 +496,129 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
         "skip_llm": skip_llm,
         "broken_wikilinks": total_broken,
         "health_check": health_report,
+        "stubs_auto_promoted": stubs_promoted,
         "timestamp": datetime.now().isoformat(),
     }
+
+
+# ─────────────────────────────────────────────────────────────
+# Canonical body-link scanning & entity auto-promotion
+# ─────────────────────────────────────────────────────────────
+
+
+def _add_canonical_body_links(wiki_path: Path, page_path: Path, body: str) -> int:
+    """Add [[wikilinks]] for canonical entity slugs found directly in body."""
+    from bot.entity_dedup import CANONICAL_ENTITIES, is_canonical_slug
+
+    if not body:
+        return 0
+
+    content = page_path.read_text(encoding="utf-8")
+    added = 0
+
+    for slug, display_name in CANONICAL_ENTITIES.items():
+        # Check if entity has a page
+        entity_page = wiki_path / "entities" / f"{slug}.md"
+        if not entity_page.exists():
+            continue
+
+        link_text = f"[[{slug}]]"
+        if link_text in content:
+            continue
+
+        # Check if slug or display name appears in the body
+        if slug.lower() in body.lower() or display_name.lower() in body.lower():
+            content = content.rstrip() + f"\n{link_text}\n"
+            added += 1
+
+    if added > 0:
+        page_path.write_text(content, encoding="utf-8")
+        logger.info(f"Added {added} canonical body links to {page_path.name}")
+
+    return added
+
+
+def _auto_promote_entities(wiki_path: Path, min_mentions: int = 3) -> int:
+    """Auto-create stub pages for canonical entities mentioned >= min_mentions times."""
+    from bot.entity_dedup import CANONICAL_ENTITIES, is_canonical_slug
+    from collections import defaultdict
+
+    entities_dir = wiki_path / "entities"
+    if not entities_dir.exists():
+        return 0
+
+    existing = {f.stem for f in entities_dir.glob("*.md") if is_canonical_slug(f.stem)}
+    candidate_slugs = [s for s in CANONICAL_ENTITIES if s not in existing]
+
+    mention_count: dict[str, int] = defaultdict(int)
+    mention_sources: dict[str, list[Path]] = defaultdict(list)
+
+    for slug in candidate_slugs:
+        display = CANONICAL_ENTITIES[slug]
+        for f in sorted((wiki_path / "entities").glob("*.md")) + sorted((wiki_path / "concepts").glob("*.md")):
+            if is_canonical_slug(f.stem):
+                continue
+            try:
+                text = f.read_text(encoding="utf-8", errors="ignore").lower()
+                if slug.lower() in text or display.lower() in text:
+                    mention_count[slug] += 1
+                    mention_sources[slug].append(f)
+            except Exception:
+                continue
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    created = 0
+
+    for slug in candidate_slugs:
+        count = mention_count[slug]
+        if count < min_mentions:
+            continue
+
+        sources = mention_sources[slug]
+        context = ""
+        for src in sources[:3]:
+            try:
+                body = src.read_text(encoding="utf-8", errors="ignore")
+                import re as _re
+                body_clean = _re.sub(r'^---.*?---\n*', '', body, flags=_re.DOTALL).strip()
+                paras = [p.strip() for p in body_clean.split('\n\n') if p.strip() and len(p.strip()) > 20]
+                if paras:
+                    context = paras[0][:300]
+                    break
+            except Exception:
+                continue
+
+        if not context:
+            context = f"Mentioned in {count} pages"
+
+        display = CANONICAL_ENTITIES[slug]
+        source_yaml = "\n".join(f'  - "{s.name}"' for s in sources[:5])
+
+        stub = f"""---
+title: {display}
+canonical: true
+created: {today}
+updated: {today}
+type: entity
+topic: Tech-Trends-&-Insights
+sources:
+{source_yaml}
+tags: []
+confidence: medium
+---
+
+# {display}
+
+{context}
+
+## Mentions
+
+"""
+        for src in sources:
+            stub += f"- Mentioned in [[{src.stem}]]\n"
+
+        (entities_dir / f"{slug}.md").write_text(stub, encoding="utf-8")
+        created += 1
+        logger.info(f"[AUTO] Promoted {slug} → entities/{slug}.md ({count} mentions)")
+
+    return created
