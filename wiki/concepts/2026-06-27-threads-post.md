@@ -1,5 +1,6 @@
 ---
 
+
 title: threads-post
 created: 2026-06-27
 updated: 2026-06-27
@@ -10,7 +11,9 @@ sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/General/2026-06-26-202606262022_00001-threads-post.md
 confidence: low
 
+
 ---
+
 
 ## Summary
 
@@ -24,3 +27,6 @@ confidence: low
 
 # Threads post
 
+## See also
+
+- [[2026-06-27-newmobilelife-newmobilelife]]

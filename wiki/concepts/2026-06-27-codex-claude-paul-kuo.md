@@ -1,5 +1,6 @@
 ---
 
+
 title: codex-claude-paul-kuo
 created: 2026-06-27
 updated: 2026-06-27
@@ -9,8 +10,9 @@ type: entity
 sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-27-202606270600_00001-我讓-codex-挑-claude-的錯,但不照它說了算-—-paul-kuo.md
 confidence: low
-
+wikilink_processed: 2026-06-27T09:43:14
 ---
+
 
 ## Summary
 
