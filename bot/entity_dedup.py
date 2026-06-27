@@ -332,6 +332,8 @@ def append_to_body(filepath: Path, section_title: str, content: str) -> None:
 
 def add_source_to_frontmatter(filepath: Path, source_path: str) -> None:
     """Add a source path to the sources: list in frontmatter."""
+    if not source_path:
+        return
     # Read existing frontmatter
     fm, body = read_frontmatter(filepath)
     
@@ -630,17 +632,21 @@ class EntityRegistry:
                 # Update updated date
                 fm = re.sub(r'^updated: .+$', f'updated: {date_str}', fm, flags=re.MULTILINE)
                 
-                # Add source if provided
+                # Add source if provided and not already present
                 if source and source not in existing:
                     if 'sources:' in fm:
                         fm = re.sub(
-                            r'(^sources:\s*.*)$',
-                            lambda m: m.group(0).rstrip(']') + f', "{source}"]' if m.group(0).strip().endswith(']') else m.group(0),
+                            r'(^sources:\s*).*$',
+                            lambda m: 'sources: ["' + source + '"]'
+                                if m.group(0).strip() == 'sources: []'
+                                else m.group(0).rstrip(']') + f', "{source}"]'
+                                if m.group(0).strip().endswith(']')
+                                else m.group(0) + f'\n  - "{source}"',
                             fm,
                             flags=re.MULTILINE,
                         )
                     else:
-                        fm += f'\nsources: ["{source}"]'
+                        fm += f'\nsources:\n  - "{source}"'
                 
                 body = body.rstrip() + f'\n\n---\n\n### {title} ({date_str})\n\n{content}\n'
                 path.write_text(f'---\n{fm}\n---\n\n{body}', encoding='utf-8')
