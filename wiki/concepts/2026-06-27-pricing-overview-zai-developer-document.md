@@ -32,3 +32,7 @@ wikilink_processed: 2026-06-27T09:50:24
 ## See also
 
 - [[2026-06-27-developers-digest-ai-development-tutorials-tools-open-source]]
+
+---
+
+[[z-ai]]

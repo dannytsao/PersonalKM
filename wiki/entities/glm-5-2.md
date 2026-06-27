@@ -41,3 +41,7 @@ confidence: medium
 ## Summary
 
 # Quick Start - Overview - Z.AI DEVELOPER DOCUMENT
+
+---
+
+[[z-ai]]

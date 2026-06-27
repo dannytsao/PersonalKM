@@ -1,6 +1,6 @@
 # Knowledge Graph
 
-Last updated: 2026-06-27T23:33:47.054020
+Last updated: 2026-06-28T00:46:30.810573
 
 > Mermaid flowchart — entities are blue, concepts are orange. Edges represent wikilink references.
 
@@ -28,6 +28,8 @@ flowchart LR
         class p_2026_06_27_新北淡水隱藏版愛心景點爆紅退潮限定心型石滬美到像國外 entity
         anges_ai["Anges AI"]
         class anges_ai entity
+        anthropic["Anthropic"]
+        class anthropic entity
         antigravity["Antigravity"]
         class antigravity entity
         apple_silicon["Apple Silicon"]
@@ -42,32 +44,56 @@ flowchart LR
         class codex entity
         cometapi["CometAPI"]
         class cometapi entity
+        cursor["Cursor"]
+        class cursor entity
         deepseek["DeepSeek"]
         class deepseek entity
+        gemini["Gemini"]
+        class gemini entity
+        github["GitHub"]
+        class github entity
         glm_5_2["GLM 5.2"]
         class glm_5_2 entity
         harness["Harness"]
         class harness entity
         hermes_agent["Hermes Agent"]
         class hermes_agent entity
+        hermes_os["Hermes OS"]
+        class hermes_os entity
         inside["Inside"]
         class inside entity
         lushbinary["LushBinary"]
         class lushbinary entity
+        minimax_m3["MiniMax M3"]
+        class minimax_m3 entity
+        mistral_ai["Mistral AI"]
+        class mistral_ai entity
         motioner["Motioner"]
         class motioner entity
         newmobilelife["newmobilelife"]
         class newmobilelife entity
+        nous_research["Nous Research"]
+        class nous_research entity
+        openclaw["OpenClaw"]
+        class openclaw entity
         openrouter["OpenRouter"]
         class openrouter entity
+        paul_kuo["Paul Kuo"]
+        class paul_kuo entity
         poyin_chen["PoYin Chen"]
         class poyin_chen entity
+        qwen["Qwen"]
+        class qwen entity
         rc_astro["RC Astro"]
         class rc_astro entity
+        sakana_ai["Sakana AI"]
+        class sakana_ai entity
         sakana_fugu["Sakana Fugu"]
         class sakana_fugu entity
         siliconflow["SiliconFlow"]
         class siliconflow entity
+        z_ai["Z.AI"]
+        class z_ai entity
     end
 
     subgraph Concepts
@@ -134,25 +160,65 @@ flowchart LR
     end
 
     anges_ai --> hermes_agent
+    anges_ai --> openclaw
+    anthropic --> p_2026_06_26_ai_sakana_fugu_fable_5mythos_5
+    anthropic --> sakana_fugu
+    chatgpt --> gemini
     claude_code --> p_2026_06_26_codex_bug_ssd
     codex --> claude_code
+    codex --> cursor
+    codex --> paul_kuo
+    cursor --> codex
+    cursor --> p_2026_06_26_codex_bug_ssd
+    deepseek --> minimax_m3
+    deepseek --> qwen
+    gemini --> chatgpt
+    gemini --> p_2026_06_26_chatgptgemini_windows_11
+    github --> hermes_agent
+    github --> p_2026_06_26_hermes_agent_hermes_os_20100_stars_facebook
+    github --> p_2026_06_26_log_id
+    glm_5_2 --> z_ai
+    hermes_agent --> github
+    hermes_agent --> hermes_os
+    hermes_agent --> nous_research
+    hermes_os --> hermes_agent
+    hermes_os --> p_2026_06_26_hermes_agent_hermes_os_20100_stars_facebook
+    inside --> mistral_ai
     lushbinary --> p_2026_06_27_lushbinary_your_ai_tech_partner
+    minimax_m3 --> deepseek
+    minimax_m3 --> p_2026_06_27_glm_52deepseek_4qwen_37minimax_m3
+    mistral_ai --> inside
+    mistral_ai --> p_2026_06_26_wwwinsidecomtw
     newmobilelife --> p_2026_06_27_newmobilelife_newmobilelife
+    nous_research --> hermes_agent
+    nous_research --> p_2026_06_26_hermes_agent_learn_ai
+    openclaw --> anges_ai
+    openclaw --> p_2026_06_26_log_id
+    p_2026_06_26_ai_sakana_fugu_fable_5mythos_5 --> anthropic
+    p_2026_06_26_ai_sakana_fugu_fable_5mythos_5 --> sakana_ai
     p_2026_06_26_ai_sakana_fugu_fable_5mythos_5 --> sakana_fugu
     p_2026_06_26_api_mac_ai_agent_ipad_app --> apple_silicon
     p_2026_06_26_chatgptgemini_windows_11 --> chatgpt
+    p_2026_06_26_chatgptgemini_windows_11 --> gemini
     p_2026_06_26_cloudflare_temporary_accounts_ai_agent --> cloudflare
     p_2026_06_26_codex_bug_ssd --> claude_code
     p_2026_06_26_codex_bug_ssd --> codex
+    p_2026_06_26_codex_bug_ssd --> cursor
+    p_2026_06_26_hermes_agent_hermes_os_20100_stars_facebook --> github
     p_2026_06_26_hermes_agent_hermes_os_20100_stars_facebook --> hermes_agent
+    p_2026_06_26_hermes_agent_hermes_os_20100_stars_facebook --> hermes_os
     p_2026_06_26_hermes_agent_learn_ai --> hermes_agent
+    p_2026_06_26_hermes_agent_learn_ai --> nous_research
     p_2026_06_26_log_id --> anges_ai
     p_2026_06_26_log_id --> hermes_agent
+    p_2026_06_26_log_id --> openclaw
     p_2026_06_26_motioner --> motioner
     p_2026_06_26_poyin_chen_motion_designer_taiwan --> poyin_chen
     p_2026_06_26_wwwinsidecomtw --> inside
+    p_2026_06_26_wwwinsidecomtw --> mistral_ai
     p_2026_06_27_api_siliconflow --> p_2026_06_27_siliconflow_ai
     p_2026_06_27_codex_claude_paul_kuo --> p_2026_06_26_codex_bug_ssd
+    p_2026_06_27_codex_claude_paul_kuo --> paul_kuo
     p_2026_06_27_developers_digest_ai_development_tutorials_tools_open_source --> p_2026_06_27_glm_52_api_pricing_benchmarks
     p_2026_06_27_developers_digest_ai_development_tutorials_tools_open_source --> p_2026_06_27_harness_engineering_for_coding_agent_users
     p_2026_06_27_developers_digest_ai_development_tutorials_tools_open_source --> p_2026_06_27_one_api_access_500_ai_models_cometapi
@@ -172,9 +238,11 @@ flowchart LR
     p_2026_06_27_glm_52_cometapi_cometapi_api_ai --> p_2026_06_27_glm_52deepseek_4qwen_37minimax_m3
     p_2026_06_27_glm_52_cometapi_cometapi_api_ai --> p_2026_06_27_one_api_access_500_ai_models_cometapi
     p_2026_06_27_glm_52_cometapi_cometapi_api_ai --> p_2026_06_27_quick_start_overview_zai_developer_document
+    p_2026_06_27_glm_52deepseek_4qwen_37minimax_m3 --> minimax_m3
     p_2026_06_27_glm_52deepseek_4qwen_37minimax_m3 --> p_2026_06_27_glm_52
     p_2026_06_27_glm_52deepseek_4qwen_37minimax_m3 --> p_2026_06_27_glm_52_api_pricing_benchmarks
     p_2026_06_27_glm_52deepseek_4qwen_37minimax_m3 --> p_2026_06_27_glm_52_cometapi_cometapi_api_ai
+    p_2026_06_27_glm_52deepseek_4qwen_37minimax_m3 --> qwen
     p_2026_06_27_harness_engineering_for_coding_agent_users --> p_2026_06_27_developers_digest_ai_development_tutorials_tools_open_source
     p_2026_06_27_harness_engineering_for_coding_agent_users --> p_2026_06_27_glm_52deepseek_4qwen_37minimax_m3
     p_2026_06_27_lushbinary_your_ai_tech_partner --> p_2026_06_27_glm_52_cometapi_cometapi_api_ai
@@ -183,21 +251,35 @@ flowchart LR
     p_2026_06_27_one_api_access_500_ai_models_cometapi --> p_2026_06_27_developers_digest_ai_development_tutorials_tools_open_source
     p_2026_06_27_one_api_access_500_ai_models_cometapi --> p_2026_06_27_glm_52_cometapi_cometapi_api_ai
     p_2026_06_27_pricing_overview_zai_developer_document --> p_2026_06_27_developers_digest_ai_development_tutorials_tools_open_source
+    p_2026_06_27_pricing_overview_zai_developer_document --> z_ai
     p_2026_06_27_quick_start_overview_zai_developer_document --> p_2026_06_26_api_mac_ai_agent_ipad_app
     p_2026_06_27_quick_start_overview_zai_developer_document --> p_2026_06_27_developers_digest_ai_development_tutorials_tools_open_source
     p_2026_06_27_quick_start_overview_zai_developer_document --> p_2026_06_27_glm_52deepseek_4qwen_37minimax_m3
     p_2026_06_27_quick_start_overview_zai_developer_document --> p_2026_06_27_harness_engineering_for_coding_agent_users
     p_2026_06_27_quick_start_overview_zai_developer_document --> p_2026_06_27_pricing_overview_zai_developer_document
+    p_2026_06_27_quick_start_overview_zai_developer_document --> z_ai
     p_2026_06_27_siliconflow_ai --> p_2026_06_27_api_siliconflow
     p_2026_06_27_siliconflow_ai --> p_2026_06_27_lushbinary_your_ai_tech_partner
     p_2026_06_27_threads_post --> p_2026_06_27_newmobilelife_newmobilelife
+    paul_kuo --> codex
+    paul_kuo --> p_2026_06_27_codex_claude_paul_kuo
     poyin_chen --> p_2026_06_26_poyin_chen_motion_designer_taiwan
+    qwen --> deepseek
+    qwen --> p_2026_06_27_glm_52deepseek_4qwen_37minimax_m3
+    sakana_ai --> p_2026_06_26_ai_sakana_fugu_fable_5mythos_5
+    sakana_ai --> sakana_fugu
+    sakana_fugu --> anthropic
+    sakana_fugu --> sakana_ai
     siliconflow --> p_2026_06_27_siliconflow_ai
+    z_ai --> glm_5_2
+    z_ai --> p_2026_06_27_pricing_overview_zai_developer_document
+    z_ai --> p_2026_06_27_quick_start_overview_zai_developer_document
 ```
 
 ## Canonical Entities
 
 - [[anges-ai|Anges AI]]
+- [[anthropic|Anthropic]]
 - [[antigravity|Antigravity]]
 - [[apple-silicon|Apple Silicon]]
 - [[chatgpt|ChatGPT]]
@@ -205,19 +287,31 @@ flowchart LR
 - [[cloudflare|Cloudflare]]
 - [[codex|Codex]]
 - [[cometapi|CometAPI]]
+- [[cursor|Cursor]]
 - [[deepseek|DeepSeek]]
+- [[gemini|Gemini]]
+- [[github|GitHub]]
 - [[glm-5-2|GLM 5.2]]
 - [[harness|Harness]]
 - [[hermes-agent|Hermes Agent]]
+- [[hermes-os|Hermes OS]]
 - [[inside|Inside]]
 - [[lushbinary|LushBinary]]
+- [[minimax-m3|MiniMax M3]]
+- [[mistral-ai|Mistral AI]]
 - [[motioner|Motioner]]
 - [[newmobilelife|newmobilelife]]
+- [[nous-research|Nous Research]]
+- [[openclaw|OpenClaw]]
 - [[openrouter|OpenRouter]]
+- [[paul-kuo|Paul Kuo]]
 - [[poyin-chen|PoYin Chen]]
+- [[qwen|Qwen]]
 - [[rc-astro|RC Astro]]
+- [[sakana-ai|Sakana AI]]
 - [[sakana-fugu|Sakana Fugu]]
 - [[siliconflow|SiliconFlow]]
+- [[z-ai|Z.AI]]
 
 ## Other Entity Pages (8)
 
@@ -264,4 +358,4 @@ flowchart LR
 - [[2026-06-27-yahoo]]
 
 ---
-Total pages: 59 | Edges: 60
+Total pages: 72 | Edges: 115

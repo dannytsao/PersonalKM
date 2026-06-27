@@ -30,3 +30,11 @@ wikilink_processed: 2026-06-27T14:07:23026-06-27T12:55:07026-06-27T11:42:03
 ## Summary
 
 # 最便宜方式用 GLM-5.2、DeepSeek 4、Qwen 3.7、MiniMax M3 模型
+
+---
+
+[[minimax-m3]]
+
+---
+
+[[qwen]]

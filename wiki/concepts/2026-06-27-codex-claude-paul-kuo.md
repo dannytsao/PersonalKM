@@ -32,3 +32,7 @@ wikilink_processed: 2026-06-27T09:43:14
 ## See also
 
 - [[2026-06-26-codex-bug-ssd]]
+
+---
+
+[[paul-kuo]]

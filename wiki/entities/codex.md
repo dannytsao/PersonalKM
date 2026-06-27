@@ -52,3 +52,7 @@ OpenAI's Codex AI coding agent was discovered to have a serious bug causing exce
 ## Summary
 
 # 我讓 codex 挑 Claude 的錯，但不照它說了算 — Paul Kuo
+
+---
+
+[[paul-kuo]]
