@@ -21,6 +21,7 @@ Usage:
 
 import logging
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict, Any
@@ -371,6 +372,11 @@ confidence: {confidence}
     # 10. Direct scan for canonical entity mentions in body (supplement)
     _add_canonical_body_links(wiki_path, page_path, body)
 
+    # 10a. Propagate capture excerpt to each mentioned canonical entity page
+    propagated = _propagate_to_entity_pages(wiki_path, page_path, detected_entities, raw_path, body)
+    if propagated:
+        logger.info(f"  → Propagated to {propagated} entity pages")
+
     # 11. Delete raw file after successful processing
     try:
         raw_path.unlink()
@@ -502,8 +508,98 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────
-# Canonical body-link scanning & entity auto-promotion
+# Capture propagation & canonical body-link scanning & entity auto-promotion
 # ─────────────────────────────────────────────────────────────
+
+
+def _add_capture_to_entity(
+    entity_path: Path,
+    capture_stem: str,
+    timestamp: str,
+    excerpt: str,
+    source_wikilink: str,
+) -> None:
+    """Add a capture section under ``## Captures`` in an entity page."""
+    content = entity_path.read_text(encoding="utf-8")
+
+    capture_entry = (
+        f"\n\n### {capture_stem} ({timestamp})\n\n"
+        f"{excerpt}\n\n"
+        f"Source: {source_wikilink}"
+    )
+
+    # Insert under existing ## Captures, or create it
+    m = re.search(r"^##\s+Captures\s*$", content, re.MULTILINE)
+    if m:
+        pos = m.end()
+        content = content[:pos] + capture_entry + content[pos:]
+    else:
+        content = content.rstrip("\n") + "\n\n## Captures\n" + capture_entry + "\n"
+
+    # Bump frontmatter updated date
+    content = re.sub(
+        r"^updated: \d{4}-\d{2}-\d{2}",
+        f"updated: {timestamp}",
+        content,
+        count=1,
+        flags=re.MULTILINE,
+    )
+
+    entity_path.write_text(content, encoding="utf-8")
+
+
+def _propagate_to_entity_pages(
+    wiki_path: Path,
+    page_path: Path,
+    detected_entities: List[str],
+    raw_path: Optional[Path],
+    body: str,
+) -> int:
+    """Append a capture excerpt to each canonical entity page mentioned in *body*."""
+    from bot.entity_dedup import CANONICAL_ENTITIES
+
+    if not body or not body.strip():
+        return 0
+
+    entities_dir = wiki_path / "entities"
+    if not entities_dir.exists():
+        return 0
+
+    updated = 0
+    timestamp = datetime.now().strftime("%Y-%m-%d")
+    page_stem = page_path.stem
+
+    excerpt = body.strip()[:300].replace("\n", " ").strip()
+    if len(body.strip()) > 300:
+        excerpt += "…"
+
+    raw_path_str = str(raw_path) if raw_path else ""
+
+    for slug in detected_entities:
+        if slug not in CANONICAL_ENTITIES:
+            continue
+
+        entity_path = entities_dir / f"{slug}.md"
+        if not entity_path.exists():
+            continue
+
+        # Idempotent: skip if this capture is already present
+        existing = entity_path.read_text(encoding="utf-8")
+        if raw_path_str and raw_path_str in existing:
+            continue
+        if re.search(rf"^###\s+{re.escape(page_stem)}\s*\(", existing, re.MULTILINE):
+            continue
+
+        _add_capture_to_entity(
+            entity_path,
+            capture_stem=page_stem,
+            timestamp=timestamp,
+            excerpt=excerpt,
+            source_wikilink=f"[[{page_stem}]]",
+        )
+        updated += 1
+
+    return updated
 
 
 def _add_canonical_body_links(wiki_path: Path, page_path: Path, body: str) -> int:
