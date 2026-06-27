@@ -1,4 +1,5 @@
 ---
+
 title: ChatGPT
 canonical: true
 created: 2026-06-27
@@ -13,7 +14,9 @@ tags:
   - windows-11
   - prompts
 confidence: medium
+wikilink_processed: 2026-06-27T18:46:53
 ---
+
 
 
 

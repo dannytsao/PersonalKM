@@ -1,4 +1,6 @@
 ---
+
+
 title: DeepSeek
 canonical: true
 created: 2026-06-27
@@ -10,7 +12,10 @@ sources: []
 tags:
   []
 confidence: medium
+wikilink_processed: 2026-06-27T18:22:42
 ---
+
+
 
 
 # DeepSeek
@@ -32,3 +37,4 @@ confidence: medium
 ---
 
 [[qwen]]
+- Related: [[2026-06-27-glm-52deepseek-4qwen-37minimax-m3]]

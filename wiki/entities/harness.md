@@ -1,4 +1,6 @@
 ---
+
+
 title: Harness
 canonical: true
 created: 2026-06-27
@@ -10,7 +12,10 @@ sources: []
 tags:
   []
 confidence: medium
+wikilink_processed: 2026-06-27T18:18:14
 ---
+
+
 
 
 # Harness
@@ -24,3 +29,4 @@ confidence: medium
 ## Summary
 
 # Harness engineering for coding agent users
+- Related: [[2026-06-27-harness-engineering-for-coding-agent-users]]

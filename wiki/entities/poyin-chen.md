@@ -1,4 +1,5 @@
 ---
+
 title: PoYin Chen
 canonical: true
 created: 2026-06-27
@@ -13,7 +14,9 @@ tags:
   - design-portfolio
   - to-read
 confidence: medium
+
 ---
+
 
 
 
@@ -61,3 +64,4 @@ PoYin Chen (陳柏尹) is a motion designer based in Taiwan whose portfolio span
 ## See also
 
 - [[2026-06-26-poyin-chen-motion-designer-taiwan]]
+- [[2026-06-26-log-id]]

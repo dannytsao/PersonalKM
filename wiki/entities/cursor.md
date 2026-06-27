@@ -1,4 +1,5 @@
 ---
+
 title: Cursor
 canonical: true
 created: 2026-06-28
@@ -10,7 +11,9 @@ sources:
   - "wiki/entities/codex.md"
 tags: []
 confidence: medium
+wikilink_processed: 2026-06-27T18:24:04
 ---
+
 
 # Cursor
 

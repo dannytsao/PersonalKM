@@ -1,4 +1,5 @@
 ---
+
 title: Hermes Agent
 canonical: true
 created: 2026-06-27
@@ -10,7 +11,9 @@ sources: []
 tags:
   [['github', 'hermes-agent', '2026', 'life-os', 'personal-productivity'], ['hermes-agent', 'nous-research', '2026', 'learn-command']]
 confidence: medium
+wikilink_processed: 2026-06-27T18:17:09
 ---
+
 
 
 # Hermes Agent

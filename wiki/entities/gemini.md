@@ -1,4 +1,5 @@
 ---
+
 title: Gemini
 canonical: true
 created: 2026-06-28
@@ -10,7 +11,9 @@ sources:
   - "wiki/entities/chatgpt.md"
 tags: []
 confidence: medium
+wikilink_processed: 2026-06-27T18:21:55
 ---
+
 
 # Gemini
 
