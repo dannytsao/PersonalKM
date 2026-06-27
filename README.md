@@ -1,7 +1,7 @@
 # PersonalKM — AI-Powered Second Brain
 
 **Status:** ✅ Phase A+B Stable (Phase A on Mac Mini, wikilinks on Mac Mini, Render = webhook only)
-**Last Updated:** 2026-06-27
+**Last Updated:** 2026-06-28
 
 LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每月報告追踪過時的技術知識。
 
@@ -344,10 +344,13 @@ Phase A 從 Render webhook 移至 Mac Mini 每小時 launchd cron：
 - [x] Phase 5: Full Integration (`bot/ingestion_v2.py`)
 - [x] Wiki vault health: 17 entities, 10 concepts, 0 broken wikilinks
 
-### ⏰ Phase 6: Canonical Entity Architecture (規劃中)
-- [ ] 建立 canonical entity pages（`docker.md`、`claude-code.md` 等）
-- [ ] 重構 Phase 3 dedup：相同 topic → 合併到 canonical page
-- [ ] 目標：≥80% wiki 頁面有 ≥1 個 incoming backlink
+### ✅ Phase 6: Canonical Entity Architecture (完成 2026-06-28)
+- [x] 21 canonical entity pages created from matched wiki pages
+- [x] 13 auto-promoted entity stubs for completeness
+- [x] Knowledge graph as Mermaid flowchart with clickable nodes
+- [x] Capture propagation: 1 new capture → updates to all mentioned entity pages
+- [x] Query interface: CLI (`scripts/query_wiki.py`) + FastAPI `GET /query`
+- [x] Sanity check & repair: `scripts/sanity_check.py`
 
 詳見 `IMPROVEMENT-BACKLOG.md`。
 
@@ -388,6 +391,6 @@ Phase A 從 Render webhook 移至 Mac Mini 每小時 launchd cron：
 
 ---
 
-**上次更新:** 2026-06-26
-**系統狀態:** ✅ Phase A+B Stable — Render webhook (raw only) + Mac Mini cron (A+B)
-**下次評審:** 2026-07-26
+**上次更新:** 2026-06-28
+**系統狀態:** ✅ Phase A+B+6 Stable — Render webhook + Mac Mini cron + Phase 6 canonical entities + query interface + sanity check
+**下次評審:** 2026-07-28

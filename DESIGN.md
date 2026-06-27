@@ -1,6 +1,6 @@
 # PersonalKM — 知識管理系統設計文檔
 
-> 最後更新：2026-06-27
+> 最後更新：2026-06-28
 
 ---
 
@@ -127,6 +127,53 @@ qwen3:8b 無法穩定輸出結構化 JSON（即使 system prompt 明確要求）
 - 每個 wiki 頁面的 `wikilinks:` 欄位（正向連結）
 - `wiki/_backlinks/<topic>.md`（反向連結 index）
 - `Wiki/log.md` 記錄處理結果
+
+---
+
+## Phase 6：Canonical Entity 架構（2026-06-28）
+
+**職責：** 建立 canonical entity pages（無日期前綴），作為實體知識的中心節點。一份 capture 觸發多個 entity 頁面更新，實現 Karpathy LLM-wiki 模式。
+
+### 架構
+
+```
+raw/ capture
+  │
+  ├─► ingest_file_v2()  ──► 主頁面 (entities/ 或 concepts/)
+  │
+  └─► _propagate_to_entity_pages()  ──► entities/<slug>.md (10-15 頁)
+       │     每篇 capture 的摘要 append 到所提及的所有 canonical entity
+       │     頁面的 ## Captures 區塊
+       │
+       └─► _add_canonical_body_links()  ──► body 中的 entity 名稱自動補 [[wikilink]]
+```
+
+### 檔案說明
+
+| 檔案 | 用途 |
+|---|---|
+| `bot/entity_dedup.py` | `CANONICAL_ENTITIES` 定義 (34 slugs)、`canonical_slug_from_name()`、merge 邏輯 |
+| `bot/ingestion_v2.py` | `_propagate_to_entity_pages()`、`_add_canonical_body_links()`、`_auto_promote_entities()` |
+| `bot/knowledge_graph.py` | Mermaid knowledge graph generator（被 ingest pipeline 和 backfill 共享）|
+| `bot/query_engine.py` | Hybrid search engine + LLM synthesis |
+| `scripts/query_wiki.py` | CLI 查詢介面 |
+| `scripts/sanity_check.py` | Repair-first vault health checker |
+| `scripts/phase6_backfill.py` | One-time migration script |
+
+### Query Interface
+
+- CLI: `python3 scripts/query_wiki.py -i` (interactive REPL) 或 `--json`
+- Web: `GET /query?q=hermes+agent&top_k=10`
+- Hybrid search: title (score 3) > frontmatter > body mentions > entity registry
+- LLM synthesis with `[[wikilink]]` citations (可用 `--no-llm` 關閉)
+
+### Sanity Check & Repair
+
+`scripts/sanity_check.py` 是 repair-first 工具，修復 frontmatter issues 但永不刪除檔案：
+- 補 `---` 分隔線 + flatten nested bracket tags + 清空 sources + 移除非 schema 欄位
+- Warning-only：type mismatch、auto-promoted stubs
+- Idempotent：第二次執行顯示 0 fixes
+- 可整合在 batch ingest 結尾自動執行
 
 ---
 

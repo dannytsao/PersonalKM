@@ -1,6 +1,6 @@
 # Documentation Inventory
 
-更新日期：2026-06-27
+更新日期：2026-06-28
 
 這份清單是 PersonalKM 專案文件的單一盤點表。每次新增、移除或重命名專案文件時，都要同步更新本表。
 
@@ -25,6 +25,8 @@
 | `docs/mac-mini-omnichannel-worker.md` | Active | Mac mini local worker 操作、安裝與排查 | worker 行為或安裝流程改變時 |
 | `scripts/migrate_wiki_to_v2.py` | Active | LLM-Wiki v2 一次性遷移腳本（已用過，未來 Phase 6 可能再用） | 需再次遷移時 |
 | `scripts/fix_broken_wikilinks.py` | Active | 修復失效 wikilinks 腳本 | wikilink 問題時 |
+| `scripts/sanity_check.py` | Active | Repair-first vault health checker (frontmatter fixer) | 每次前端迭代時更新 |
+| `scripts/query_wiki.py` | Active | CLI wiki query interface with hybrid search | 查詢邏輯改變時 |
 | `outputs/ingestion-reports/*.md` | Generated | 自動 ingestion 報告 | 系統自動產生 |
 | `outputs/health-check*.txt` | Generated | 健康檢查輸出 | 系統自動產生 |
 | `raw/**/*.md` | Knowledge Note | LINE Bot 或 worker 捕獲的 raw notes | 系統自動產生或人工整理 |
