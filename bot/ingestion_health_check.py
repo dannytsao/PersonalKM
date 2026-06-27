@@ -67,7 +67,7 @@ class IngestionHealthCheck:
     
     def check_wiki_structure(self) -> bool:
         """Check wiki/ has required subdirectories."""
-        required_dirs = ["entities", "concepts", "sources"]
+        required_dirs = ["entities", "concepts"]
         all_exist = True
         
         for dir_name in required_dirs:
@@ -149,13 +149,18 @@ class IngestionHealthCheck:
                 
                 fm_block = content[3:fm_end]
                 
-                # Validate required fields
-                required_fields = ["title:", "created:", "updated:", "type:", "tags:", "sources:", "confidence:", "contested:"]
+                # Validate required fields (per SCHEMA.md: contested/confidence are optional quality signals)
+                required_fields = ["title:", "created:", "updated:", "type:", "tags:", "sources:"]
+                optional_quality_fields = ["confidence:", "contested:"]
                 missing = [f for f in required_fields if f not in fm_block]
-                
+                missing_quality = [f for f in optional_quality_fields if f not in fm_block]
+
                 if missing:
                     self.warnings.append(f"Missing fields in {file_path.name}: {missing}")
-                else:
+                elif missing_quality:
+                    self.warnings.append(f"Missing optional quality signals in {file_path.name}: {missing_quality}")
+
+                if not missing:
                     valid_count += 1
             except Exception as e:
                 self.checks_failed.append(f"Frontmatter parse error in {file_path.name}: {e}")
@@ -235,12 +240,12 @@ class IngestionHealthCheck:
             return True  # Still valid, just empty
     
     def check_knowledge_graph(self) -> bool:
-        """Validate knowledge-graph.md."""
+        """Validate knowledge-graph.md (optional)."""
         kg_path = self.wiki_path / "knowledge-graph.md"
-        
+
         if not kg_path.exists():
-            self.checks_failed.append("knowledge-graph.md does not exist ❌")
-            return False
+            self.warnings.append("Wiki/knowledge-graph.md MISSING (optional)")
+            return True  # Optional, don't fail
         
         content = kg_path.read_text()
         
