@@ -232,48 +232,10 @@ def organize_note_to_wiki(
 
 
 def build_knowledge_graph(wiki_path: Path) -> str:
-    """Generate knowledge graph markdown (backward compatible)."""
+    """Generate knowledge graph with Mermaid visualization + node index."""
     try:
-        graph_md = f"""# 📊 Knowledge Graph
-
-Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}
-
-"""
-        
-        # Index entities
-        entities_path = wiki_path / "entities"
-        if entities_path.exists():
-            files = list(entities_path.glob("*.md"))
-            
-            graph_md += f"""## 🔗 Entities ({len(files)} files)
-
-"""
-            for f in sorted(files):
-                name = f.stem
-                graph_md += f"- **{name}**\n"
-            
-            graph_md += "\n"
-        
-        # Index concepts
-        concepts_path = wiki_path / "concepts"
-        if concepts_path.exists():
-            files = list(concepts_path.glob("*.md"))
-            
-            graph_md += f"""## 💡 Concepts ({len(files)} files)
-
-"""
-            for f in sorted(files):
-                name = f.stem
-                graph_md += f"- {name}\n"
-            
-            graph_md += "\n"
-        
-        graph_md += f"""---
-Last updated: {datetime.now().isoformat()}
-"""
-        
-        return graph_md
-        
+        from bot.knowledge_graph import build_knowledge_graph as _build
+        return _build(wiki_path)
     except Exception as e:
         logger.error(f"Graph generation failed: {e}")
         return "# Knowledge Graph\n\n(generation failed)"
