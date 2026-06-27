@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.dannytsao.personalkm.phase-a-ingest</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/dannytsao/Library/Application Support/PersonalKM/run_mac_mini_phase_a.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/dannytsao/.personalkm/PersonalKM-worker</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>StartInterval</key>
+  <integer>3600</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/dannytsao/Library/Logs/PersonalKM/phase-a.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/dannytsao/Library/Logs/PersonalKM/phase-a.err.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>PERSONALKM_REPO_ROOT</key>
+    <string>/Users/dannytsao/.personalkm/PersonalKM-worker</string>
+    <key>PERSONALKM_PYTHON</key>
+    <string>/usr/bin/python3</string>
+  </dict>
+</dict>
+</plist>
