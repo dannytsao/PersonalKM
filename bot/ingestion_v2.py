@@ -139,10 +139,11 @@ _CONCEPT_KEYWORDS = [
     "how to", "tutorial", "教學", "教您", "步驟", "方法",
     "guide", "introduction to", "overview of", "what is", "什麼是",
     "comparison", "比較", "vs ", " versus ", "difference between",
-    "review", "心得", "開箱", "教學", "使用心得",
+    "review", "心得", "開箱", "使用心得",
     "最佳化", "優化", "設定", "配置",
     "setup", "install", "configuration", "getting started",
     "understanding", "explained", "原理", "概念",
+    "攻略", "完整攻略", "新手攻略", "懶人包",
 ]
 
 # Keywords that strongly indicate an ENTITY page
@@ -172,16 +173,12 @@ def _classify_page_type(body: str) -> str:
     concept_score = sum(1 for kw in _CONCEPT_KEYWORDS if kw in lower)
     entity_score = sum(1 for kw in _ENTITY_KEYWORDS if kw in lower)
 
-    # Strong concept signals
-    if concept_score >= 2 and entity_score == 0:
-        return "concept"
-    if concept_score >= 3:
+    # Concept wins if it has any signal and entity has no strong signal
+    if concept_score >= 1 and entity_score <= 1:
         return "concept"
 
-    # Strong entity signals
-    if entity_score >= 2 and concept_score == 0:
-        return "entity"
-    if entity_score >= 3:
+    # Entity wins if it has stronger or equal signal
+    if entity_score >= 2:
         return "entity"
 
     # Default: entity (specific named tools/articles → entities/ is safer)
