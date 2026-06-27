@@ -17,19 +17,19 @@ If the push is rejected because remote `main` contains new bot-generated note co
 
 ## End-of-Day Trigger
 
-When the user says `call it a day` (or similar), run the end-of-day wrap-up workflow **before closing**:
+When the user says `call it a day` (or similar), run the end-of-day wrap-up workflow **before closing**. **Updating all project-related documents is a mandatory part of day-end closing — do not skip it.**
 
 1. **Sync both repos** with `origin/main`:
    ```bash
    cd ~/Documents/PersonalKM && git pull --rebase origin main
    cd ~/.personalkm/PersonalKM-worker && git pull --rebase origin main
    ```
-2. **Update all project docs** that changed during the session:
-   - `CHANGELOG.md` — add entry for the day with all meaningful changes (features, fixes, architecture)
-   - `README.md` — update `Last Updated:` date; add brief note if a major feature landed
+2. **Update all project docs** that changed during the session (mandatory):
+   - `CHANGELOG.md` — add `## YYYY-MM-DD` entry with all meaningful changes (features, fixes, bugs, architecture)
+   - `README.md` — update `Last Updated:` date; add brief note if a major feature or bug fix landed
    - `DESIGN.md` — update `最後更新:` date if architecture or flow changed
    - `DOCS-INVENTORY.md` — update `更新日期:` if doc structure changed
-   - Any other doc that is now inaccurate
+   - Any other doc that is now inaccurate or stale
 3. **Run `git diff --check`** to catch trailing whitespace or merge conflicts.
 4. **Commit** with message: `docs: end-of-day wrap-up YYYY-MM-DD`
 5. **Push** to `origin main`.
