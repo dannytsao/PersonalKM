@@ -105,30 +105,75 @@ TOPIC_OPTIONS = [
 # Title Extraction
 # ─────────────────────────────────────────────────────────────
 
-def extract_title(raw_path: Path, content: str, max_len: int = 80) -> str:
-    """Extract a clean title from filename or content."""
-    # Try first meaningful line (non-frontmatter, non-heading)
+def extract_title(raw_path: Path, content: str, max_len: int = 120) -> str:
+    """Extract a clean human-readable title from a raw capture.
+
+    Priority:
+      1. First H1 (`^#`) in the body — returned verbatim (NOT slugified here;
+         slugification happens later via normalize_entity_name where needed).
+         H1 is the natural title of YouTube/web/article captures.
+      2. First non-section, non-frontmatter line of body (legacy fallback).
+      3. Filename stem with date/log-id prefixes stripped.
+
+    Skips:
+      - YAML frontmatter (already stripped by _strip_frontmatter)
+      - `## Log ID` block AND its body (always a log_id timestamp, not a title)
+      - `## ` / `### ` section headers (NOT headings stripped to their text —
+        these are metadata labels like `## 摘要`, `## 內含連結` and would
+        pollute the title with section names)
+      - Frontmatter-like `key: value` lines, all-caps noise
+
+    Args:
+        max_len: hard cap on returned length — long H1s are truncated with `…`
+                 so canonical_slug_from_name can still match.
+    """
     body = _strip_frontmatter(content)
-    for line in body.split("\n")[:20]:
-        line = line.strip()
-        if not line:
+
+    # 1) Prefer first H1 line — it's the actual page title from the source.
+    for line in body.split("\n"):
+        s = line.strip()
+        if s.startswith("# ") and not s.startswith("## "):
+            title = s.lstrip("# ").strip()
+            if title:
+                # Don't slugify here — keep the human-readable string for both
+                # frontmatter `title:` and canonical_slug_from_name().
+                if len(title) > max_len:
+                    title = title[: max_len - 1].rstrip() + "…"
+                return title
+
+    # 2) Walk the body, skipping `## Log ID` + its body, skipping all
+    #    `##` / `###` section headers, and any frontmatter-detect line.
+    skip_until_blank = False
+    for line in body.split("\n")[:40]:
+        s = line.strip()
+        if not s:
+            skip_until_blank = False
             continue
-        # Skip markdown headings
-        if line.startswith("#"):
-            line = line.lstrip("#").strip()
-        # Skip frontmatter-like lines
-        if line.startswith("---") or ":" in line or line.isupper():
+        # H2/H3 — never a title; treat `## Log ID` as a "skip its body too" trigger.
+        if s.startswith("## ") or s.startswith("### "):
+            if s.lstrip("#").strip().lower() == "log id":
+                skip_until_blank = True
             continue
-        # Skip very short or very long lines
-        if 5 < len(line) < max_len:
-            return normalize_entity_name(line)
-    
-    # Fall back to filename
+        if skip_until_blank:
+            continue
+        if s.startswith("---"):
+            continue
+        # Skip YAML-ish `key: value` lines that survive frontmatter stripping
+        # (e.g. orphaned metadata). Allow `:` inside the value, but bail on
+        # a leading `key:` look.
+        if re.match(r"^[A-Za-z_][\w-]*\s*:", s):
+            continue
+        if s.isupper() or len(s) <= 5:
+            continue
+        candidate = s.lstrip("#").strip()
+        if 5 < len(candidate) <= max_len:
+            return candidate
+
+    # 3) Fall back to filename stem with known prefixes stripped.
     name = raw_path.stem
-    # Strip date prefixes
-    import re
     name = re.sub(r"^\d{4}-\d{2}-\d{2}[-_]", "", name)
     name = re.sub(r"^\d{10,}[-_]", "", name)
+    name = re.sub(r"^\d{6,}[-_]", "", name)
     name = name.replace("-", " ").replace("_", " ")
     return name.strip() or "untitled"
 
