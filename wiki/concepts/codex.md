@@ -1,4 +1,6 @@
 ---
+
+
 title: Hermes GPT v0.3.0：透過 MCP 把本地模型接進 ChatGPT，突破 Codex 配額限制 - INSIDE
 canonical: true
 created: 2026-06-28
@@ -9,9 +11,12 @@ type: concept
 sources:
   - [[Archive/raw/Tech/2026-06-28-202606281837_00001-hermes-gpt-v0.3.0-透過-mcp-把本地模型接進-chatgpt,突破-codex-配額限制-insid]]
 confidence: low
+wikilink_processed: 2026-06-28T11:10:21
 ---
+
+
 
 ## Summary
 
 # Hermes GPT v0.3.0：透過 MCP 把本地模型接進 ChatGPT，突破 Codex 配額限制 - INSIDE
-
+- Related: [[codex]]
