@@ -313,7 +313,12 @@ def ingest_file_v2(
     #    SCHEMA: entities/ = people, products, organizations, specific named tools
     #             concepts/ = topics, methods, techniques, how-to guides
     #    page_type from _classify_page_type: "entity" or "concept"
-    subfolder = "entities" if page_type == "entity" else "concepts"
+    # Canonical entities always belong in entities/, regardless of heuristic page_type.
+    # Phase 6 design: a canonical entity page is the single source of truth for that entity.
+    if use_canonical:
+        subfolder = "entities"
+    else:
+        subfolder = "entities" if page_type == "entity" else "concepts"
     wiki_category_path = wiki_path / subfolder
     wiki_category_path.mkdir(parents=True, exist_ok=True)
 
