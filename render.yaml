@@ -55,6 +55,10 @@ services:
         value: personalkm-bot@example.com
       - key: OPENAI_API_KEY
         sync: false
+      - key: MINIMAX_API_KEY
+        sync: false
+      - key: MINIMAX_MODEL
+        value: MiniMax-M3
       # Notification settings (optional - set these for alerts)
       - key: NOTIFY_DISCORD_WEBHOOK
         sync: false
