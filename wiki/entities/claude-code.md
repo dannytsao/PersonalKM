@@ -1,6 +1,8 @@
 ---
 
 
+
+
 title: Claude Code 安裝手把手教學：從零開始，搭配 CC Switch 輕鬆切換模型 - 電腦王阿達
 canonical: true
 created: 2026-06-28
@@ -13,9 +15,10 @@ sources:
   - "[[Archive/raw/Tech/2026-06-28-202606281457_00001-fix-karpathy’s-llm-wiki-with-a-knowledge-graph-claude-code-+]]"
   - "[[Archive/raw/Tech/2026-06-28-202606281457_00002-fix-karpathy’s-llm-wiki-with-a-knowledge-graph-claude-code-+]]"
 confidence: high
-
-
+wikilink_processed: 2026-06-28T12:17:34
 ---
+
+
 
 ## Summary
 
@@ -50,4 +53,4 @@ This guide provides a step-by-step tutorial for installing Claude Code on Window
 - Source file archived in raw/ directory
 
 **Source:** ^# Fix Karpathy’s LLM Wiki with a Knowledge Graph | Claude Code + Obsidian + InfraNodus  ## Log ID 202606281457_00002  ## 摘要 本影片介紹如何使用 Claude Code、Obsidian 及 InfraNodus 等工具，結合知識圖譜來修正 Karpathy 的大型語言模型維基...
-
+- Related: [[claude-code]]

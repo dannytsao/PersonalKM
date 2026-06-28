@@ -1,4 +1,5 @@
 ---
+
 title: Reddit - Please wait for verification
 created: 2026-06-28
 updated: 2026-06-28
@@ -8,7 +9,9 @@ type: entity
 sources:
   - [[Archive/raw/Tech/2026-06-13-202606131148_00001-reddit-please-wait-for-verification]]
 confidence: high
+wikilink_processed: 2026-06-28T12:32:18
 ---
+
 
 ## Summary
 

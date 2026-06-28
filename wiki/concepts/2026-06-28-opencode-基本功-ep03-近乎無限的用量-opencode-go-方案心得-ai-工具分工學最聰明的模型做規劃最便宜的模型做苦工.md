@@ -1,3 +1,16 @@
+---
+
+
+
+wikilink_processed: 2026-06-28T12:19:08
+
+
+
+---
+
+
+
+
 
 title: OpenCode基本功EP03 近乎無限的用量 Opencode Go方案心得_AI工具分工學：最聰明的模型做規劃，最便宜的模型做苦工
 created: 2026-06-28
@@ -24,3 +37,6 @@ confidence: low
 ## See also
 
 - [[glm-5-2]]
+- [[2026-06-28-local-ai-is-finally-usable-real-world-workflows-on-a-5-year-old-mac-with-google-gemma]]
+- [[hermes-agent]]
+- [[2026-06-28-上班族必備零基礎-10-分鐘用-copilot-搭建-ai-代理]]

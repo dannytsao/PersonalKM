@@ -1,3 +1,7 @@
+---
+wikilink_processed: 2026-06-28T12:18:23
+---
+
 
 title: Obsidian with Ollama
 created: 2026-06-28
