@@ -1,5 +1,4 @@
 ---
-
 title: GLM 5.2
 canonical: true
 created: 2026-06-27
@@ -11,8 +10,8 @@ sources: []
 tags:
   []
 confidence: medium
-wikilink_processed: 2026-06-27T18:19:08
 ---
+
 
 
 

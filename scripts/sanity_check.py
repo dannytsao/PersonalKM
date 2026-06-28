@@ -99,25 +99,37 @@ def _add_frontmatter_delimiter(text: str) -> str:
 
 
 def _flatten_nested_tags(fm_text: str) -> (str, bool):
-    """Replace nested bracket tags like ``[['a','b']]`` with proper YAML list."""
+    """Replace nested tags like ``[['a','b'], ['c','d']]`` with proper YAML list."""
     changed = False
+
+    def _extract_list_items(raw: str) -> list[str]:
+        """Extract all string items from a YAML-ish list representation."""
+        items = []
+        for m in re.finditer(r"'([^']*)'|\"([^\"]*)\"|([a-zA-Z0-9_/-]+)", raw):
+            items.append(m.group(1) or m.group(2) or m.group(3))
+        return items
 
     def _replace_tags(m: re.Match) -> str:
         nonlocal changed
-        lead = m.group(1)    # ^ or \n before "tags:"
-        indent = m.group(2)  # whitespace before "tags:"
-        raw = m.group(3)     # content between [[ and ]]
-        items = re.findall(r"'([^']*)'", raw)
-        if not items:
+        lead = m.group(1)
+        indent = m.group(2)
+        raw = m.group(3)
+        items = _extract_list_items(raw)
+        seen = set()
+        deduped = []
+        for item in items:
+            if item not in seen:
+                seen.add(item)
+                deduped.append(item)
+        if not deduped:
             return m.group(0)
         changed = True
-        rest = "tags:\n" + "\n".join(f"{indent}  - {item}" for item in items)
-        # Strip the trailing \n\s*$ that the regex consumed
+        rest = "tags:\n" + "\n".join(f"{indent}  - {item}" for item in deduped)
         return lead + indent + rest
 
-    # Inline:  tags: [['a','b']]     (or  tags:\n  [['a','b']]  since \s* eats newlines)
+    # Match: tags:\n  [[...], [...]]   or   tags: [[...], [...]]
     fm_text = re.sub(
-        r"(^|\n)(\s*)tags:\s*\[\[([^\]]*)\]\]\s*$",
+        r"(^|\n)(\s*)tags:\s*(\[(?:\[[^\]]*\],?\s*)+\])\s*$",
         _replace_tags,
         fm_text,
         count=1,

@@ -1,18 +1,22 @@
 ---
-
 title: Hermes Agent
 canonical: true
 created: 2026-06-27
 updated: 2026-06-27
 type: entity
 topic: AI-Agent-&-Tools
-sources:
-sources: []
 tags:
-  [['github', 'hermes-agent', '2026', 'life-os', 'personal-productivity'], ['hermes-agent', 'nous-research', '2026', 'learn-command']]
+  - github
+  - hermes-agent
+  - 2026
+  - life-os
+  - personal-productivity
+  - nous-research
+  - learn-command
 confidence: medium
-wikilink_processed: 2026-06-27T18:17:09
+sources: []
 ---
+
 
 
 
@@ -25,7 +29,6 @@ Hermes Agent introduced a new /learn command that allows users to convert variou
 - Hermes Agent added a new /learn command for creating reusable AI skills from any data
 - Users point the command to a directory containing code, API docs, product manuals, PDFs, or config files
 - Feature announced by Nous Research on June 23 via X (Twitter)
-- [[hermes-agent]]
 - [[nous-research]]
 - Hermes OS 2.0 reached 100 stars on GitHub
 - System reorganized into three loops (Loops)
@@ -49,7 +52,6 @@ Hermes Agent introduced a new /learn command that allows users to convert variou
 
 ## Related Entities
 
-- [[hermes-agent]]
 - [[nous-research]]
 
 **Source:** ^# Hermes Agent 新增 /learn 指令：讓任何資料都能變成可重複使用的 AI 技能 - 電腦王阿達  ## Log ID 202606261701_00001  ## 摘要 Hermes Agent 推出全新 /learn 指令，使用者可將任何資料如程式碼、API 文件、產品手冊、PDF 或設定檔轉換成可重複使用的 AI 技能。此功能由 Nous Research 於 6 月 23...
@@ -70,7 +72,6 @@ Hermes OS 2.0 reached 100 GitHub stars, prompting its author to reflect on next 
 ## Related Entities
 
 - [[hermes-os]]
-- [[hermes-agent]]
 - [[github]]
 - [[facebook]]
 

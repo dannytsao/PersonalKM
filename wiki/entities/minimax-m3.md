@@ -1,5 +1,4 @@
 ---
-
 title: MiniMax M3
 canonical: true
 created: 2026-06-28
@@ -11,8 +10,8 @@ sources:
   - "wiki/concepts/2026-06-27-glm-52deepseek-4qwen-37minimax-m3.md"
 tags: []
 confidence: medium
-wikilink_processed: 2026-06-27T18:13:12
 ---
+
 
 
 # MiniMax M3

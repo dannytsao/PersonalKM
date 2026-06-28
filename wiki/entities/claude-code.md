@@ -1,25 +1,20 @@
 ---
-
 title: Claude Code
 canonical: true
 created: 2026-06-27
 updated: 2026-06-27
 type: entity
 topic: Tech-Trends-&-Insights
-sources:
-sources: []
-tags:
-  []
+tags: []
 confidence: medium
-wikilink_processed: 2026-06-27T18:27:08
+sources: []
 ---
 
 
 
 
-# Claude Code
 
-# Claude Taiwan | #為什麼要找第二個AI來審查 | Facebook
+# Claude Code
 
 ## Captures
 
