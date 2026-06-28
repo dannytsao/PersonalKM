@@ -7,7 +7,8 @@ topic: Tech-Trends-&-Insights
 tags: []
 type: entity
 sources:
-  - [[raw/archive/archive/archive/archive/Tech/2026-06-28-202606281457_00001-fix-karpathy’s-llm-wiki-with-a-knowledge-graph-claude-code-+]]
+  - [[Archive/raw/Tech/2026-06-28-202606281457_00001-fix-karpathy’s-llm-wiki-with-a-knowledge-graph-claude-code-+]]
+  - [[Archive/raw/Tech/2026-06-28-202606281457_00002-fix-karpathy’s-llm-wiki-with-a-knowledge-graph-claude-code-+]]
 confidence: low
 ---
 
