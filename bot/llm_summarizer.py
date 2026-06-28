@@ -321,8 +321,10 @@ def detect_entity_mentions(content: str) -> List[str]:
     ]
     cleaned_lower = cleaned.lower()
     for tool in common_tools:
-        # word-boundary match so 'react' doesn't hit inside 'reaction'
-        if re.search(r'\b' + re.escape(tool) + r'\b', cleaned_lower):
+        # Tolerate space-or-hyphen between words so 'Claude Code' in body
+        # still matches 'claude-code' in common_tools.
+        pattern = re.escape(tool).replace(r"\-", r"[-\s]")
+        if re.search(r'\b' + pattern + r'\b', cleaned_lower):
             entities.add(tool)
 
     # Pattern: Chinese entity mentions like "克劳德" or "Claude" — only
