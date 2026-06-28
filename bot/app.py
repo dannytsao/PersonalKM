@@ -38,7 +38,7 @@ async def query_vault(q: str = "", top_k: int = 10) -> dict:
     from bot.query_engine import query_wiki
     settings = get_settings()
     vault_path = await asyncio.to_thread(ensure_vault, settings)
-    result = query_wiki(q, vault_path, top_k=top_k, use_llm=False)
+    result = query_wiki(q, vault_path, top_k=top_k, use_llm=True)
     return result
 
 
