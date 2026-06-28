@@ -1,4 +1,5 @@
 ---
+
 title: Antigravity
 canonical: true
 created: 2026-06-28
@@ -9,7 +10,9 @@ sources: []
 tags:
   []
 confidence: medium
+
 ---
+
 # Antigravity
 
 # Antigravity CLI（agy）快速上手 | Antigravity 速速上手
@@ -22,3 +25,7 @@ confidence: medium
 
 # Antigravity CLI（agy）快速上手 | Antigravity 速速上手
 - Related: [[antigravity]]
+
+## See also
+
+- [[2026-06-27-antigravity-cliagy-antigravity]]

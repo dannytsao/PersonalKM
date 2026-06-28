@@ -1,4 +1,5 @@
 ---
+
 title: Z.AI
 canonical: true
 created: 2026-06-28
@@ -12,7 +13,9 @@ sources:
 tags:
   []
 confidence: medium
+wikilink_processed: 2026-06-28T05:38:23
 ---
+
 # Z.AI
 
 # GLM 5.2 - API Pricing & Benchmarks

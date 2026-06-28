@@ -1,4 +1,6 @@
 ---
+
+
 title: claude-taiwan-ai-facebook
 created: 2026-06-27
 updated: 2026-06-27
@@ -9,7 +11,11 @@ type: entity
 sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-27-202606270600_00001-claude-taiwan-為什麼要找第二個ai來審查-facebook.md
 confidence: low
+wikilink_processed: 2026-06-28T05:23:10
+
 ---
+
+
 ## Summary
 
 # Claude Taiwan | #為什麼要找第二個AI來審查 | Facebook
@@ -22,3 +28,6 @@ confidence: low
 
 # Claude Taiwan | #為什麼要找第二個AI來審查 | Facebook
 
+## See also
+
+- [[2026-06-26-hermes-agent-hermes-os-20100-stars-facebook]]

@@ -1,4 +1,5 @@
 ---
+
 title: Codex
 canonical: true
 created: 2026-06-27
@@ -13,7 +14,9 @@ tags:
   - 2026
   - to-read
 confidence: medium
+
 ---
+
 # Codex
 
 OpenAI's Codex AI coding agent was discovered to have a serious bug causing excessive background SSD writes, reportedly accumulating ~37TB of writes in just 21 days. At this rate, SSD write endurance (warranty lifespan) could be exhausted in less than a year, posing significant risk for heavy users
@@ -58,3 +61,7 @@ OpenAI's Codex AI coding agent was discovered to have a serious bug causing exce
 ---
 
 [[paul-kuo]]
+
+## See also
+
+- [[2026-06-27-codex-claude-paul-kuo]]

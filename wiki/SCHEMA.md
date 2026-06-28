@@ -31,13 +31,20 @@ created: YYYY-MM-DD
 updated: YYYY-MM-DD
 type: entity | concept | comparison | query | summary
 tags: [from taxonomy below]
-sources: [raw/<category>/source-name.md]
+sources: [[raw/Tech/source-name]]
 # Optional quality signals:
 confidence: high | medium | low
 contested: true
 contradictions: [other-page-slug]
 ---
 ```
+
+`sources` uses Obsidian wikilinks (`[[raw/Tech/filename]]`) pointing to the
+original capture file in `raw/`. These are clickable in Obsidian — open the
+source content directly. Raw files are preserved on disk so links stay alive.
+
+**Legacy:** Old pages may have `sources` as file paths or `[]` — the normalize
+script handles both.
 
 ## Tag Taxonomy
 

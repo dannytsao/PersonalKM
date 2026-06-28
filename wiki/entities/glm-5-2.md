@@ -1,4 +1,5 @@
 ---
+
 title: GLM 5.2
 canonical: true
 created: 2026-06-27
@@ -9,7 +10,9 @@ sources: []
 tags:
   []
 confidence: medium
+
 ---
+
 # GLM 5.2
 
 # GLM 5.2 - API Pricing & Benchmarks
@@ -43,3 +46,7 @@ confidence: medium
 ---
 
 [[z-ai]]
+
+## See also
+
+- [[2026-06-27-glm-52-api-pricing-benchmarks]]
