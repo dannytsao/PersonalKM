@@ -27,6 +27,8 @@ import unicodedata
 from pathlib import Path
 from typing import Optional
 
+from tools.omnichannel_md.frontmatter import parse_yaml_list
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -251,8 +253,8 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
             key = key.strip()
             val = val.strip()
             if val.startswith('['):
-                # Inline list: ["a", "b"] or [tag1, tag2]
-                fm[key] = val
+                # Inline list: ["a", "b"] or ['a', 'b'] or [tag1, tag2]
+                fm[key] = parse_yaml_list(val)
             elif val:
                 fm[key] = val
             else:
@@ -351,16 +353,18 @@ def add_source_to_frontmatter(filepath: Path, source_path: str) -> None:
     else:
         new_sources = f'["{source_path}"]'
     
-    # Write back with updated sources
+    # Write back with updated sources — remove all duplicates, keep one
     lines = filepath.read_text(encoding='utf-8').split('\n')
-    
-    # Find and replace sources: line
-    for i, line in enumerate(lines):
+    new_lines: list[str] = []
+    sources_written = False
+    for line in lines:
         if line.strip().startswith('sources:'):
-            lines[i] = f'sources: {new_sources}'
-            break
-    
-    filepath.write_text('\n'.join(lines), encoding='utf-8')
+            if not sources_written:
+                new_lines.append(f'sources: {new_sources}')
+                sources_written = True
+        else:
+            new_lines.append(line)
+    filepath.write_text('\n'.join(new_lines), encoding='utf-8')
 
 
 # ---------------------------------------------------------------------------
