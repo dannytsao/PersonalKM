@@ -313,16 +313,18 @@ def ingest_file_v2(
     action = "unknown"
     page_path: Optional[Path] = None
     timestamp = datetime.now().strftime("%Y-%m-%d")
-    # Store Obsidian-clickable wikilink pointing to raw/archive/ instead of absolute path
+    # Store Obsidian-clickable wikilink pointing back to the archived raw file.
+    # Archive lives at vault_root/archive/raw/<subfolder>/<file>.md (kept OUT of
+    # raw/ so the recursive glob in ingest_raw_to_wiki never re-ingests it).
     vault_root = raw_path.parent  # climb to vault root
     while vault_root.name != "raw" and vault_root.parent != vault_root:
         vault_root = vault_root.parent
     vault_root = vault_root.parent
-    # Archive path preserves subfolder structure: raw/archive/Tech/xxx.md
-    archive_dir = vault_root / "raw" / "archive"
-    rel = raw_path.relative_to(vault_root)
-    raw_archive_path = archive_dir / raw_path.relative_to(vault_root / "raw")
-    archive_rel = Path("raw/archive") / raw_path.relative_to(vault_root / "raw")
+    archive_dir = vault_root / "archive" / "raw"
+    rel_under_raw = raw_path.relative_to(vault_root / "raw")
+    raw_archive_path = archive_dir / rel_under_raw
+    # Wikilink path is relative to the vault root (Obsidian-resolvable).
+    archive_rel = Path("archive/raw") / rel_under_raw
     raw_path_str = f"[[{archive_rel.with_suffix('')}]]"
 
     if match:
