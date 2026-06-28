@@ -1,6 +1,6 @@
 # Knowledge Graph
 
-Last updated: 2026-06-28T16:39:16.029331
+Last updated: 2026-06-28T17:39:18.972457
 
 > Mermaid flowchart (TD layout) — click a node to open the page. Entities are blue, concepts are orange. Edges are wikilinks. Zoom: scroll, Pan: drag background.
 
@@ -14,6 +14,9 @@ flowchart TD
         p_2026_06_28_log_id["2026-06-28-log-id"]
         click p_2026_06_28_log_id "entities/2026-06-28-log-id.md" "Open 2026-06-28-log-id"
         class p_2026_06_28_log_id entity
+        claude_code["Claude Code"]
+        click claude_code "entities/claude-code.md" "Open Claude Code"
+        class claude_code entity
         glm_5_2["GLM 5.2"]
         click glm_5_2 "entities/glm-5-2.md" "Open GLM 5.2"
         class glm_5_2 entity
@@ -27,6 +30,7 @@ flowchart TD
 
 ## Canonical Entities
 
+- [[claude-code|Claude Code]]
 - [[glm-5-2|GLM 5.2]]
 
 ## Other Entity Pages (1)
@@ -34,4 +38,4 @@ flowchart TD
 - [[2026-06-28-log-id]]
 
 ---
-Total pages: 2 | Edges: 1
+Total pages: 3 | Edges: 1
