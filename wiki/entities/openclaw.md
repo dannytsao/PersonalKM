@@ -8,10 +8,10 @@ topic: Tech-Trends-&-Insights
 sources:
   - "wiki/entities/2026-06-26-log-id.md"
   - "wiki/entities/anges-ai.md"
-tags: []
+tags:
+  []
 confidence: medium
 ---
-
 # OpenClaw
 
 Anges AI is a Singapore-based free AI API platform that offers multiple models accessible via API calls, with no credit card required and no usage limits. It supports text, image, and video generation models, making it useful for experimenting with AI agent tools. Performance is reported as good dur

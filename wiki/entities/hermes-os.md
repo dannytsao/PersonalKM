@@ -8,10 +8,10 @@ topic: Tech-Trends-&-Insights
 sources:
   - "wiki/entities/hermes-agent.md"
   - "wiki/concepts/2026-06-26-hermes-agent-hermes-os-20100-stars-facebook.md"
-tags: []
+tags:
+  []
 confidence: medium
 ---
-
 # Hermes OS
 
 Hermes Agent introduced a new /learn command that allows users to convert various data sources—including code, API documentation, product manuals, PDFs, and configuration files—into reusable AI skills by pointing to a directory. The feature was announced by Nous Research on June 23 via X (Twitter).

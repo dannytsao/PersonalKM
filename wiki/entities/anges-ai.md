@@ -12,8 +12,6 @@ tags:
   - free-api
 confidence: medium
 ---
-
-
 # Anges AI
 
 Anges AI is a Singapore-based free AI API platform that offers multiple models accessible via API calls, with no credit card required and no usage limits. It supports text, image, and video generation models, making it useful for experimenting with AI agent tools. Performance is reported as good dur

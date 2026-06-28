@@ -14,9 +14,6 @@ sources:
   - /tmp/personal-km-vault/raw/Tech/2026-06-26-202606261759_00001-日本-ai-新創團隊發表-sakana-fugu,能力號稱已追上-fable-5、mythos-5-模型-電腦王阿達.md
 confidence: medium
 ---
-
-
-
 ## Summary
 
 Sakana AI, a Japanese AI startup based in Tokyo, released "Sakana Fugu" on June 22 — a multi-agent AI orchestration system designed to dynamically coordinate the collective intelligence of multiple models. The system claims benchmark performance in coding and scientific reasoning comparable to Anthr

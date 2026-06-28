@@ -14,10 +14,6 @@ sources:
   - /tmp/personal-km-vault/raw/Tech/2026-06-26-202606260009_00001-cloudflare-推出-temporary-accounts-服務-ai-agent-一鍵部署、一鍵認領,部署不刪檔.md
 confidence: medium
 ---
-
-
-
-
 ## Summary
 
 Cloudflare launched a Temporary Accounts service aimed at simplifying AI Agent deployment and account claiming workflows. The service eliminates friction points such as browser-based OAuth authorization, manual API Token copy-paste, and multi-factor authentication (MFA) requirements that are cumbers

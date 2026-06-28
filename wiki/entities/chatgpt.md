@@ -5,7 +5,6 @@ created: 2026-06-27
 updated: 2026-06-27
 type: entity
 topic: AI-Agent-&-Tools
-sources:
 sources: []
 tags:
   - to-read
@@ -14,11 +13,6 @@ tags:
   - prompts
 confidence: medium
 ---
-
-
-
-
-
 # ChatGPT
 
 An article from 電腦王阿達 describes how to use ChatGPT and Gemini as AI assistants to diagnose Windows 11 computer health. It provides step-by-step instructions and ready-made prompts to help users check system performance and maintenance status. The raw capture is thin and primarily a meta-summary, wit

@@ -3,16 +3,17 @@ title: poyin-chen-motion-designer-taiwan
 created: 2026-06-26
 updated: 2026-06-27
 topic: Personal-Interests
-tags: ['motion-design', 'taiwan', 'design-portfolio', 'to-read']
+tags:
+  - motion-design
+  - taiwan
+  - design-portfolio
+  - to-read
 type: entity
 sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/General/2026-06-26-202606261451_00001-poyin-chen-motion-designer-動態設計師,-taiwan.md
   - /tmp/personal-km-vault/raw/General/2026-06-26-202606261451_00001-poyin-chen-motion-designer-動態設計師,-taiwan.md
 confidence: high
 ---
-
-
-
 ## Summary
 
 PoYin Chen (陳柏尹) is a motion designer based in Taiwan whose portfolio spans award-show packaging for Taiwan's Golden Bell (金鐘), Golden Melody (金曲), and Golden Horse (金馬) ceremonies, as well as character animation and brand motion design. Their showreel and full portfolio are hosted on their personal

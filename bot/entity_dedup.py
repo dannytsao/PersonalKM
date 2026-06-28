@@ -256,7 +256,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
                 # Inline list: ["a", "b"] or ['a', 'b'] or [tag1, tag2]
                 fm[key] = parse_yaml_list(val)
             elif val:
-                fm[key] = val
+                fm[key] = parse_yaml_list(val)
             else:
                 fm[key] = ""
         i += 1

@@ -3,16 +3,17 @@ title: wwwinsidecomtw
 created: 2026-06-26
 updated: 2026-06-27
 topic: Tech-Trends-&-Insights
-tags: ['capture-failed', 'http-403', 'mistral', '2025']
+tags:
+  - capture-failed
+  - http-403
+  - mistral
+  - 2025
 type: entity
 sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/General/2026-06-24-202606242132_00001-www.inside.com.tw.md
   - /tmp/personal-km-vault/raw/General/2026-06-24-202606242132_00001-www.inside.com.tw.md
 confidence: low
 ---
-
-
-
 ## Summary
 
 A log entry recording a failed web scraping attempt of an Inside (Taiwan tech media) article about Mistral AI (slug: 41612-mistral-free). The target website returned HTTP 403, blocking automated content extraction, so no article body was retrieved. The entry serves as a capture-failure record with a

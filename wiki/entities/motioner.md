@@ -1,12 +1,10 @@
 ---
-
 title: Motioner
 canonical: true
 created: 2026-06-27
 updated: 2026-06-27
 type: entity
 topic: Personal-Interests
-sources:
 sources: []
 tags:
   - motion-design
@@ -14,12 +12,7 @@ tags:
   - taiwan
   - to-explore
 confidence: medium
-
 ---
-
-
-
-
 # Motioner
 
 Motioner (motioner.tw) is a Taiwanese online learning platform specializing in motion design education. It offers professionally curated courses covering diverse design topics, structured for accessibility regardless of skill level. The platform also publishes column articles to enrich the learning

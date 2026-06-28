@@ -12,8 +12,6 @@ tags:
   - ai-agent
 confidence: medium
 ---
-
-
 # Apple Silicon
 
 Apple has published an official tutorial showing developers how to run local AI models on Mac to build AI Agents for iPad app development, requiring no API keys or subscriptions. The approach leverages Apple Silicon hardware to execute the full AI loop entirely on-device, ensuring data remains local

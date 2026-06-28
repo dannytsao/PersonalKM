@@ -5,7 +5,6 @@ created: 2026-06-27
 updated: 2026-06-27
 type: entity
 topic: AI-Agent-&-Tools
-sources:
 sources: []
 tags:
   - cloudflare
@@ -15,9 +14,6 @@ tags:
   - 2026
 confidence: medium
 ---
-
-
-
 # Cloudflare
 
 Cloudflare launched a Temporary Accounts service aimed at simplifying AI Agent deployment and account claiming workflows. The service eliminates friction points such as browser-based OAuth authorization, manual API Token copy-paste, and multi-factor authentication (MFA) requirements that are cumbers

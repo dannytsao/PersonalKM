@@ -5,7 +5,6 @@ created: 2026-06-27
 updated: 2026-06-27
 type: entity
 topic: AI-Agent-&-Tools
-sources:
 sources: []
 tags:
   - multi-agent-systems
@@ -15,9 +14,6 @@ tags:
   - anthropic
 confidence: medium
 ---
-
-
-
 # Sakana Fugu
 
 Sakana AI, a Japanese AI startup based in Tokyo, released "Sakana Fugu" on June 22 — a multi-agent AI orchestration system designed to dynamically coordinate the collective intelligence of multiple models. The system claims benchmark performance in coding and scientific reasoning comparable to Anthr

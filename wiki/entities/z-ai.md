@@ -9,10 +9,10 @@ sources:
   - "wiki/entities/glm-5-2.md"
   - "wiki/concepts/2026-06-27-pricing-overview-zai-developer-document.md"
   - "wiki/concepts/2026-06-27-quick-start-overview-zai-developer-document.md"
-tags: []
+tags:
+  []
 confidence: medium
 ---
-
 # Z.AI
 
 # GLM 5.2 - API Pricing & Benchmarks

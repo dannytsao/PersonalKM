@@ -5,16 +5,11 @@ created: 2026-06-27
 updated: 2026-06-27
 type: entity
 topic: Tech-Trends-&-Insights
-sources:
 sources: []
 tags:
   []
 confidence: medium
 ---
-
-
-
-
 # CometAPI
 
 # GLM 5.2：完整指南、基準測試、定價與透過 CometAPI 存取 - CometAPI - 一個 API 中的所有 AI 模型

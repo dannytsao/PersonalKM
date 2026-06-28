@@ -13,9 +13,6 @@ sources:
   - /tmp/personal-km-vault/raw/Tech/2026-06-26-202606261701_00001-hermes-agent-新增-learn-指令-讓任何資料都能變成可重複使用的-ai-技能-電腦王阿達.md
 confidence: high
 ---
-
-
-
 ## Summary
 
 Hermes Agent introduced a new /learn command that allows users to convert various data sources—including code, API documentation, product manuals, PDFs, and configuration files—into reusable AI skills by pointing to a directory. The feature was announced by Nous Research on June 23 via X (Twitter). 

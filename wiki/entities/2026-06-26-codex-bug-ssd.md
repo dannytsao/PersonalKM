@@ -14,9 +14,6 @@ sources:
   - /tmp/personal-km-vault/raw/Tech/2026-06-26-202606261828_00001-codex-被發現有一個嚴重-bug,可能讓-ssd-寫入壽命不到一年就耗盡(附自檢方法)-電腦王阿達.md
 confidence: medium
 ---
-
-
-
 ## Summary
 
 OpenAI's Codex AI coding agent was discovered to have a serious bug causing excessive background SSD writes, reportedly accumulating ~37TB of writes in just 21 days. At this rate, SSD write endurance (warranty lifespan) could be exhausted in less than a year, posing significant risk for heavy users 

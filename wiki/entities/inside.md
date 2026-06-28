@@ -5,7 +5,6 @@ created: 2026-06-27
 updated: 2026-06-27
 type: entity
 topic: Tech-Trends-&-Insights
-sources:
 sources: []
 tags:
   - capture-failed
@@ -14,9 +13,6 @@ tags:
   - 2025
 confidence: medium
 ---
-
-
-
 # Inside
 
 A log entry recording a failed web scraping attempt of an Inside (Taiwan tech media) article about Mistral AI (slug: 41612-mistral-free). The target website returned HTTP 403, blocking automated content extraction, so no article body was retrieved. The entry serves as a capture-failure record with a

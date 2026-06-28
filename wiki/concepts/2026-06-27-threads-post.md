@@ -3,16 +3,13 @@ title: threads-post
 created: 2026-06-27
 updated: 2026-06-27
 topic: Tech-Trends-&-Insights
-tags: []
+tags:
+  []
 type: entity
 sources:
   - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/General/2026-06-26-202606262022_00001-threads-post.md
 confidence: low
 ---
-
-
-
-
 ## Summary
 
 # Threads post

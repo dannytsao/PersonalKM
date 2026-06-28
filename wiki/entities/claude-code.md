@@ -5,15 +5,11 @@ created: 2026-06-27
 updated: 2026-06-27
 type: entity
 topic: Tech-Trends-&-Insights
-tags: []
+tags:
+  []
 confidence: medium
 sources: []
 ---
-
-
-
-
-
 # Claude Code
 
 ## Captures
