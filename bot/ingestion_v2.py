@@ -281,19 +281,56 @@ def ingest_file_v2(
         if existing_content.startswith("---"):
             parts = existing_content.split("---", 2)
             new_content = f"---\n{parts[1]}\n---\n\n{merged_body}"
+            try:
+                existing_fm = yaml.safe_load(parts[1])
+                existing_tags = existing_fm.get("tags", [])
+                if not isinstance(existing_tags, list):
+                    existing_tags = [existing_tags] if existing_tags else []
+                flat_existing = []
+                for t in existing_tags:
+                    if isinstance(t, list):
+                        flat_existing.extend(str(x) for x in t)
+                    elif isinstance(t, str):
+                        flat_existing.append(t)
+                merged_tags = list(dict.fromkeys(flat_existing + tags))
+                tags_yaml = yaml.dump(merged_tags, default_flow_style=True).strip()
+                new_content = re.sub(
+                    r'^tags:.*(\n\s+.*)*',
+                    f'tags: {tags_yaml}',
+                    new_content,
+                    count=1,
+                    flags=re.MULTILINE,
+                )
+            except Exception as e:
+                logger.warning(f"Could not merge tags for {page_path.name}: {e}")
         else:
             new_content = merged_body
 
-        import re
         new_content = re.sub(r'^updated: .+$', f'updated: {timestamp}', new_content, flags=re.MULTILINE)
 
         if raw_path_str not in new_content:
-            new_content = re.sub(
-                r'(^sources:.*)$',
-                r'\1\n  - ' + raw_path_str,
-                new_content,
-                flags=re.MULTILINE,
-            )
+            try:
+                existing_fm = yaml.safe_load(parts[1])
+                existing_sources = existing_fm.get("sources", [])
+                if not isinstance(existing_sources, list):
+                    existing_sources = [existing_sources] if existing_sources else []
+                if raw_path_str not in existing_sources:
+                    existing_sources.append(raw_path_str)
+                sources_str = "\n".join(f'  - "{s}"' for s in existing_sources)
+                new_content = re.sub(
+                    r'^sources:.*(\n\s+.*)*',
+                    f"sources:\n{sources_str}",
+                    new_content,
+                    count=1,
+                    flags=re.MULTILINE,
+                )
+            except Exception:
+                new_content = re.sub(
+                    r'(^sources:.*)$',
+                    r'\1\n  - ' + raw_path_str,
+                    new_content,
+                    flags=re.MULTILINE,
+                )
 
         page_path.write_text(new_content, encoding="utf-8")
         logger.info(f"✅ MERGED {raw_path.name} → {match.relative_to(wiki_path)}")
@@ -334,12 +371,52 @@ confidence: {confidence}
                 new_content = merged
             new_content = re.sub(r'^updated: .+$', f'updated: {timestamp}', new_content, flags=re.MULTILINE)
             if raw_path_str not in new_content:
+                try:
+                    existing_fm = yaml.safe_load(parts[1])
+                    existing_sources = existing_fm.get("sources", [])
+                    if not isinstance(existing_sources, list):
+                        existing_sources = [existing_sources] if existing_sources else []
+                    if raw_path_str not in existing_sources:
+                        existing_sources.append(raw_path_str)
+                    sources_str = "\n".join(f'  - "{s}"' for s in existing_sources)
+                    new_content = re.sub(
+                        r'^sources:.*(\n\s+.*)*',
+                        f"sources:\n{sources_str}",
+                        new_content,
+                        count=1,
+                        flags=re.MULTILINE,
+                    )
+                except Exception as e:
+                    logger.warning(f"Could not merge sources for {page_path.name}: {e}")
+                    if raw_path_str not in new_content:
+                        new_content = re.sub(
+                            r'^sources:\s*.*$',
+                            lambda m: m.group(0).rstrip(']') + f', "{raw_path_str}"]' if m.group(0).strip().endswith(']') else m.group(0) + f'\n  - {raw_path_str}',
+                            new_content,
+                            flags=re.MULTILINE,
+                        )
+            try:
+                existing_fm = yaml.safe_load(parts[1])
+                existing_tags = existing_fm.get("tags", [])
+                if not isinstance(existing_tags, list):
+                    existing_tags = [existing_tags] if existing_tags else []
+                flat_existing = []
+                for t in existing_tags:
+                    if isinstance(t, list):
+                        flat_existing.extend(str(x) for x in t)
+                    elif isinstance(t, str):
+                        flat_existing.append(t)
+                merged_tags = list(dict.fromkeys(flat_existing + tags))
+                tags_yaml = yaml.dump(merged_tags, default_flow_style=True).strip()
                 new_content = re.sub(
-                    r'(^sources:\s*.*)$',
-                    lambda m: m.group(0).rstrip(']') + f', "{raw_path_str}"]' if m.group(0).strip().endswith(']') else m.group(0) + f'\n  - {raw_path_str}',
+                    r'^tags:.*(\n\s+.*)*',
+                    f'tags: {tags_yaml}',
                     new_content,
+                    count=1,
                     flags=re.MULTILINE,
                 )
+            except Exception as e:
+                logger.warning(f"Could not merge tags for {page_path.name}: {e}")
             page_path.write_text(new_content, encoding="utf-8")
             logger.info(f"✅ CANONICAL MERGED {raw_path.name} → {subfolder}/{canonical_slug}.md")
 
@@ -615,9 +692,11 @@ def _add_canonical_body_links(wiki_path: Path, page_path: Path, body: str) -> in
 
     content = page_path.read_text(encoding="utf-8")
     added = 0
+    own_slug = page_path.stem
 
     for slug, display_name in CANONICAL_ENTITIES.items():
-        # Check if entity has a page
+        if slug == own_slug:
+            continue
         entity_page = wiki_path / "entities" / f"{slug}.md"
         if not entity_page.exists():
             continue
