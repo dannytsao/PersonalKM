@@ -287,7 +287,14 @@ def ingest_file_v2(
         summary_text = paras[0] if paras else body[:500]
         distilled = f"## Summary\n\n{summary_text}\n"
         topic = "Tech-Trends-&-Insights"
-        tags = []
+        # When LLM is unavailable, we can't distill cross-topic tags. Stamp
+        # the page with `needs-llm-reprocess` so the next batch knows to
+        # re-summarize, plus the canonical slug (if matched) for graph
+        # connectivity. Never empty — keeps query/sanity checks happy.
+        fallback_tags = ["needs-llm-reprocess"]
+        if canonical_slug_from_name(extract_title(raw_path, content)) is not None:
+            fallback_tags.append(canonical_slug_from_name(extract_title(raw_path, content)))
+        tags = fallback_tags
         confidence = "low"
 
     # 6. Build title
@@ -320,11 +327,13 @@ def ingest_file_v2(
     while vault_root.name != "raw" and vault_root.parent != vault_root:
         vault_root = vault_root.parent
     vault_root = vault_root.parent
-    archive_dir = vault_root / "archive" / "raw"
+    archive_dir = vault_root / "Archive" / "raw"
     rel_under_raw = raw_path.relative_to(vault_root / "raw")
     raw_archive_path = archive_dir / rel_under_raw
     # Wikilink path is relative to the vault root (Obsidian-resolvable).
-    archive_rel = Path("archive/raw") / rel_under_raw
+    # Capital-A matches the existing git-tracked Archive/ directory so paths
+    # stay valid on case-sensitive filesystems (e.g. Render's Linux).
+    archive_rel = Path("Archive/raw") / rel_under_raw
     raw_path_str = f"[[{archive_rel.with_suffix('')}]]"
 
     if match:
