@@ -34,6 +34,9 @@ try:
 except ImportError:
     from ingestion_health_check import IngestionHealthCheck
 
+from tools.omnichannel_md.frontmatter import format_yaml_tags
+
+
 logger = logging.getLogger(__name__)
 
 # Initialize OpenAI with API key from environment
@@ -128,6 +131,67 @@ Respond ONLY with JSON:"""
         return {"entities": [], "relationships": [], "wiki_path": "concepts/general"}
 
 
+# ── Tri-domain tag taxonomy prompt ─────────────────────────────────────────
+
+TRIDOMAIN_TAG_PROMPT = """
+You are a content tagger for a personal knowledge base covering three domains:
+1. TECH (科技) - AI tools, DevOps, programming, frameworks
+2. SCENIC (美景) - Taiwan travel spots, photography locations, nature
+3. FOOD (美食) - Restaurants, food spots, cafes, food experiences
+
+Given the content below, produce tags that help the user ORGANISE and FIND this note later.
+
+Rules:
+- At least 2 tags, at most 6 tags.
+- Be specific enough to be useful for search/filter (not "technology", "food", "travel").
+- Tech content: use concrete tool/concept names (docker, kubernetes, rag, agent, codex, claude-code, obsidian, prompt-engineering)
+- Scenic content: include location and theme (Taipei, Taitung, trail, night-view, Milky-Way, old-house, cafe)
+- Food content: include location and type/cuisine (Taipei-food, Tainan-snacks, buffet, brunch, hotpot, Michelin)
+- Cross-domain is OK (e.g. Alishan-cafe can have both scenic and food tags).
+- Do NOT duplicate info already in the topic or title fields.
+- Return ONLY a JSON object with a single tags key.
+
+{"tags": ["tag1", "tag2"]}
+
+Content:
+"""
+
+
+def generate_tags_llm(content: str, max_content_chars: int = 1500) -> List[str]:
+    """Use OpenAI to generate tri-domain tags from raw content."""
+    if not client:
+        logger.warning("OpenAI client not available, returning empty tags")
+        return []
+
+    try:
+        prompt = TRIDOMAIN_TAG_PROMPT + content[:max_content_chars]
+
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=200,
+        )
+
+        msg_content = response.choices[0].message.content
+        output = msg_content.strip() if msg_content else ""
+        start = output.find("{")
+        end = output.rfind("}") + 1
+
+        if start < 0 or end <= start:
+            logger.warning("No JSON found in LLM tag response")
+            return []
+
+        parsed = json.loads(output[start:end])
+        tags = parsed.get("tags", [])
+        if isinstance(tags, list):
+            return [str(t).strip() for t in tags if t]
+        return []
+    except Exception as e:
+        logger.error(f"LLM tag generation failed: {e}")
+        return []
+
+
 def build_llmwiki_frontmatter(
     title: str,
     page_type: str,
@@ -201,6 +265,11 @@ def organize_note_to_wiki(
         
         # Build llm-wiki frontmatter
         fm = build_llmwiki_frontmatter(title, subfolder.rstrip('s'), categories, entities, summary, raw_path, schema)
+        
+        # Replace keyword-based tags with LLM-generated tri-domain tags
+        llm_tags = generate_tags_llm(content)
+        if llm_tags:
+            fm["tags"] = llm_tags
         
         # Add frontmatter to content
         fm_str = WikiPage.build_frontmatter(fm)
