@@ -267,7 +267,13 @@ def ingest_file_v2(
     action = "unknown"
     page_path: Optional[Path] = None
     timestamp = datetime.now().strftime("%Y-%m-%d")
-    raw_path_str = str(raw_path)
+    # Store Obsidian-clickable wikilink instead of absolute path
+    vault_root = raw_path.parent  # climb to vault root
+    while vault_root.name != "raw" and vault_root.parent != vault_root:
+        vault_root = vault_root.parent
+    vault_root = vault_root.parent
+    rel = raw_path.relative_to(vault_root)
+    raw_path_str = f"[[{rel.with_suffix('')}]]"
 
     if match:
         # 8a. Merge: update existing entity page
@@ -458,11 +464,8 @@ confidence: {confidence}
     if propagated:
         logger.info(f"  → Propagated to {propagated} entity pages")
 
-    # 11. Delete raw file after successful processing
-    try:
-        raw_path.unlink()
-    except Exception as e:
-        logger.warning(f"Could not delete raw file {raw_path}: {e}")
+    # 11. Keep raw file so Obsidian can follow [[raw/...]] links
+    #     (raw_path.unlink() was removed to preserve clickable source references)
 
     return True, {
         "action": action,
