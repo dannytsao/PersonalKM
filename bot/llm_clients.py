@@ -168,6 +168,11 @@ class OpenAIClient:
         self.api_key = api_key
         self.default_model = model or os.getenv("OPENAI_MODEL") or self.DEFAULT_MODEL
         self.base_url = base_url or os.getenv("OPENAI_BASE_URL") or self.DEFAULT_BASE_URL
+        # Ollama needs a larger context window for CJK-heavy content.
+        # Default 2048 causes silent empty responses on multi-lingual notes.
+        self._extra_body = None
+        if "127.0.0.1" in self.base_url or "localhost" in self.base_url:
+            self._extra_body = {"options": {"num_ctx": 8192}}
         
         try:
             from openai import OpenAI
@@ -181,6 +186,8 @@ class OpenAIClient:
     def chat_completions_create(self, model: str, messages: List[Any], **kwargs):
         """Create a chat completion via OpenAI."""
         if self._client:
+            if self._extra_body:
+                kwargs["extra_body"] = self._extra_body
             return self._client.chat.completions.create(
                 model=model,
                 messages=messages,
