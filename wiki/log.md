@@ -11,3 +11,6 @@
 - raw/ layer: symlinked to ../raw (Tech, Food, General categories)
 - Tag taxonomy: 13 tags across AI-Tools, Workflows, Topics, Meta
 - Notes: wiki/entities/ and wiki/concepts/ wiped clean (all 372 source-less pages removed)
+
+## 2026-06-28
+- Purged all 72 stale wiki pages (no source files)
