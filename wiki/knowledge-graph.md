@@ -1,6 +1,6 @@
 # Knowledge Graph
 
-Last updated: 2026-06-28T15:39:13.515441
+Last updated: 2026-06-28T16:39:16.029331
 
 > Mermaid flowchart (TD layout) — click a node to open the page. Entities are blue, concepts are orange. Edges are wikilinks. Zoom: scroll, Pan: drag background.
 
