@@ -1,6 +1,6 @@
 # Knowledge Graph
 
-Last updated: 2026-06-28T14:58:36.479900
+Last updated: 2026-06-28T15:39:13.515441
 
 > Mermaid flowchart (TD layout) — click a node to open the page. Entities are blue, concepts are orange. Edges are wikilinks. Zoom: scroll, Pan: drag background.
 
@@ -22,6 +22,7 @@ flowchart TD
     subgraph Concepts
     end
 
+    p_2026_06_28_log_id --> glm_5_2
 ```
 
 ## Canonical Entities
@@ -33,4 +34,4 @@ flowchart TD
 - [[2026-06-28-log-id]]
 
 ---
-Total pages: 2 | Edges: 0
+Total pages: 2 | Edges: 1
