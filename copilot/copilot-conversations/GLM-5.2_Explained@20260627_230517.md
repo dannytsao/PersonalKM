@@ -101,3 +101,10 @@ For example, the note [[2026-06-26-450]] about the 055 Lobster Seafood Restauran
 
 I extracted the relevant information from these notes to answer your question about food in Taiwan.
 [Timestamp: 2026/06/28 09:04:45]
+
+**user**: hermes agent 有什麼新功能？
+[Context: Notes: wiki/concepts/2026-06-26-1107.md]
+[Timestamp: 2026/06/28 09:44:21]
+
+**ai**: 很抱歉，我無法提供 [[hermes-agent]] 的新功能資訊。在您提供的筆記中，[[hermes-agent]] 僅被提及為一個 AI 代理工具，與 [[anges-ai]] 相關，但沒有詳細說明其功能或更新。
+[Timestamp: 2026/06/28 09:44:22]
