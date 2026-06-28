@@ -1,4 +1,4 @@
----
+
 title: Obsidian with Ollama
 created: 2026-06-28
 updated: 2026-06-28
@@ -22,3 +22,6 @@ This guide explains how to integrate Ollama with Obsidian for local large langua
 
 **Source:** ^# Obsidian with Ollama  ## 摘要 1. 本視頻介紹如何在Obsidian中使用Ollama搭配Lama系列模型，透過本地運行大語言模型來執行AI任務，避免將個人筆記資料上傳至雲端服務，強調數據隱私保護的重要性。 2. 說明安裝Ollama與設定本地LMM的步驟，並建議根據電腦資源選擇合適模型，以平衡效能與隱私，同時展示如何在Obsidian中切換至本地模型進行筆記處理。...
 
+## See also
+
+- [[claude-code]]
