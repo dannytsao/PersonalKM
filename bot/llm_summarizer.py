@@ -254,28 +254,62 @@ def detect_entity_mentions(content: str) -> List[str]:
     Detect entity mentions in content using simple pattern matching.
 
     Returns list of normalized entity names (English, lowercase, hyphens).
+
+    Notes:
+        - Skips ALL markdown section headers (`##`, `###`) and their body
+          for known metadata sections (Log ID, 摘要, 重點, 原始內容, 內含連結,
+          媒體, 擷取狀態, 原文連結). These are scaffolding from the LINE
+          capture pipeline, not entity mentions.
+        - URL string fragments (YouTube IDs, etc.) are stripped before
+          CamelCase/Acronym matching to avoid fake entities like 'mawlxat'.
     """
     # Strip frontmatter
     body = _strip_frontmatter(content)
 
-    # Common patterns for entity names
-    # 1. CamelCase → camel-case
-    # 2. Acronyms like "GPT-4", "Claude 3.5", "K8s"
-    # 3. Tool names: "Docker", "Kubernetes", "Terraform"
+    # ── Strip metadata section headers AND their body ──────────────────────
+    # Sections we treat as pipeline scaffolding, never as entity mentions.
+    _SCAFFOLDING_SECTIONS = {
+        "log id", "log_id",
+        "摘要", "重點", "原始內容", "原始内容", "內含連結", "內含链接",
+        "媒體", "媒体", "擷取狀態", "撷取状态", "原文連結", "原文链接",
+        "media", "raw content", "source link", "links",
+    }
 
-    entities = set()
+    lines = body.split("\n")
+    skip_until_next_header = False
+    cleaned_lines: list[str] = []
+    for line in lines:
+        s = line.strip()
+        is_header = s.startswith("## ") or s.startswith("### ")
+        if is_header:
+            heading_text = s.lstrip("#").strip().lower()
+            skip_until_next_header = heading_text in _SCAFFOLDING_SECTIONS
+            cleaned_lines.append("")  # drop the header itself
+            continue
+        if skip_until_next_header:
+            continue
+        cleaned_lines.append(line)
+    cleaned = "\n".join(cleaned_lines)
+
+    # ── Strip URLs so YouTube IDs never become CamelCase entities ──────────
+    cleaned = re.sub(r"https?://[^\s)]+", " ", cleaned)
+
+    entities: set[str] = set()
 
     # Pattern: CamelCase words (but not all-caps like GPT-4)
-    camel = re.findall(r'(?<![A-Z])([A-Z][a-z]+(?:[A-Z][a-z]+)+)', body)
+    camel = re.findall(r'(?<![A-Z])([A-Z][a-z]+(?:[A-Z][a-z]+)+)', cleaned)
     for word in camel:
-        entities.add(_slugify(word))
+        slug = _slugify(word)
+        # Reject slugs that look like YouTube IDs (random short alphanumeric)
+        if 3 <= len(slug) <= 40 and not re.fullmatch(r"[a-z0-9]{6,12}", slug):
+            entities.add(slug)
 
     # Pattern: Acronyms with versions (GPT-4, Claude 3.5, K8s)
-    acronyms = re.findall(r'\b(GPT-\d+(?:\.\d+)?|Claude-\d+(?:\.\d+)?|K8s|LLaMA-\d+|Mistral-\d+|Lora|QLoRA|RLHF|AgentOps|RAG)\b', body, re.IGNORECASE)
+    acronyms = re.findall(r'\b(GPT-\d+(?:\.\d+)?|Claude-\d+(?:\.\d+)?|K8s|LLaMA-\d+|Mistral-\d+|Lora|QLoRA|RLHF|AgentOps|RAG)\b', cleaned, re.IGNORECASE)
     for a in acronyms:
         entities.add(a.lower().replace('.', '-'))
 
-    # Pattern: Common tools (lowercase)
+    # Pattern: Common tools (lowercase). Matched on whole-word boundaries.
     common_tools = [
         'docker', 'kubernetes', 'terraform', 'ansible', 'helm',
         'github-actions', 'gitlab-ci', 'jenkins', 'nginx',
@@ -283,18 +317,23 @@ def detect_entity_mentions(content: str) -> List[str]:
         'fastapi', 'flask', 'django', 'nextjs', 'react',
         'vscode', 'cursor', 'claude-code', 'openai', 'anthropic',
         'huggingface', 'pytorch', 'tensorflow', 'langchain',
+        'opencode', 'obsidian', 'infranodus',
     ]
-    body_lower = body.lower()
+    cleaned_lower = cleaned.lower()
     for tool in common_tools:
-        if tool in body_lower:
+        # word-boundary match so 'react' doesn't hit inside 'reaction'
+        if re.search(r'\b' + re.escape(tool) + r'\b', cleaned_lower):
             entities.add(tool)
 
-    # Pattern: Chinese entity mentions like "克劳德·德雷克" or "Claude"
-    # Extract quoted or bracket-enclosed names
-    chinese_names = re.findall(r'[\'""]?([\u4e00-\u9fff][\u4e00-\u9fff]{1,10})[\'""]?', body)
+    # Pattern: Chinese entity mentions like "克劳德" or "Claude" — only
+    # extracted from the cleaned body (no scaffolding). Require length ≥ 2
+    # (was silently ≥3 before via the regex quantifier `{1,10}` → min 2 chars).
+    chinese_names = re.findall(r'[\u4e00-\u9fff]{2,12}', cleaned)
     for name in chinese_names:
-        if len(name) >= 2:
-            entities.add(f"topic-{name}")
+        # Filter out generic Chinese stop-words that show up in capture scaffolding
+        if name in {"內容", "字幕", "影片", "連結", "建議", "資訊", "詳細", "觀看"}:
+            continue
+        entities.add(f"topic-{name}")
 
     return sorted(list(entities))
 

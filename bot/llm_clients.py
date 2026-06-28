@@ -147,11 +147,13 @@ class OpenAIClient:
     """
     OpenAI Chat Completions API client.
     
-    Used as fallback when MiniMax is unavailable.
+    Used as fallback when MiniMax is unavailable. Also serves as the
+    client for OpenAI-compatible local servers (e.g. Ollama) when
+    OPENAI_BASE_URL is set to a non-default endpoint.
     """
     
     provider = "openai"
-    base_url = "https://api.openai.com/v1"
+    DEFAULT_BASE_URL = "https://api.openai.com/v1"
     
     AVAILABLE_MODELS = [
         "gpt-4o",
@@ -162,13 +164,14 @@ class OpenAIClient:
     
     DEFAULT_MODEL = "gpt-4o-mini"
     
-    def __init__(self, api_key: str, model: Optional[str] = None):
+    def __init__(self, api_key: str, model: Optional[str] = None, base_url: Optional[str] = None):
         self.api_key = api_key
-        self.default_model = model or self.DEFAULT_MODEL
+        self.default_model = model or os.getenv("OPENAI_MODEL") or self.DEFAULT_MODEL
+        self.base_url = base_url or os.getenv("OPENAI_BASE_URL") or self.DEFAULT_BASE_URL
         
         try:
             from openai import OpenAI
-            self._client = OpenAI(api_key=self.api_key)
+            self._client = OpenAI(api_key=self.api_key, base_url=self.base_url)
             self._available = True
         except ImportError:
             logger.warning("OpenAI SDK not available")
@@ -243,18 +246,44 @@ def get_minimax_client() -> Optional[MiniMaxClient]:
         return None
 
 
+def _is_local_base_url(url: str) -> bool:
+    """True if the URL points at a local OpenAI-compatible server (e.g. Ollama)."""
+    if not url:
+        return False
+    lower = url.lower()
+    return any(host in lower for host in ("127.0.0.1", "localhost", "0.0.0.0"))
+
+
+def _probe_ollama(base_url: str, timeout: float = 1.5) -> bool:
+    """Quick reachability probe for an OpenAI-compatible local server
+    (Ollama at /v1/models, LM Studio, llama.cpp server, etc.)."""
+    try:
+        import urllib.request
+        req = urllib.request.Request(f"{base_url.rstrip('/')}/models", method="GET")
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+
 def get_openai_client() -> Optional[OpenAIClient]:
-    """Get OpenAI client if API key is available."""
+    """Get OpenAI client if API key is available.
+
+    Honors OPENAI_BASE_URL: when it points at a localhost endpoint
+    (e.g. http://127.0.0.1:11434/v1 for Ollama), the caller is
+    responsible for reachability; for genuine OpenAI cloud we just
+    check the SDK is importable.
+    """
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         logger.debug("OPENAI_API_KEY not set")
         return None
-    
+
     model = os.getenv("OPENAI_MODEL")
     try:
         client = OpenAIClient(api_key=api_key, model=model)
         if client.is_available():
-            logger.info(f"OpenAI client initialized (model: {client.default_model})")
+            logger.info(f"OpenAI client initialized (model: {client.default_model}, base: {client.base_url})")
             return client
         else:
             logger.warning("OpenAI client initialized but not available")
@@ -267,13 +296,39 @@ def get_openai_client() -> Optional[OpenAIClient]:
 def get_default_client() -> tuple:
     """
     Get the best available LLM client.
-    
+
+    Priority (configurable via env, no code changes needed):
+      1. LOCAL Ollama  — when OPENAI_BASE_URL is a localhost URL
+                         AND Ollama is reachable. Zero-cost, on-device.
+      2. MiniMax        — when MINIMAX_API_KEY is set (cloud, structured JSON expertise).
+      3. OpenAI cloud   — when OPENAI_API_KEY is set without a localhost OPENAI_BASE_URL.
+      4. NoOp           — graceful degradation (skip_llm=True downstream).
+
     Returns:
-        Tuple of (client, client_info) where client_info describes the client.
-        client is a MiniMaxClient, OpenAIClient, or NoOpClient (never None).
+        Tuple of (client, client_info). client is never None.
     """
-    # Priority: MiniMax → OpenAI → NoOp
-    
+    # 1) Local Ollama (OpenAI-compatible) — preferred default on Mac Mini.
+    base_url = os.getenv("OPENAI_BASE_URL", "")
+    api_key = os.getenv("OPENAI_API_KEY")
+    if _is_local_base_url(base_url) and api_key:
+        if _probe_ollama(base_url):
+            client = OpenAIClient(api_key=api_key, model=os.getenv("OPENAI_MODEL"))
+            if client.is_available():
+                logger.info(f"Local LLM OK: {base_url} model={client.default_model}")
+                info = LLMClientInfo(
+                    provider="ollama-local",
+                    default_model=client.default_model,
+                    available_models=client.list_models(),
+                    base_url=client.base_url,
+                )
+                return client, info
+            logger.warning(f"Local LLM at {base_url} reachable, but OpenAI SDK init failed")
+        else:
+            logger.warning(
+                f"OPENAI_BASE_URL={base_url} but server not reachable — falling through to MiniMax"
+            )
+
+    # 2) MiniMax cloud
     minimax = get_minimax_client()
     if minimax:
         info = LLMClientInfo(
@@ -283,7 +338,8 @@ def get_default_client() -> tuple:
             base_url=minimax.base_url,
         )
         return minimax, info
-    
+
+    # 3) OpenAI cloud
     openai = get_openai_client()
     if openai:
         info = LLMClientInfo(
@@ -293,8 +349,8 @@ def get_default_client() -> tuple:
             base_url=openai.base_url,
         )
         return openai, info
-    
-    # No API key available — return no-op client
+
+    # 4) No API key available — return no-op client
     logger.warning(
         "No LLM API key found. Set MINIMAX_API_KEY or OPENAI_API_KEY. "
         "LLM features will be disabled."
