@@ -54,6 +54,11 @@ from bot.entity_dedup import (
 )
 from bot.llm_summarizer import detect_entity_mentions, _strip_frontmatter
 
+from tools.omnichannel_md.frontmatter import (
+    parse_yaml_list,
+    format_yaml_tags,
+)
+
 # ── Entity-to-canonical mapping (which entities appear in which pages) ──
 
 # Maps: canonical_slug → list of filename patterns that match
@@ -189,13 +194,9 @@ def aggregate_entity_content(pages: list[Path]) -> dict:
 
         if "tags" in fm:
             raw = fm["tags"]
-            if isinstance(raw, str) and raw.startswith("["):
-                import json
-                try:
-                    for t in json.loads(raw):
-                        tags.add(t)
-                except (json.JSONDecodeError, TypeError):
-                    tags.add(str(raw))
+            if isinstance(raw, str):
+                for t in parse_yaml_list(raw):
+                    tags.add(t)
             elif isinstance(raw, list):
                 for t in raw:
                     tags.add(t)
@@ -275,7 +276,7 @@ def build_canonical_frontmatter(slug: str, aggregated: dict) -> str:
     clean_tags = [t for t in aggregated["tags"][:10] if t]
 
     sources_yaml = "\n".join(f'  - "{s}"' for s in clean_sources) if clean_sources else "  []"
-    tags_yaml = ", ".join(clean_tags) if clean_tags else ""
+    tags_yaml = format_yaml_tags(clean_tags)
 
     return f"""---
 title: {display_name}
@@ -287,7 +288,7 @@ topic: {aggregated["topic"]}
 sources:
 {sources_yaml}
 tags:
-  [{tags_yaml}]
+{tags_yaml}
 confidence: medium
 ---"""
 
