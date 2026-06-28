@@ -1,5 +1,6 @@
 ---
 
+
 title: RC Astro
 canonical: true
 created: 2026-06-27
@@ -10,8 +11,9 @@ sources: []
 tags:
   []
 confidence: medium
-
+wikilink_processed: 2026-06-28T05:43:03
 ---
+
 
 # RC Astro
 

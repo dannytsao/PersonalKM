@@ -1,4 +1,5 @@
 ---
+
 title: Qwen
 canonical: true
 created: 2026-06-28
@@ -11,7 +12,9 @@ sources:
 tags:
   []
 confidence: medium
+wikilink_processed: 2026-06-28T05:44:09
 ---
+
 # Qwen
 
 - /Users/dannytsao/.personalkm/PersonalKM-worker/raw/Tech/2026-06-26-202606262022_00001-最便宜方式用-glm-5.2、deepseek-4、qwen-3.7、minimax-m3-模型.md
