@@ -22,6 +22,7 @@ Usage:
 import logging
 import os
 import re
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict, Any
@@ -267,13 +268,17 @@ def ingest_file_v2(
     action = "unknown"
     page_path: Optional[Path] = None
     timestamp = datetime.now().strftime("%Y-%m-%d")
-    # Store Obsidian-clickable wikilink instead of absolute path
+    # Store Obsidian-clickable wikilink pointing to raw/archive/ instead of absolute path
     vault_root = raw_path.parent  # climb to vault root
     while vault_root.name != "raw" and vault_root.parent != vault_root:
         vault_root = vault_root.parent
     vault_root = vault_root.parent
+    # Archive path preserves subfolder structure: raw/archive/Tech/xxx.md
+    archive_dir = vault_root / "raw" / "archive"
     rel = raw_path.relative_to(vault_root)
-    raw_path_str = f"[[{rel.with_suffix('')}]]"
+    raw_archive_path = archive_dir / raw_path.relative_to(vault_root / "raw")
+    archive_rel = Path("raw/archive") / raw_path.relative_to(vault_root / "raw")
+    raw_path_str = f"[[{archive_rel.with_suffix('')}]]"
 
     if match:
         # 8a. Merge: update existing entity page
@@ -464,8 +469,14 @@ confidence: {confidence}
     if propagated:
         logger.info(f"  → Propagated to {propagated} entity pages")
 
-    # 11. Keep raw file so Obsidian can follow [[raw/...]] links
-    #     (raw_path.unlink() was removed to preserve clickable source references)
+    # 11. Move raw file to raw/archive/ so raw/ stays clean but sources stay clickable
+    try:
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        raw_archive_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(raw_path), str(raw_archive_path))
+        logger.info(f"  → Archived raw file to {raw_archive_path.relative_to(vault_root)}")
+    except Exception as e:
+        logger.warning(f"Could not archive raw file {raw_path}: {e}")
 
     return True, {
         "action": action,
