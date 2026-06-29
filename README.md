@@ -448,3 +448,13 @@ Phase A 從 Render webhook 移至 Mac Mini 每小時 launchd cron：
 **上次更新:** 2026-06-28
 **系統狀態:** ✅ Phase A+B+6 Stable — Render webhook + Mac Mini cron + Phase 6 canonical entities + query interface + sanity check
 **下次評審:** 2026-07-28
+
+## Planning Documents
+
+Future architecture and migration planning are maintained under the `planning/` directory.
+
+Current planning documents:
+
+- `planning/2026-Cloudflare-Migration.md`
+
+These documents are design proposals and may not reflect the current implementation.
