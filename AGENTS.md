@@ -72,38 +72,42 @@ python -m personalkm.llm.usage report         # show today's token spend per pro
 
 ## Deployment
 
+> Hard rule 6 overrides steps 2-3 below: commit and push to your **current working branch**, never directly to `main`. Merging into `main` (step 4) is a separate, deliberate action, not something that happens on every commit.
+
 After completing code or configuration changes in this repository:
 
 1. Run the relevant tests or checks for the changed area.
-2. Commit the finished changes on `main`.
-3. Push to `origin main`.
-4. Confirm the Render service is live by checking:
+2. Commit the finished changes on your current working branch.
+3. Push to `origin <current-branch>`.
+4. When ready to ship, merge the branch into `main` — if it's a clean fast-forward (no divergence), `git push origin <branch>:main` does this as a single server-side ref update without needing to check out `main` locally. Otherwise do a real merge on `main` and push that.
+5. Confirm the Render service is live by checking:
 
    `https://personal-km-line-bot.onrender.com/health`
 
-The Render web service is configured with `autoDeploy: true`, so pushing to `main` triggers deployment automatically.
+The Render web service is configured with `autoDeploy: true`, so pushing to `main` triggers deployment automatically — this happens at step 4, not at every branch commit.
 
-If the push is rejected because remote `main` contains new bot-generated note commits, run `git pull --rebase origin main`, rerun relevant tests, then push again.
+If step 4's push to `main` is rejected because remote `main` contains new bot-generated note commits, re-fetch, re-verify the fast-forward is still clean (or merge), rerun relevant tests, then push again.
 
 ## End-of-Day Trigger
 
 When the user says `call it a day` (or similar), run the end-of-day wrap-up workflow **before closing**. **Updating all project-related documents is a mandatory part of day-end closing — do not skip it.**
 
-1. **Sync both repos** with `origin/main`:
+> Hard rule 6 overrides the branch target below: end-of-day docs get committed and pushed to your **current working branch**, never directly to `main`. Merging that branch into `main` (see Deployment step 4) is a separate, deliberate action — not a routine part of closing out a day.
+
+1. **Sync the current branch**, and the vault worker separately (it tracks `main`, not your feature branch):
    ```bash
-   cd ~/Documents/PersonalKM && git pull --rebase origin main
+   cd ~/Documents/PersonalKM && git pull --rebase origin <current-branch>
    cd ~/.personalkm/PersonalKM-worker && git pull --rebase origin main
    ```
 2. **Update all project docs** that changed during the session (mandatory):
    - `CHANGELOG.md` — add `## YYYY-MM-DD` entry with all meaningful changes (features, fixes, bugs, architecture)
    - `README.md` — update `Last Updated:` date; add brief note if a major feature or bug fix landed
    - `DESIGN.md` — update `最後更新:` date if architecture or flow changed
-   - `DOCS-INVENTORY.md` — update `更新日期:` if doc structure changed
-   - Any other doc that is now inaccurate or stale
+   - Any other doc that is now inaccurate or stale (`DOCS-INVENTORY.md` was archived to `docs/archive/` on 2026-07-04 and is no longer actively maintained — do not resurrect it)
 3. **Run `git diff --check`** to catch trailing whitespace or merge conflicts.
 4. **Commit** with message: `docs: end-of-day wrap-up YYYY-MM-DD`
-5. **Push** to `origin main`.
-6. **Sync vault** (worker repo pulls the same commit).
-7. **Confirm** local `HEAD` matches `origin/main` in both repos and Render health endpoint is live.
+5. **Push** to `origin <current-branch>`.
+6. **Sync vault** — the worker repo only picks up these changes once your branch is merged into `main`; it does not need to run every day.
+7. **Confirm** local `HEAD` matches `origin/<current-branch>`. The Render health endpoint reflects `main` only, so it won't change until the branch is merged and deployed.
 
-> All docs live in the same GitHub repo as the vault. A single push updates both the source code repo and the knowledge vault simultaneously.
+> All docs live in the same GitHub repo as the vault. A single push to `main` (once merged) updates both the source code repo and the knowledge vault simultaneously.
