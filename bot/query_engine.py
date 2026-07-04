@@ -29,12 +29,12 @@ from typing import Optional
 
 try:
     from bot.entity_dedup import CANONICAL_ENTITIES, EntityRegistry, normalize_entity_name
-    from bot.llm_clients import get_llm_client, get_llm_info
+    from personalkm.llm.router import route
 except ImportError:
     # Allow running as script from repo root
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from bot.entity_dedup import CANONICAL_ENTITIES, EntityRegistry, normalize_entity_name
-    from bot.llm_clients import get_llm_client, get_llm_info
+    from personalkm.llm.router import route
 
 
 logger = logging.getLogger(__name__)
@@ -237,25 +237,17 @@ def answer_with_llm(
     query: str,
     context: str,
     wiki_path: Path,
-    client=None,
 ) -> dict:
     """
-    Send query + context to LLM and return structured answer.
+    Send query + context to the LLM router and return a structured answer.
 
-    Returns dict with keys: answer, sources, matched_pages (or error).
+    Returns dict with keys: answer, sources, matched_pages.
+
+    Raises LLMError (from personalkm.llm.router.route) when every candidate
+    model for the "query_answer" stage is exhausted. Callers must NOT catch
+    this and silently degrade — AGENTS.md rule 3 forbids skip_llm fallbacks;
+    let it propagate so the failure is visible.
     """
-    if client is None:
-        client = get_llm_client()
-    info = get_llm_info()
-
-    if not client.is_available():
-        return {
-            "answer": None,
-            "error": "No LLM client available (set MINIMAX_API_KEY or OPENAI_API_KEY)",
-            "sources": [],
-            "matched_pages": 0,
-        }
-
     prompt = f"""You are a personal knowledge base assistant. Given wiki pages from the user's vault, answer their question. Use [[wikilink]] notation to cite sources. If the context doesn't contain enough information, say so.
 
 Context (wiki pages sorted by relevance):
@@ -265,21 +257,8 @@ Question: {query}
 
 Answer (cite sources with [[wikilink]], e.g. [[hermes-agent]]):"""
 
-    try:
-        response = client.chat_completions_create(
-            model=info.default_model,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1024,
-            temperature=0.3,
-        )
-        answer_text = response["choices"][0]["message"]["content"].strip()
-    except Exception as e:
-        return {
-            "answer": None,
-            "error": f"LLM call failed: {e}",
-            "sources": [],
-            "matched_pages": 0,
-        }
+    completion = route("query_answer", prompt)
+    answer_text = completion.text.strip()
 
     # Extract [[wikilinks]] from the answer for source tracking
     cited = list(set(_extract_wikilinks(answer_text)))
@@ -297,7 +276,6 @@ def query_wiki(
     vault_root: Path,
     top_k: int = 10,
     use_llm: bool = True,
-    client=None,
 ) -> dict:
     """
     Full query pipeline: search → (optional LLM) → result.
@@ -340,7 +318,7 @@ def query_wiki(
 
     if use_llm and results:
         context = build_llm_context(results)
-        llm_result = answer_with_llm(query, context, wiki_path, client=client)
+        llm_result = answer_with_llm(query, context, wiki_path)
         output["llm_used"] = True
         if llm_result["error"]:
             output["error"] = llm_result["error"]

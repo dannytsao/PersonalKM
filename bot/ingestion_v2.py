@@ -6,7 +6,7 @@ Integrated pipeline: Phase 1 (MiniMax) + Phase 2 (Summarization) + Phase 3 (Dedu
 Data flow:
     raw/*.md → ingest_raw_to_wiki()
         ├── ContentQualityChecker (filter low-quality)
-        ├── summarize_content() (LLM: topic + tags + summary)
+        ├── _synthesize_wiki_note() (personalkm.llm.router.route: topic + tags + summary)
         ├── detect_entity_mentions() (Phase 2: extract entity names)
         ├── EntityRegistry.find_entity_match() (Phase 3: dedup check)
         ├── distill_to_markdown() (Phase 2: wiki format)
@@ -31,9 +31,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import yaml
 
 from bot.entity_dedup import EntityRegistry, normalize_entity_name, canonical_slug_from_name
-from bot.llm_clients import get_llm_client, get_llm_info
-from bot.llm_summarizer import summarize_content, distill_to_markdown, detect_entity_mentions, _strip_frontmatter
+from bot.llm_summarizer import distill_to_markdown, detect_entity_mentions, _strip_frontmatter
 from bot.wikilinks import WikilinkManager
+from personalkm.llm.router import route
 
 logger = logging.getLogger(__name__)
 
@@ -235,14 +235,124 @@ def _classify_page_type(body: str) -> str:
 
 
 # ─────────────────────────────────────────────────────────────
+# LLM Prompts (router-backed: personalkm.llm.router.route)
+# ─────────────────────────────────────────────────────────────
+# Split across two router stages per config/models.yaml so cheap structured
+# classification runs on a local/cheap model while the quality-critical
+# prose synthesis runs on the primary model:
+#   entity_extraction — topic / tags / entities / related concepts (JSON)
+#   ingest_synthesis  — summary / key facts (JSON)
+
+_EXTRACTION_SYSTEM_PROMPT = """You are an entity and tag classifier for a personal wiki.
+
+RULES:
+- Classify the PRIMARY topic from these 5 options ONLY:
+  AI-Agent-&-Tools | Automation-Workflows | PKM-&-System-Design | Tech-Trends-&-Insights | Personal-Interests
+- tags: cross-topic attributes (tools, techniques, technologies, years, action
+  states, e.g. docker, claude, llm, 2025, to-read) — never a second topic label.
+  0 tags is fine if nothing cross-topic applies.
+- Use English, lowercase-hyphenated entity/concept names.
+- OUTPUT JSON ONLY — no markdown code fences, no explanations."""
+
+_EXTRACTION_ENTITY_PROMPT = """Classify this entity note.
+
+CONTENT:
+{content}
+
+Respond ONLY with this JSON (no markdown, no code fences):
+{{
+  "topic": "AI-Agent-&-Tools | Automation-Workflows | PKM-&-System-Design | Tech-Trends-&-Insights | Personal-Interests",
+  "entities_mentioned": ["entity-name-1", "entity-name-2"],
+  "related_concepts": ["concept-name-1"],
+  "tags": ["relevant", "cross-topic", "tags"]
+}}"""
+
+_EXTRACTION_CONCEPT_PROMPT = """Classify this concept/guide note.
+
+CONTENT:
+{content}
+
+Respond ONLY with this JSON (no markdown, no code fences):
+{{
+  "topic": "AI-Agent-&-Tools | Automation-Workflows | PKM-&-System-Design | Tech-Trends-&-Insights | Personal-Interests",
+  "prerequisites": ["prereq-concept-1"],
+  "related_tools": ["tool-name-1"],
+  "tags": ["relevant", "cross-topic", "tags"]
+}}"""
+
+_SYNTHESIS_SYSTEM_PROMPT = """You are a knowledge curator for a personal wiki.
+Your task is to distill raw notes into a concise, structured wiki summary.
+
+RULES:
+- Extract key facts only — no fluff, no repetition
+- Use English for entity names (e.g., "Claude Code" not "克勞德代碼")
+- Keep summaries to 3-5 sentences max
+- Key facts should be specific (versions, commands, configurations — not generic)
+- OUTPUT JSON ONLY — no markdown code fences, no explanations."""
+
+_SYNTHESIS_USER_PROMPT = """Distill this {page_type} note into a wiki entry.
+
+SOURCE FILE: {source_path}
+
+CONTENT:
+{content}
+
+Respond ONLY with this JSON (no markdown, no code fences):
+{{
+  "summary": "3-5 sentence summary in English",
+  "key_facts": [
+    "{{fact 1 — specific and concrete}}",
+    "{{fact 2 — specific and concrete}}",
+    "{{fact 3}}"
+  ],
+  "confidence": "high|medium|low"
+}}"""
+
+# API token limit — matches the previous llm_summarizer truncation.
+_MAX_CONTENT_CHARS = 8000
+
+
+def _synthesize_wiki_note(body: str, *, page_type: str, source_path: str) -> Dict[str, Any]:
+    """Synthesize a wiki note via the LLM router (two cost-tiered stages).
+
+    No skip_llm fallback: if every candidate model for a stage is exhausted,
+    `route()` raises LLMError and it propagates unchanged (AGENTS.md rule 3 /
+    MIGRATION.md step 3) — the raw note stays pending and is retried next run.
+    """
+    content = body[:_MAX_CONTENT_CHARS]
+
+    extraction_prompt = (
+        _EXTRACTION_ENTITY_PROMPT if page_type == "entity" else _EXTRACTION_CONCEPT_PROMPT
+    ).format(content=content)
+    extraction = route(
+        "entity_extraction", extraction_prompt,
+        system=_EXTRACTION_SYSTEM_PROMPT, expect_json=True,
+    )
+
+    synthesis_prompt = _SYNTHESIS_USER_PROMPT.format(
+        page_type=page_type, source_path=source_path, content=content,
+    )
+    synthesis = route(
+        "ingest_synthesis", synthesis_prompt,
+        system=_SYNTHESIS_SYSTEM_PROMPT, expect_json=True,
+    )
+
+    result: Dict[str, Any] = {}
+    result.update(extraction if isinstance(extraction, dict) else {})
+    result.update(synthesis if isinstance(synthesis, dict) else {})
+    result.setdefault("tags", [])
+    result.setdefault("confidence", "medium")
+    result["raw_content"] = content
+    return result
+
+
+# ─────────────────────────────────────────────────────────────
 # Core Ingestion Step
 # ─────────────────────────────────────────────────────────────
 
 def ingest_file_v2(
     raw_path: Path,
     wiki_path: Path,
-    *,
-    skip_llm: bool = False,
 ) -> Tuple[bool, Dict[str, Any]]:
     """
     Process a single raw file through the v2 pipeline.
@@ -270,32 +380,17 @@ def ingest_file_v2(
     # 4. Classify page_type BEFORE summarization (drives prompt template)
     #    Heuristic: how-to/process content → concept, named tools/companies → entity
     page_type = _classify_page_type(body)
-    if skip_llm:
-        summary_result = None
-    else:
-        summary_result = summarize_content(body, page_type=page_type)
 
-    # 5. Distill to wiki markdown
-    if summary_result:
-        distilled = distill_to_markdown(summary_result, page_type=page_type)
-        topic = summary_result.get("topic", "Tech-Trends-&-Insights")
-        tags = summary_result.get("tags", [])
-        confidence = summary_result.get("confidence", "medium")
-    else:
-        # Fallback: use first paragraph
-        paras = [p.strip() for p in body.split("\n\n") if p.strip()]
-        summary_text = paras[0] if paras else body[:500]
-        distilled = f"## Summary\n\n{summary_text}\n"
-        topic = "Tech-Trends-&-Insights"
-        # When LLM is unavailable, we can't distill cross-topic tags. Stamp
-        # the page with `needs-llm-reprocess` so the next batch knows to
-        # re-summarize, plus the canonical slug (if matched) for graph
-        # connectivity. Never empty — keeps query/sanity checks happy.
-        fallback_tags = ["needs-llm-reprocess"]
-        if canonical_slug_from_name(extract_title(raw_path, content)) is not None:
-            fallback_tags.append(canonical_slug_from_name(extract_title(raw_path, content)))
-        tags = fallback_tags
-        confidence = "low"
+    # 5. Synthesize wiki note + extract entities/tags via the LLM router.
+    #    Raises LLMError if every candidate model is exhausted — this is
+    #    intentional and must propagate (no skip_llm fallback, AGENTS.md rule 3).
+    summary_result = _synthesize_wiki_note(
+        body, page_type=page_type, source_path=str(raw_path)
+    )
+    distilled = distill_to_markdown(summary_result, page_type=page_type)
+    topic = summary_result.get("topic", "Tech-Trends-&-Insights")
+    tags = summary_result.get("tags", [])
+    confidence = summary_result.get("confidence", "medium")
 
     # 6. Build title
     title = extract_title(raw_path, content)
@@ -575,13 +670,6 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
             "processed": 0,
         }
 
-    # Check LLM availability
-    llm_client = get_llm_client()
-    llm_info = get_llm_info()
-    skip_llm = llm_info.provider == "none"
-
-    logger.info(f"LLM provider: {llm_info.provider} | Model: {llm_info.default_model} | Skip-LLM: {skip_llm}")
-
     # Scan raw files
     raw_files = sorted(raw_path.glob("**/*.md"))
     logger.info(f"Found {len(raw_files)} files in raw/")
@@ -612,7 +700,7 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
             results.append({"file": str(rel_path), "status": "trashed", "reason": reason})
             continue
 
-        success, result = ingest_file_v2(raw_file, wiki_path, skip_llm=skip_llm)
+        success, result = ingest_file_v2(raw_file, wiki_path)
         if success:
             processed += 1
         else:
@@ -653,9 +741,6 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
         "trashed": trashed,
         "total": len(raw_files),
         "results": results,
-        "llm_provider": llm_info.provider,
-        "llm_model": llm_info.default_model,
-        "skip_llm": skip_llm,
         "broken_wikilinks": total_broken,
         "health_check": health_report,
         "stubs_auto_promoted": stubs_promoted,
