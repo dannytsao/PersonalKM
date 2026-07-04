@@ -8,3 +8,4 @@ __pycache__/
 .agent/
 # runtime state (LLM token accounting)
 .runtime/
+.DS_Store
