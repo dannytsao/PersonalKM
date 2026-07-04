@@ -1,6 +1,6 @@
 # PersonalKM — 知識管理系統設計文檔
 
-> 最後更新：2026-06-28
+> 最後更新：2026-07-04 — LLM 呼叫已改由 `personalkm.llm.router` 統一路由（詳見 CHANGELOG.md 2026-07-04 與 MIGRATION.md Step 3），本文件的流程圖對外行為不變。
 
 ---
 

@@ -2,6 +2,24 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
+## 2026-07-04
+
+### Added
+
+- **LLM router wiring (MIGRATION.md Step 3)**: `bot/ingestion_v2.py`, `scripts/ingestion_job.py`, `bot/query_engine.py` now call `personalkm.llm.router.route()` for all LLM calls instead of `bot/llm_clients.py`. Synthesis and entity/tag extraction in `ingestion_v2.py` are split into two router stages (`ingest_synthesis`, `entity_extraction`) matching `config/models.yaml`'s cost tiering. Query answers use the `query_answer` stage.
+- **No more silent LLM fallback**: removed all `skip_llm` degraded-output paths (AGENTS.md rule 3) — `LLMError` now propagates from every call site so a failed raw note stays pending and is retried, instead of producing a low-confidence stub page.
+- **SPEC.md** — "PersonalKM — 功能規格文件": functional spec covering the full capture flow and not-yet-implemented features.
+- **CHECKLIST.md** — "Karpathy LLM Wiki 入口完成檢查表": 29-item completion checklist gating progress to the Distillation Loop.
+
+### Changed
+
+- Archived 13 stale root-level completion reports/status docs into `docs/archive/` (`SESSION-SUMMARY-2026-06-13.md`, `FINAL-STATUS-2026-06-13.txt`, `IMPLEMENTATION-SUMMARY.txt`, `DECAY-SYSTEM-COMPLETE.txt`, `HERMES-COMPLETE.txt`, `DEPLOYMENT-COMPLETE.md`/`.txt`, `RUNNING-LOGS-AND-RETRY.md`, `INGESTION-IMPROVEMENTS.md`, `QUALITY-FILTERING.md`, `PROJECT-DOCUMENTATION-PROCESS.md`, `DOCS-INVENTORY.md`, `LINE Bot + Obsidian 連結整理系統：需求與實施結論.md`) via `git mv` (history preserved).
+- Fast-forwarded `origin/main` from `f4bcc15` to `ced0447` to catch up with `restructure/phase-1-scaffold`'s scaffold + router work; untracked `.DS_Store` from git on `main` in a follow-up commit.
+
+### Housekeeping
+
+- Identified two additional local clones of this repo (`~/Documents/Github/PersonalKM` on `main`, now current; `~/Documents/GitHub/DannyTsao/PersonalKM`, stale since 2026-06-08) — neither is referenced by any documented workflow in `AGENTS.md`.
+
 ## 2026-06-28
 
 ### Added
