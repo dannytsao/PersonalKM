@@ -2,7 +2,7 @@
 name = "personalkm"
 version = "0.2.0"
 description = "Personal KM pipeline: LINE capture -> resolve -> LLM synthesis -> wiki"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 dependencies = [
   "pyyaml>=6.0",
   "fastapi>=0.110",

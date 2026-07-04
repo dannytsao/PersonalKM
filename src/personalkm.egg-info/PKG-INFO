@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: personalkm
+Version: 0.2.0
+Summary: Personal KM pipeline: LINE capture -> resolve -> LLM synthesis -> wiki
+Requires-Python: >=3.9
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: fastapi>=0.110
+Requires-Dist: uvicorn>=0.29
+Provides-Extra: llm
+Requires-Dist: anthropic>=0.40; extra == "llm"
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: ruff>=0.4; extra == "dev"

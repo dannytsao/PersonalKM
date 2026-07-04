@@ -1,0 +1,10 @@
+pyyaml>=6.0
+fastapi>=0.110
+uvicorn>=0.29
+
+[dev]
+pytest>=8.0
+ruff>=0.4
+
+[llm]
+anthropic>=0.40
