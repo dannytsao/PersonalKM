@@ -1,0 +1,59 @@
+# Per-stage LLM routing. This is the ONLY file where model names may appear.
+# Router behavior: primary -> (over budget or failed max_retries) -> fallback
+# chain -> LLMError. Usage recorded to .runtime/llm_usage.json; budgets reset
+# daily, so an exhausted provider comes back automatically the next day.
+#
+# Providers below match the current PersonalKM stack
+# (bot/llm_clients.py: MiniMax primary, OpenAI fallback; Ollama on Mac Mini).
+
+providers:
+  minimax:
+    kind: openai_compat
+    base_url: https://api.minimax.io/v1
+    api_key_env: MINIMAX_API_KEY
+  openai:
+    kind: openai_compat            # base_url omitted => api.openai.com
+    api_key_env: OPENAI_API_KEY
+  ollama:
+    kind: ollama
+    base_url: http://localhost:11434
+  claude:
+    kind: anthropic                # enable by setting ANTHROPIC_API_KEY
+    api_key_env: ANTHROPIC_API_KEY
+
+# Daily token budgets (input+output). TODO: adjust to your real plan quotas.
+budgets:
+  minimax: { daily_tokens: 500000 }
+  openai:  { daily_tokens: 200000 }
+  claude:  { daily_tokens: 300000 }
+  ollama:  { daily_tokens: unlimited }
+
+defaults:
+  max_retries: 2
+  timeout_s: 120
+
+stages:
+  # Phase A: full wiki note synthesis (quality-critical)
+  ingest_synthesis:
+    primary:  minimax/MiniMax-M3
+    fallback: [openai/gpt-4.1-mini, ollama/qwen3:8b]
+    max_output_tokens: 2000
+
+  # Cheap structured extraction: entities, tags, classification
+  entity_extraction:
+    primary:  ollama/qwen3:8b
+    fallback: [minimax/MiniMax-M2.7-highspeed]
+    max_output_tokens: 800
+    json_only: true
+
+  # Phase B / Phase 6: wikilink + entity page updates
+  propagation_distill:
+    primary:  ollama/qwen3:8b
+    fallback: [minimax/MiniMax-M2.7-highspeed]
+    max_output_tokens: 1200
+
+  # Query engine answers (LINE 我問)
+  query_answer:
+    primary:  minimax/MiniMax-M2.7-highspeed
+    fallback: [ollama/qwen3:8b]
+    max_output_tokens: 1500

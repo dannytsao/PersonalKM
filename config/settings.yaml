@@ -1,0 +1,18 @@
+# Non-secret runtime settings. Secrets go in environment variables only.
+
+vault:
+  # Local clone of the PRIVATE content repo. Code repo contains no content.
+  path: ~/.personalkm/personalkm-vault   # after MIGRATION.md Step 1; until then this repo root
+  raw_dir: raw
+  wiki_dir: wiki
+  registry: wiki/_registry/entities.yaml
+
+pipeline:
+  hourly_batch_limit: 20        # max raw notes per Phase A run
+  fetch_max_retries: 3          # resolver retries before status=failed_final
+  stub_on_auth_required: true   # create stub wiki page for unfetchable links
+
+alerts:
+  # Pipeline failures push a LINE message to yourself (uses same channel as bot)
+  line_notify_on_failure: true
+  heartbeat_max_silence_hours: 24
