@@ -36,24 +36,24 @@ stages:
   # Phase A: full wiki note synthesis (quality-critical)
   ingest_synthesis:
     primary:  minimax/MiniMax-M3
-    fallback: [openai/gpt-4.1-mini, ollama/qwen3:8b]
+    fallback: [openai/gpt-4.1-mini, ollama/qwen2.5:latest]
     max_output_tokens: 2000
 
   # Cheap structured extraction: entities, tags, classification
   entity_extraction:
-    primary:  ollama/qwen3:8b
+    primary:  ollama/qwen2.5:latest
     fallback: [minimax/MiniMax-M2.7-highspeed]
     max_output_tokens: 800
     json_only: true
 
   # Phase B / Phase 6: wikilink + entity page updates
   propagation_distill:
-    primary:  ollama/qwen3:8b
+    primary:  ollama/qwen2.5:latest
     fallback: [minimax/MiniMax-M2.7-highspeed]
     max_output_tokens: 1200
 
   # Query engine answers (LINE 我問)
   query_answer:
     primary:  minimax/MiniMax-M2.7-highspeed
-    fallback: [ollama/qwen3:8b]
+    fallback: [ollama/qwen2.5:latest]
     max_output_tokens: 1500
