@@ -40,7 +40,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("phase6")
 
-VAULT_ROOT = Path(os.getenv("VAULT_PATH", str(Path.home() / ".personalkm/personalkm-vault")))
+VAULT_ROOT = Path(os.getenv("VAULT_PATH", str(Path.home() / "Documents/PersonalKM/Personalkm-vault")))
 
 sys.path.insert(0, str(Path(__file__).parent.parent.resolve()))
 

@@ -2,7 +2,7 @@
 
 vault:
   # Local clone of the PRIVATE content repo. Code repo contains no content.
-  path: ~/.personalkm/personalkm-vault   # after MIGRATION.md Step 1; until then this repo root
+  path: ~/Documents/PersonalKM/Personalkm-vault
   raw_dir: raw
   wiki_dir: wiki
   registry: wiki/_registry/entities.yaml
