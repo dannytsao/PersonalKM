@@ -649,10 +649,15 @@ confidence: {confidence}
 # Batch Ingestion
 # ─────────────────────────────────────────────────────────────
 
-def ingest_raw_to_wiki(vault_path: Path) -> dict:
+def ingest_raw_to_wiki(vault_path: Path, max_files: Optional[int] = None) -> dict:
     """
     Main v2 ingestion: process all files in vault_path/raw/
-    
+
+    Args:
+        vault_path: root of the vault (contains raw/ and wiki/)
+        max_files: if set and > 0, only process the first N raw files
+                   (deterministic, sorted by path). None = process all.
+
     Returns:
         dict with keys: status, processed, failed, trashed, total,
                         results (list of per-file results),
@@ -672,7 +677,11 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
 
     # Scan raw files
     raw_files = sorted(raw_path.glob("**/*.md"))
-    logger.info(f"Found {len(raw_files)} files in raw/")
+    if max_files is not None and max_files > 0:
+        raw_files = raw_files[:max_files]
+        logger.info(f"Found {len(raw_files)} files in raw/ (limited to first {max_files})")
+    else:
+        logger.info(f"Found {len(raw_files)} files in raw/")
 
     processed = 0
     failed = 0
