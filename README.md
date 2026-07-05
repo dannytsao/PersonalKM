@@ -237,13 +237,13 @@ curl http://127.0.0.1:8000/health
 ### 手動觸發 Phase A
 
 ```bash
-cd ~/Documents/PersonalKM
+cd ~/Documents/GitHub/DannyTsao/PersonalKM
 python3 scripts/ingest_wiki.py --vault ~/.personalkm/personalkm-vault
 
 ### 手動觸發 Phase B
 
 ```bash
-cd ~/Documents/PersonalKM
+cd ~/Documents/GitHub/DannyTsao/PersonalKM
 python3 scripts/post_link_ollama.py --vault ~/.personalkm/personalkm-vault
 ```
 

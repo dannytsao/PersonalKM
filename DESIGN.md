@@ -215,7 +215,7 @@ trap 'rmdir "$LOCK_DIR"' EXIT
 
 ### 5. 兩個獨立的 Git Repo
 
-`~/Documents/PersonalKM`（開發/文件）和 `~/.personalkm/personalkm-vault`（vault）是不同的 repo。後者為 private repo `github.com/dannytsao/Personalkm-vault`。Phase A/B script 讀寫 vault repo，Render 和 Mac Mini 之間通過 GitHub 同步。
+`~/Documents/GitHub/DannyTsao/PersonalKM`（開發/文件）和 `~/.personalkm/personalkm-vault`（vault）是不同的 repo。後者為 private repo `github.com/dannytsao/Personalkm-vault`。Phase A/B script 讀寫 vault repo，Render 和 Mac Mini 之間通過 GitHub 同步。
 
 ### 6. 未知 `3b1e74e` Vault Backup
 
@@ -264,7 +264,7 @@ launchctl list | grep phase
 
 ```bash
 # 手動觸發 Phase A
-cd ~/Documents/PersonalKM
+cd ~/Documents/GitHub/DannyTsao/PersonalKM
 python3 scripts/ingest_wiki.py --vault ~/.personalkm/personalkm-vault
 
 # 重新 load Phase A cron
