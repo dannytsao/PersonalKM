@@ -7,7 +7,7 @@ PLIST_SOURCE="$REPO_ROOT/launchd/$LABEL.plist"
 PLIST_TARGET="$HOME/Library/LaunchAgents/$LABEL.plist"
 LOG_DIR="$HOME/Library/Logs/PersonalKM"
 APP_SUPPORT="$HOME/Library/Application Support/PersonalKM"
-WORKER_REPO="${PERSONALKM_WORKER_REPO:-$HOME/.personalkm/PersonalKM-worker}"
+WORKER_REPO="${PERSONALKM_WORKER_REPO:-$HOME/.personalkm/personalkm-vault}"
 ORIGIN_URL="$(git -C "$REPO_ROOT" remote get-url origin)"
 
 mkdir -p "$HOME/Library/LaunchAgents" "$LOG_DIR" "$APP_SUPPORT" "$(dirname "$WORKER_REPO")"

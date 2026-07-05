@@ -12,7 +12,7 @@
   </array>
 
   <key>WorkingDirectory</key>
-  <string>/Users/dannytsao/.personalkm/PersonalKM-worker</string>
+  <string>/Users/dannytsao/.personalkm/personalkm-vault</string>
 
   <key>RunAtLoad</key>
   <true/>
@@ -31,7 +31,7 @@
     <key>PATH</key>
     <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     <key>PERSONALKM_REPO_ROOT</key>
-    <string>/Users/dannytsao/.personalkm/PersonalKM-worker</string>
+    <string>/Users/dannytsao/.personalkm/personalkm-vault</string>
     <key>PERSONALKM_PYTHON</key>
     <string>/usr/bin/python3</string>
   </dict>

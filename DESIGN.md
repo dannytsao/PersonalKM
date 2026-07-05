@@ -215,7 +215,7 @@ trap 'rmdir "$LOCK_DIR"' EXIT
 
 ### 5. 兩個獨立的 Git Repo
 
-`~/Documents/PersonalKM`（開發/文件）和 `~/.personalkm/PersonalKM-worker`（vault）是不同的 repo，共享同一份 vault content on GitHub。Phase A script 讀寫 worker vault，Render 和 Mac Mini 之間通過 GitHub 同步。
+`~/Documents/PersonalKM`（開發/文件）和 `~/.personalkm/personalkm-vault`（vault）是不同的 repo。後者為 private repo `github.com/dannytsao/Personalkm-vault`。Phase A/B script 讀寫 vault repo，Render 和 Mac Mini 之間通過 GitHub 同步。
 
 ### 6. 未知 `3b1e74e` Vault Backup
 
@@ -244,7 +244,7 @@ launchctl list | grep phase
 1. 檢查 `~/Library/Logs/PersonalKM/phase-a.out.log` 有無錯誤
 2. 確認 `scripts/ingest_wiki.py` 在 `sys.path` 中（`repo_root` 解析）
 3. 確認 vault 有未處理的 raw 檔案：`ls vault/raw/`
-4. 手動執行：`python3 scripts/ingest_wiki.py --vault ~/.personalkm/PersonalKM-worker`
+4. 手動執行：`python3 scripts/ingest_wiki.py --vault ~/.personalkm/personalkm-vault`
 
 ### Phase B wikilinks 沒更新
 
@@ -265,7 +265,7 @@ launchctl list | grep phase
 ```bash
 # 手動觸發 Phase A
 cd ~/Documents/PersonalKM
-python3 scripts/ingest_wiki.py --vault ~/.personalkm/PersonalKM-worker
+python3 scripts/ingest_wiki.py --vault ~/.personalkm/personalkm-vault
 
 # 重新 load Phase A cron
 launchctl unload ~/Library/LaunchAgents/com.dannytsao.personalkm.phase-a-ingest.plist
@@ -276,6 +276,6 @@ cat ~/Library/Logs/PersonalKM/phase-a.out.log
 cat ~/Library/Logs/PersonalKM/phase-a.err.log
 
 # GitHub 上的 vault 最新狀態
-cd ~/.personalkm/PersonalKM-worker
+cd ~/.personalkm/personalkm-vault
 git fetch origin && git log origin/main --oneline -5
 ```

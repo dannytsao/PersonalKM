@@ -32,7 +32,7 @@ from typing import Optional
 # Setup
 # ─────────────────────────────────────────────────────────────
 
-VAULT_ROOT = Path(os.getenv("VAULT_PATH", str(Path.home() / ".personalkm/PersonalKM-worker")))
+VAULT_ROOT = Path(os.getenv("VAULT_PATH", str(Path.home() / ".personalkm/personalkm-vault")))
 
 logging.basicConfig(
     level=logging.INFO,
