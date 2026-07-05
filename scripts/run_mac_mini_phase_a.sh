@@ -3,7 +3,7 @@ set -euo pipefail
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
-REPO_ROOT="${PERSONALKM_REPO_ROOT:-$HOME/.personalkm/PersonalKM-worker}"
+REPO_ROOT="${PERSONALKM_REPO_ROOT:-$HOME/.personalkm/personalkm-vault}"
 LOG_DIR="${PERSONALKM_WORKER_LOG_DIR:-$HOME/Library/Logs/PersonalKM}"
 # Fixed path — does NOT depend on TMPDIR (launchd unsets ALL env vars including TMPDIR)
 LOCK_DIR="${PERSONALKM_LOCK_DIR:-$HOME/Library/Application Support/PersonalKM/phase-a.lock}"

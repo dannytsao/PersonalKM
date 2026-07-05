@@ -97,7 +97,7 @@ When the user says `call it a day` (or similar), run the end-of-day wrap-up work
 1. **Sync the current branch**, and the vault worker separately (it tracks `main`, not your feature branch):
    ```bash
    cd ~/Documents/PersonalKM && git pull --rebase origin <current-branch>
-   cd ~/.personalkm/PersonalKM-worker && git pull --rebase origin main
+   cd ~/.personalkm/personalkm-vault && git pull --rebase origin main
    ```
 2. **Update all project docs** that changed during the session (mandatory):
    - `CHANGELOG.md` — add `## YYYY-MM-DD` entry with all meaningful changes (features, fixes, bugs, architecture)

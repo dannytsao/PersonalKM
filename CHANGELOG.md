@@ -2,6 +2,12 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
+## 2026-07-05
+
+### Changed
+
+- **Vault split (MIGRATION.md Step 1)**: Content paths (`raw/ wiki/ Attachments/ Trash/ .obsidian/`) moved to new private repo `github.com/dannytsao/Personalkm-vault`. Code repo history rewritten via `git-filter-repo` (force push). All path references updated (9 shell scripts, 3 Python scripts, 3 launchd plists, Render env vars). Mac Mini launchd reloaded. Full backup created (`pkm-code-backup.bundle` + `pkm-worker-backup`).
+
 ## 2026-07-04
 
 ### Added
