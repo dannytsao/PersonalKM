@@ -23,7 +23,7 @@ updates entity pages. Philosophy: 我存，AI 整理，我問.
 ## Hard rules (guardrails)
 
 1. **Never touch the vault.** Knowledge content lives in a separate private
-   repo (`personalkm-vault`), whose local path comes from
+   repo (`Personalkm-vault`), whose local path comes from
    `config/settings.yaml`. Agents must never create, edit, or delete files
    under the vault path. Tests use `tests/fixtures/` instead.
 2. **No provider names outside `src/personalkm/llm/` and `config/models.yaml`.**
@@ -96,8 +96,8 @@ When the user says `call it a day` (or similar), run the end-of-day wrap-up work
 
 1. **Sync the current branch**, and the vault worker separately (it tracks `main`, not your feature branch):
    ```bash
-   cd ~/Documents/PersonalKM && git pull --rebase origin <current-branch>
-   cd ~/.personalkm/personalkm-vault && git pull --rebase origin main
+   cd ~/Documents/GitHub/DannyTsao/PersonalKM && git pull --rebase origin <current-branch>
+   cd ~/Documents/PersonalKM/Personalkm-vault && git pull --rebase origin main
    ```
 2. **Update all project docs** that changed during the session (mandatory):
    - `CHANGELOG.md` — add `## YYYY-MM-DD` entry with all meaningful changes (features, fixes, bugs, architecture)

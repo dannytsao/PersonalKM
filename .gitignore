@@ -9,3 +9,5 @@ __pycache__/
 # runtime state (LLM token accounting)
 .runtime/
 .DS_Store
+# Obsidian vault config (lives in vault repo, not code repo)
+.obsidian/

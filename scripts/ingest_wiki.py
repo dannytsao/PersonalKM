@@ -32,7 +32,7 @@ from typing import Optional
 # Setup
 # ─────────────────────────────────────────────────────────────
 
-VAULT_ROOT = Path(os.getenv("VAULT_PATH", str(Path.home() / ".personalkm/personalkm-vault")))
+VAULT_ROOT = Path(os.getenv("VAULT_PATH", str(Path.home() / "Documents/PersonalKM/Personalkm-vault")))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -86,15 +86,32 @@ def _commit_and_push_wiki(vault_path: Path) -> None:
 # Main Phase A logic
 # ─────────────────────────────────────────────────────────────
 
-def run_phase_a(vault_path: Path) -> dict:
+def run_phase_a(vault_path: Path, max_files: Optional[int] = None, dry_run: bool = False) -> dict:
     """
     Pull latest from GitHub, run ingest_raw_to_wiki, push wiki/ changes.
+
+    Args:
+        vault_path: root of the vault
+        max_files: if set and > 0, only process the first N raw files
+        dry_run: if True, list what would be processed and exit without
+                 calling the LLM, writing files, or pushing.
     Returns a result dict.
     """
     # Add repo root to sys.path so 'bot' package is importable
     repo_root = Path(__file__).parent.parent.resolve()
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
+
+    # Dry run: just enumerate the raw files that would be processed.
+    if dry_run:
+        raw_files = sorted((vault_path / "raw").glob("**/*.md"))
+        if max_files is not None and max_files > 0:
+            raw_files = raw_files[:max_files]
+        logger.info(f"DRY RUN: would process {len(raw_files)} raw file(s):")
+        for f in raw_files:
+            logger.info(f"  - {f.relative_to(vault_path)}")
+        return {"status": "dry_run", "would_process": len(raw_files),
+                "files": [str(f.relative_to(vault_path)) for f in raw_files]}
 
     # Pull latest so we have all raw files that Render/Render cron pushed
     try:
@@ -105,7 +122,7 @@ def run_phase_a(vault_path: Path) -> dict:
 
     # Run ingestion
     from bot.ingestion_v2 import ingest_raw_to_wiki
-    result = ingest_raw_to_wiki(vault_path)
+    result = ingest_raw_to_wiki(vault_path, max_files=max_files)
 
     processed = result.get("processed", 0)
     failed = result.get("failed", 0)
@@ -143,5 +160,5 @@ if __name__ == "__main__":
         sys.exit(1)
 
     logger.info(f"Starting Phase A ingestion for vault: {vault_path}")
-    result = run_phase_a(vault_path)
+    result = run_phase_a(vault_path, max_files=args.limit or None, dry_run=args.dry_run)
     logger.info(f"Result: {result}")
