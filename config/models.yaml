@@ -57,3 +57,10 @@ stages:
     primary:  minimax/MiniMax-M2.7-highspeed
     fallback: [ollama/qwen2.5:latest]
     max_output_tokens: 1500
+
+  # Pre-ingestion raw note quality check (cheap — classification only)
+  raw_quality_check:
+    primary:  ollama/qwen2.5:latest
+    fallback: [minimax/MiniMax-M2.7-highspeed]
+    max_output_tokens: 600
+    json_only: true

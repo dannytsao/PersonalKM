@@ -34,6 +34,13 @@ try:
 except ImportError:
     from ingestion_health_check import IngestionHealthCheck
 
+# Import pre-ingestion raw note quality check
+try:
+    from personalkm.ingest.health_check import scan_raw_notes, print_summary as print_raw_summary
+except ImportError:
+    scan_raw_notes = None
+    print_raw_summary = None
+
 from tools.omnichannel_md.frontmatter import format_yaml_tags
 
 
@@ -319,7 +326,21 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
     try:
         raw_path = vault_path / "raw"
         wiki_path = vault_path / "wiki"
-        
+
+        # ── Pre-ingestion raw note quality check ──
+        result: dict = {"pre_health_check": None}
+        if scan_raw_notes is not None and print_raw_summary is not None:
+            running_log.step("RAW_CHECK", "Checking raw note quality before ingestion")
+            raw_report = scan_raw_notes(vault_path)
+            print_raw_summary(raw_report)
+            result["pre_health_check"] = raw_report
+            if raw_report.get("status") == "issues_found":
+                running_log.warning("RAW_CHECK", f"{raw_report.get('notes_with_issues', 0)} note(s) have quality issues — proceeding")
+            else:
+                running_log.success("RAW_CHECK", "All raw notes pass quality check")
+        else:
+            running_log.warning("RAW_CHECK", "Pre-ingestion health check module not available (personalkm package not installed)")
+
         running_log.step("CHECK", f"Checking raw/ folder: {raw_path}")
         if not raw_path.exists():
             running_log.error("CHECK", f"raw/ folder not found at {raw_path}")
@@ -416,6 +437,7 @@ def ingest_raw_to_wiki(vault_path: Path) -> dict:
             "index_updated": True,
             "log_updated": True,
             "log_file": str(running_log.get_path()),
+            "pre_health_check": result.get("pre_health_check"),
         }
         
         # Run health check after ingestion

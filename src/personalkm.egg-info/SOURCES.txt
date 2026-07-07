@@ -5,6 +5,9 @@ src/personalkm.egg-info/SOURCES.txt
 src/personalkm.egg-info/dependency_links.txt
 src/personalkm.egg-info/requires.txt
 src/personalkm.egg-info/top_level.txt
+src/personalkm/capture/__init__.py
+src/personalkm/ingest/__init__.py
+src/personalkm/ingest/health_check.py
 src/personalkm/llm/base.py
 src/personalkm/llm/claude.py
 src/personalkm/llm/gemini.py
@@ -12,6 +15,8 @@ src/personalkm/llm/ollama.py
 src/personalkm/llm/openai_compat.py
 src/personalkm/llm/router.py
 src/personalkm/llm/usage.py
+src/personalkm/propagate/__init__.py
+src/personalkm/query/__init__.py
 src/personalkm/resolve/status.py
 src/personalkm/resolve/adapters/base.py
 tests/test_app.py
