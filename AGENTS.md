@@ -102,7 +102,7 @@ When the user says `call it a day` (or similar), run the end-of-day wrap-up work
 2. **Update all project docs** that changed during the session (mandatory):
    - `CHANGELOG.md` — add `## YYYY-MM-DD` entry with all meaningful changes (features, fixes, bugs, architecture)
    - `README.md` — update `Last Updated:` date; add brief note if a major feature or bug fix landed
-   - `DESIGN.md` — update `最後更新:` date if architecture or flow changed
+   - `DESIGN.md` — update `最後更新:` date if architecture or flow changed. Also check the "術語對照" table at the top still maps its Phase A/B/Query terminology onto this file's current capture/resolve/ingest/propagate/query stage names — if a stage's target module or responsibilities changed here, update that table too, not just the date.
    - Any other doc that is now inaccurate or stale (`DOCS-INVENTORY.md` was archived to `docs/archive/` on 2026-07-04 and is no longer actively maintained — do not resurrect it)
 3. **Run `git diff --check`** to catch trailing whitespace or merge conflicts.
 4. **Commit** with message: `docs: end-of-day wrap-up YYYY-MM-DD`

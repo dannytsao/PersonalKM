@@ -38,6 +38,18 @@
 └──────────────────────────────────────────────────────────────┘
 ```
 
+**術語對照（本文件 vs. AGENTS.md）：** 本文件的 Phase A / Phase B 是 Mac Mini cron job 與腳本的既有命名（`phase-a-ingest`、`phase-b-wikilink` 等 launchd/檔名沿用至今，故不重新命名），對應 AGENTS.md 目前的 5 階段架構如下：
+
+| 本文件用語 | AGENTS.md 階段 | 對應目錄（遷移後） |
+|---|---|---|
+| （LINE webhook，見下方 RENDER 區塊） | Capture stage | `src/personalkm/capture/`（MIGRATION.md Step 5，尚未搬移） |
+| （未獨立描述，隱含於 webhook → save raw file） | Resolve stage | `src/personalkm/resolve/`（MIGRATION.md Step 4） |
+| Phase A | Ingest stage | `src/personalkm/ingest/` |
+| Phase B | Propagate stage | `src/personalkm/propagate/` |
+| Query Interface | Query stage | `src/personalkm/query/` |
+
+本文件寫成時尚未有 capture/resolve 的模組化拆分，因此下方章節只涵蓋 Phase A/B/Query 三者；capture 與 resolve 的權威說明請見 AGENTS.md。
+
 ---
 
 ## Phase A：LINE → Raw → Wiki Entities
