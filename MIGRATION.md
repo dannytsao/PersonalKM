@@ -69,7 +69,7 @@ Implementation order TBD with Danny.
 
 **不改變任何功能。** 在 Steps 1-4 都完成後，有時間和心力再做。
 
-1. `bot/` webhook code → `src/personalkm/capture/`
+1. `bot/` webhook code → `src/personalkm/capture/`. Preserve the `analyze_on_capture` hook that `bot/app.py::capture_urls()` calls into `bot/knowledge_decay.py` (see KNOWLEDGE-DECAY-GUIDE.md 架構) — it must still fire from wherever `capture_urls()` lands.
 2. `scripts/ingest_wiki.py` → split into `src/personalkm/ingest/` (+ `scripts/` thin entrypoints)
 3. Propagation logic → `src/personalkm/propagate/`
 4. Query engine → `src/personalkm/query/`
