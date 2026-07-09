@@ -11,3 +11,7 @@ __pycache__/
 .DS_Store
 # Obsidian vault config (lives in vault repo, not code repo)
 .obsidian/
+# graphify output: keep the graph + report, ignore local build state
+graphify-out/*
+!graphify-out/graph.json
+!graphify-out/GRAPH_REPORT.md
