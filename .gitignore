@@ -4,13 +4,12 @@ __pycache__/
 .pytest_cache/
 *.pyc
 .DS_Store
-# agent scratch space (dev isolation)
-.agent/
-# runtime state (LLM token accounting)
-.runtime/
-.DS_Store
 # Obsidian vault config (lives in vault repo, not code repo)
 .obsidian/
+# Agent runtime state
+.omo/
+.agent/
+.runtime/
 # graphify output: keep the graph + report, ignore local build state
 graphify-out/*
 !graphify-out/graph.json
