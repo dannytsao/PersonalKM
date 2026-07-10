@@ -2,6 +2,20 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
+## 2026-07-09
+
+### Added
+
+- **Resolver Layer — Day 1 (MIGRATION.md Step 4)**:
+  - `src/personalkm/resolve/url_extractor.py` — 3-tier URL extraction from raw notes (frontmatter → 原文連結 → 內含連結 → regex fallback), with `extract_all_urls()` for multi-link notes.
+  - `src/personalkm/resolve/adapters/github.py` — `GitHubAdapter` fetching repo README via `raw.githubusercontent.com`. Handles root, tree/<ref>, blob/<ref> URLs. 404 → `GoneError`, 403/429 → `AuthWallError`.
+  - Package `__init__.py` for `resolve/` and `resolve/adapters/` modules.
+- **`resolver/adapters` branch** — feature branch for the 5-day Resolver Layer plan.
+
+### Changed
+
+- `.gitignore` — cleaned up duplicates from merge conflict, added `.omo/` and missing patterns.
+
 ## 2026-07-05
 
 ### Changed
