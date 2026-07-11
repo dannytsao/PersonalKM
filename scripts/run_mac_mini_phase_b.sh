@@ -3,7 +3,7 @@ set -euo pipefail
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
-REPO_ROOT="${PERSONALKM_REPO_ROOT:-$HOME/Documents/PersonalKM/Personalkm-vault}"
+REPO_ROOT="${PERSONALKM_REPO_ROOT:-$HOME/Documents/GitHub/DannyTsao/PersonalKM}"
 LOG_DIR="${PERSONALKM_WORKER_LOG_DIR:-$HOME/Library/Logs/PersonalKM}"
 LOCK_DIR="${PERSONALKM_LOCK_DIR:-$HOME/Library/Application Support/PersonalKM/phase-b.lock}"
 PYTHON_BIN="${PERSONALKM_PYTHON:-/usr/bin/python3}"
