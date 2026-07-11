@@ -124,7 +124,7 @@ def run_phase_a(vault_path: Path, max_files: Optional[int] = None, dry_run: bool
     # Runs before ingest so LLM gets full article content, not just snippets.
     logger.info("🚀 Resolver: Fetching external content...")
     try:
-        from src.personalkm.resolve import resolve_raw_notes
+        from personalkm.resolve import resolve_raw_notes
 
         resolver_result = resolve_raw_notes(vault_path, max_files=max_files)
         resolver_status = resolver_result.get("status", "error")

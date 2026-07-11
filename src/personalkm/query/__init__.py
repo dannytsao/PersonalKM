@@ -1,1 +1,1 @@
-"""query — natural-language query engine."""
+"""Wiki query engine and search."""

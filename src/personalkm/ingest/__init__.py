@@ -1,1 +1,1 @@
-"""Pre-ingestion health check module."""
+"""Phase A: raw note → wiki entity ingestion."""

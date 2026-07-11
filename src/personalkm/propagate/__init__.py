@@ -1,1 +1,1 @@
-"""propagate — entity page updates (Phase B)."""
+"""Phase B: entity propagation, wikilinks, knowledge graph."""

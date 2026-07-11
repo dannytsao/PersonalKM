@@ -1,1 +1,1 @@
-"""capture — LINE Bot webhook and note ingestion entry points."""
+"""LINE capture webhook and note creation."""
