@@ -3,6 +3,9 @@
 Scans ``vault/raw/`` for notes with URLs, fetches actual content,
 and stores it in a ``resolved/`` mirror directory alongside ``raw/``.
 
+Also creates stub wiki pages for content that cannot be fetched
+(auth walls, dead links, or exhausted retries).
+
 Design (SPEC.md § 第二層 Resolve):
 
     vault/
@@ -16,6 +19,7 @@ with full context. Notes without resolvable URLs are skipped silently.
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -40,6 +44,55 @@ _ADAPTERS = [
     GenericAdapter(),  # catch-all — must be last
 ]
 
+# Frontmatter for stub wiki pages
+_STUB_TEMPLATE = """---
+title: {title}
+created: {date}
+updated: {date}
+stub: true
+source: {url}
+status: {status}
+---
+
+## {title}
+
+This page is a **stub** — the linked content could not be automatically fetched.
+
+**URL:** [{url}]({url})
+
+**Status:** {status_label}
+
+{note}
+
+---
+
+*This stub was automatically created by the Resolver. If you have access to the
+content, please edit this page with the relevant information.*
+"""
+
+_STUB_LABELS = {
+    "auth_required": "Authentication Required",
+    "dead": "Content No Longer Available",
+    "failed_final": "Content Fetch Failed (retries exhausted)",
+}
+
+_STUB_NOTES = {
+    "auth_required": (
+        "The website requires login or blocks automated access "
+        "(Instagram, Threads, paywalls, etc.). "
+        "If you can access the content, paste the key information here manually."
+    ),
+    "dead": (
+        "The URL returned a 404 or 410 response — the content no longer exists "
+        "at this address. The URL and your original note are preserved for reference."
+    ),
+    "failed_final": (
+        "The resolver exhausted all retries without successfully fetching the content. "
+        "This could be a temporary network issue or a persistent problem. "
+        "The URL and your original note are preserved for reference."
+    ),
+}
+
 
 def resolve_raw_notes(
     vault_path: Path,
@@ -52,10 +105,12 @@ def resolve_raw_notes(
         max_files: If set, only process the first N unresolved files.
 
     Returns:
-        dict with keys: total, resolved, skipped, errors
+        dict with keys: status, total, resolved, skipped, stubs, errors
     """
     raw_dir = vault_path / "raw"
     resolved_dir = vault_path / "resolved"
+    wiki_dir = vault_path / "wiki"
+    stubs_dir = wiki_dir / "stubs"
 
     if not raw_dir.exists():
         return {"status": "error", "message": f"raw/ not found at {raw_dir}"}
@@ -82,6 +137,7 @@ def resolve_raw_notes(
     total = len(unresolved)
     resolved = 0
     skipped = 0
+    stubs = 0
     errors = 0
 
     for raw_path in unresolved:
@@ -107,11 +163,13 @@ def resolve_raw_notes(
             content = adapter.fetch(url)
         except AuthWallError:
             logger.info("  🔒 Auth wall: %s (%s)", url, rel)
-            skipped += 1
+            _create_stub(stubs_dir, rel, url, "auth_required")
+            stubs += 1
             continue
         except GoneError:
             logger.info("  💀 Gone: %s (%s)", url, rel)
-            skipped += 1
+            _create_stub(stubs_dir, rel, url, "dead")
+            stubs += 1
             continue
         except Exception:
             logger.exception("Error resolving %s: %s", rel, url)
@@ -134,6 +192,7 @@ def resolve_raw_notes(
         "total": total,
         "resolved": resolved,
         "skipped": skipped,
+        "stubs": stubs,
         "errors": errors,
     }
 
@@ -174,3 +233,58 @@ def _find_raw_dir(raw_path: Path) -> Path | None:
         if parent.name == "raw":
             return parent
     return None
+
+
+def _create_stub(
+    stubs_dir: Path,
+    rel: Path,
+    url: str,
+    status: str,
+) -> None:
+    """Create a stub wiki page for an unfetchable URL.
+
+    Args:
+        stubs_dir: ``wiki/stubs/`` directory
+        rel: Relative path of the raw note (used for the stub filename)
+        url: The URL that couldn't be fetched
+        status: One of ``auth_required``, ``dead``, ``failed_final``
+    """
+    label = _STUB_LABELS.get(status, status)
+    note = _STUB_NOTES.get(status, "")
+    date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    # Derive a title from the raw note filename
+    title = _stub_title_from_rel(rel)
+
+    content = _STUB_TEMPLATE.format(
+        title=title,
+        date=date,
+        url=url,
+        status=status,
+        status_label=label,
+        note=note,
+    )
+
+    stub_path = stubs_dir / rel
+    stub_path.parent.mkdir(parents=True, exist_ok=True)
+    stub_path.write_text(content, encoding="utf-8")
+    logger.info("  📄 Stub created: %s (%s)", stub_path, status)
+
+
+def _stub_title_from_rel(rel: Path) -> str:
+    """Derive a human-readable title from a raw note relative path.
+
+    Examples:
+        ``Tech/2026-07-05-github-something.md`` → ``Github Something``
+        ``Food/some-restaurant.md`` → ``Some Restaurant``
+    """
+    stem = rel.stem
+    # Strip date prefix
+    import re as _re
+
+    stem = _re.sub(r"^\d{4}-\d{2}-\d{2}[-_]", "", stem)
+    stem = _re.sub(r"^[\d_]+-", "", stem)
+    # Replace separators with spaces
+    stem = stem.replace("-", " ").replace("_", " ")
+    # Title case
+    return stem.strip().title() or "Untitled"

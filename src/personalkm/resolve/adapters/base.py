@@ -41,7 +41,7 @@ class Adapter(ABC):
 
 
 _PATTERNS: list[tuple[str, str]] = [
-    (r"(youtube\.com/watch|youtu\.be/)", "youtube"),
+    (r"(youtube\.com/watch|youtu\.be/|youtube\.com/shorts/)", "youtube"),
     (r"github\.com/[^/]+/[^/]+", "github"),
     (r"threads\.(net|com)/", "threads"),
     (r"instagram\.com/", "instagram"),
