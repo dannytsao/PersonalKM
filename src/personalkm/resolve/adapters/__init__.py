@@ -5,10 +5,12 @@ Each module implements `Adapter` from ``base.py``.
 
 from src.personalkm.resolve.adapters.base import Adapter, FetchedContent, classify_url
 from src.personalkm.resolve.adapters.github import GitHubAdapter
+from src.personalkm.resolve.adapters.generic import GenericAdapter
 
 __all__ = [
     "Adapter",
     "FetchedContent",
     "classify_url",
     "GitHubAdapter",
+    "GenericAdapter",
 ]
