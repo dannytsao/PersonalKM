@@ -14,7 +14,7 @@
 | 1 | Vault 拆分 private repo | 內容 (`raw/ wiki/ ...`) 移到 private repo | ✅ 已完成 |
 | 2 | LLM Router | `route()` 取代直接 SDK 呼叫 | ✅ 已完成 |
 | 3 | Agent 開發隔離 | AGENTS.md + contracts + branch isolation | ✅ 已完成 |
-| 4 | Resolver Layer | URL fetch adapters (YouTube/新聞/GitHub) | ☐ 待討論 |
+| 4 | Resolver Layer | URL fetch adapters (YouTube/新聞/GitHub) | ✅ 已完成 |
 | 5 | Code movement | `bot/` → `src/personalkm/` (純整理，無功能變更) | ☐ 待討論 |
 
 ---
