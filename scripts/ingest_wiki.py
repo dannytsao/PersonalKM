@@ -97,10 +97,11 @@ def run_phase_a(vault_path: Path, max_files: Optional[int] = None, dry_run: bool
                  calling the LLM, writing files, or pushing.
     Returns a result dict.
     """
-    # Add repo root to sys.path so 'bot' package is importable
+    # Add repo root and src/ to sys.path (Mac Mini uses /usr/bin/python3, no editable install)
     repo_root = Path(__file__).parent.parent.resolve()
-    if str(repo_root) not in sys.path:
-        sys.path.insert(0, str(repo_root))
+    for p in [str(repo_root), str(repo_root / "src")]:
+        if p not in sys.path:
+            sys.path.insert(0, p)
 
     # Dry run: just enumerate the raw files that would be processed.
     if dry_run:

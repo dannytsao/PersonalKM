@@ -12,7 +12,7 @@ async def test_process_url_writes_note_when_fetch_is_forbidden(monkeypatch):
         response = httpx.Response(403, request=request)
         raise httpx.HTTPStatusError("Forbidden", request=request, response=response)
 
-    monkeypatch.setattr("bot.link_processor.fetch_page", fake_fetch_page)
+    monkeypatch.setattr("personalkm.capture.link_processor.fetch_page", fake_fetch_page)
 
     note = await process_url(Settings(), "https://openai.com/")
 
@@ -27,7 +27,7 @@ async def test_process_url_handles_google_ai_mode_share_without_fetching(monkeyp
     async def fake_fetch_page(url, timeout_seconds, max_chars):
         raise AssertionError("Google AI Mode share links should not be fetched")
 
-    monkeypatch.setattr("bot.link_processor.fetch_page", fake_fetch_page)
+    monkeypatch.setattr("personalkm.capture.link_processor.fetch_page", fake_fetch_page)
 
     note = await process_url(Settings(), "https://share.google/aimode/8uyYWVgle7A2ZDGFx")
 
@@ -45,7 +45,7 @@ async def test_process_url_summarizes_google_ai_mode_pasted_answer(monkeypatch):
     async def fake_fetch_page(url, timeout_seconds, max_chars):
         raise AssertionError("Google AI Mode pasted answers should not fetch the share page")
 
-    monkeypatch.setattr("bot.link_processor.fetch_page", fake_fetch_page)
+    monkeypatch.setattr("personalkm.capture.link_processor.fetch_page", fake_fetch_page)
 
     url = "https://share.google/aimode/YyTssJIr44VpGTZWt"
     message = f"{url}\nAI Mode 回答：這篇內容整理 AI agent workflow、自動化與知識管理實作。"
