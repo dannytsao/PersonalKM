@@ -373,6 +373,25 @@ def ingest_file_v2(
     # 2. Strip frontmatter for clean body
     body = _strip_frontmatter(content)
 
+    # 2a. Prefer resolved content if available (from resolver/ runner).
+    #     Resolved content is the full article/transcript/README, not just
+    #     the LINE snippet. This gives the LLM real substance to summarize.
+    try:
+        from src.personalkm.resolve import get_resolved_content
+
+        resolved = get_resolved_content(raw_path)
+        if resolved and len(resolved.strip()) > 50:
+            logger.info(
+                "Using resolved content for %s (%d chars)",
+                raw_path.name,
+                len(resolved),
+            )
+            body = resolved
+        else:
+            logger.debug("No resolved content for %s, using raw body", raw_path.name)
+    except Exception:
+        logger.debug("Resolver not available, using raw body for %s", raw_path.name)
+
     # 3. Detect entity mentions in body (before summarization distorts it)
     detected_entities = detect_entity_mentions(body)
     logger.debug(f"Detected entities in {raw_path.name}: {detected_entities[:5]}")

@@ -120,6 +120,23 @@ def run_phase_a(vault_path: Path, max_files: Optional[int] = None, dry_run: bool
     except Exception as e:
         logger.warning(f"git pull failed (may be up-to-date): {e}")
 
+    # Step 0: Resolver — fetch external content for raw notes with URLs
+    # Runs before ingest so LLM gets full article content, not just snippets.
+    logger.info("🚀 Resolver: Fetching external content...")
+    try:
+        from src.personalkm.resolve import resolve_raw_notes
+
+        resolver_result = resolve_raw_notes(vault_path, max_files=max_files)
+        resolver_status = resolver_result.get("status", "error")
+        resolver_resolved = resolver_result.get("resolved", 0)
+        logger.info(
+            "Resolver complete: status=%s, resolved=%d",
+            resolver_status,
+            resolver_resolved,
+        )
+    except Exception as e:
+        logger.warning(f"Resolver step failed (non-fatal): {e}")
+
     # Run ingestion
     from bot.ingestion_v2 import ingest_raw_to_wiki
     result = ingest_raw_to_wiki(vault_path, max_files=max_files)
