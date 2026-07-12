@@ -92,20 +92,43 @@ def _append_to_log(
     processed: int = 0,
     failed: int = 0,
     status: str = "unknown",
+    results: list | None = None,  # per-file results from ingest
 ) -> None:
     """Append a Phase A run summary to vault/wiki/log.md."""
     from datetime import datetime, timezone
 
     log_path = vault_path / "wiki" / "log.md"
-    date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    now = datetime.now(timezone.utc).astimezone()
+    date_str = now.strftime("%Y-%m-%d")
+    time_str = now.strftime("%H:%M:%S")
 
     # Build the log entry
     parts = [
-        f"\n## [{date}] phase-a | Resolver + Ingest run",
+        f"\n## [{date_str} {time_str}] phase-a | Resolver + Ingest run",
         f"- Resolver: {resolver_resolved} resolved, {resolver_stubs} stubs, {resolver_errors} errors, {resolver_skipped} skipped",
         f"- Ingest: {processed} processed, {failed} failed",
         f"- Status: {status}",
     ]
+
+    # Add per-file details
+    if results:
+        parts.append("")
+        for r in results:
+            fname = r.get("file", "?")
+            rstatus = r.get("status", "?")
+            action = r.get("action", "")
+            if rstatus == "success":
+                page = r.get("page_path", "")
+                parts.append(f"  ✅ {fname} → {page}")
+            elif rstatus == "skipped":
+                reason = r.get("reason", "")
+                parts.append(f"  ⏭️ {fname} ({reason})")
+            elif rstatus == "trashed":
+                reason = r.get("reason", "")
+                parts.append(f"  🗑️ {fname} ({reason})")
+            else:
+                parts.append(f"  ❌ {fname} ({rstatus})")
+        parts.append("")
 
     entry = "\n".join(parts) + "\n"
 
@@ -208,6 +231,7 @@ def run_phase_a(vault_path: Path, max_files: Optional[int] = None, dry_run: bool
             processed=processed,
             failed=failed,
             status=status,
+            results=result.get("results", []),
         )
     except Exception as e:
         logger.warning(f"Failed to append to log: {e}")
