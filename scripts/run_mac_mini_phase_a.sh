@@ -19,7 +19,8 @@ PYTHON_BIN="/Users/dannytsao/.hermes/hermes-agent/venv/bin/python3"
 
 # Source pipeline status reporter (quality feedback loop)
 # Must be sourced BEFORE any exit to capture all exit paths.
-STATUS_SCRIPT="$REPO_ROOT/scripts/pipeline_status.sh"
+# Use ~/.personalkm/ path — launchd cannot access ~/Documents/ (macOS TCC).
+STATUS_SCRIPT="${PERSONALKM_STATUS_SCRIPT:-$HOME/.personalkm/scripts/pipeline_status.sh}"
 if [ -f "$STATUS_SCRIPT" ]; then
     # shellcheck source=/dev/null
     . "$STATUS_SCRIPT"
@@ -33,12 +34,12 @@ log() {
 }
 
 vault_log() {
-    # Append a skip entry to vault/wiki/log.md
-    local entry="\n## [$(date '+%Y-%m-%d %H:%M:%S')] phase-a | $1\n- $2\n"
-    local log_path="$VAULT_ROOT/wiki/log.md"
-    if [ -f "$log_path" ]; then
-        printf "%b" "$entry" >> "$log_path" 2>/dev/null || true
-    fi
+    # Append a skip entry to the local status log instead of vault/wiki/log.md
+    # (which is blocked by macOS TCC when running under launchd).
+    local entry="[$(date '+%Y-%m-%d %H:%M:%S')] phase-a | $1 | $2"
+    local local_log="$PIPELINE_STATUS_DIR/action_log.jsonl"
+    mkdir -p "$(dirname "$local_log")"
+    printf "%s\n" "$entry" >> "$local_log" 2>/dev/null || true
 }
 
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then

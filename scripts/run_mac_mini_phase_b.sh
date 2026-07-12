@@ -18,7 +18,8 @@ PYTHON_BIN="/Users/dannytsao/.hermes/hermes-agent/venv/bin/python3"
 VAULT_ROOT="${PERSONALKM_VAULT_ROOT:-$HOME/Documents/PersonalKM/Personalkm-vault}"
 
 # Source pipeline status reporter (quality feedback loop)
-STATUS_SCRIPT="$REPO_ROOT/scripts/pipeline_status.sh"
+# Use ~/.personalkm/ path — launchd cannot access ~/Documents/ (macOS TCC).
+STATUS_SCRIPT="${PERSONALKM_STATUS_SCRIPT:-$HOME/.personalkm/scripts/pipeline_status.sh}"
 if [ -f "$STATUS_SCRIPT" ]; then
     # shellcheck source=/dev/null
     . "$STATUS_SCRIPT"
