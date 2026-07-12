@@ -65,7 +65,7 @@ if ! curl -s --max-time 3 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
     exit 0
 fi
 
-if ! git diff --quiet || ! git diff --cached --quiet; then
+if [ "${REPO_ACCESSIBLE:-true}" = true ] && ( ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null ); then
     log "Repo has local uncommitted changes; skipping Phase B run."
     write_phase_status "B" 0 "skipped" "Vault repo has uncommitted changes"
     exit 0

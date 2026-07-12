@@ -68,7 +68,7 @@ if [ ! -x "$PYTHON_BIN" ]; then
     exit 1
 fi
 
-if [ "${REPO_ACCESSIBLE:-true}" = true ] && ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+if [ "${REPO_ACCESSIBLE:-true}" = true ] && ( ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null ); then
     log "Repo has local uncommitted changes; skipping Phase A run."
     vault_log "Skipped" "Repo has local uncommitted changes"
     write_phase_status "A" 0 "skipped" "Vault repo has uncommitted changes"
