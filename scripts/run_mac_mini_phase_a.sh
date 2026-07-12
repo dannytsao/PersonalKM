@@ -11,6 +11,7 @@ if [ -f "$SECRETS_FILE" ]; then
 fi
 
 REPO_ROOT="${PERSONALKM_REPO_ROOT:-$HOME/Documents/GitHub/DannyTsao/PersonalKM}"
+VAULT_ROOT="${PERSONALKM_VAULT_ROOT:-$HOME/Documents/PersonalKM/Personalkm-vault}"
 LOG_DIR="${PERSONALKM_WORKER_LOG_DIR:-$HOME/Library/Logs/PersonalKM}"
 # Fixed path — does NOT depend on TMPDIR (launchd unsets ALL env vars including TMPDIR)
 LOCK_DIR="${PERSONALKM_LOCK_DIR:-$HOME/Library/Application Support/PersonalKM/phase-a.lock}"
@@ -21,6 +22,15 @@ mkdir -p "$(dirname "$LOCK_DIR")"
 
 log() {
     printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')" "$*"
+}
+
+vault_log() {
+    # Append a skip entry to vault/wiki/log.md
+    local entry="\n## [$(date '+%Y-%m-%d %H:%M:%S')] phase-a | $1\n- $2\n"
+    local log_path="$VAULT_ROOT/wiki/log.md"
+    if [ -f "$log_path" ]; then
+        printf "%b" "$entry" >> "$log_path" 2>/dev/null || true
+    fi
 }
 
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then
@@ -43,6 +53,7 @@ fi
 
 if ! git diff --quiet || ! git diff --cached --quiet; then
     log "Repo has local uncommitted changes; skipping Phase A run."
+    vault_log "Skipped" "Repo has local uncommitted changes"
     exit 0
 fi
 
