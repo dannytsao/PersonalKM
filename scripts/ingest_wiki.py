@@ -82,6 +82,51 @@ def _commit_and_push_wiki(vault_path: Path) -> None:
     logger.info("Pushed wiki/ changes to GitHub")
 
 
+def _append_to_log(
+    vault_path: Path,
+    *,
+    resolver_resolved: int = 0,
+    resolver_skipped: int = 0,
+    resolver_stubs: int = 0,
+    resolver_errors: int = 0,
+    processed: int = 0,
+    failed: int = 0,
+    status: str = "unknown",
+) -> None:
+    """Append a Phase A run summary to vault/wiki/log.md."""
+    from datetime import datetime, timezone
+
+    log_path = vault_path / "wiki" / "log.md"
+    date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    # Build the log entry
+    parts = [
+        f"\n## [{date}] phase-a | Resolver + Ingest run",
+        f"- Resolver: {resolver_resolved} resolved, {resolver_stubs} stubs, {resolver_errors} errors, {resolver_skipped} skipped",
+        f"- Ingest: {processed} processed, {failed} failed",
+        f"- Status: {status}",
+    ]
+
+    entry = "\n".join(parts) + "\n"
+
+    # Ensure log file exists with header
+    if not log_path.exists():
+        log_path.write_text(
+            f"# Wiki Log\n\n"
+            f"> Chronological record of all wiki actions. Append-only.\n"
+            f"> Format: `## [YYYY-MM-DD] action | subject`\n"
+            f"> Actions: ingest, update, query, lint, create, archive, delete\n"
+            f"> When this file exceeds 500 entries, rotate: rename to log-YYYY.md, start fresh.\n"
+            f"{entry}",
+            encoding="utf-8",
+        )
+    else:
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(entry)
+
+    logger.info("Appended run summary to wiki/log.md")
+
+
 # ─────────────────────────────────────────────────────────────
 # Main Phase A logic
 # ─────────────────────────────────────────────────────────────
@@ -147,6 +192,25 @@ def run_phase_a(vault_path: Path, max_files: Optional[int] = None, dry_run: bool
     status = result.get("status", "unknown")
 
     logger.info(f"Phase A complete: status={status}, processed={processed}, failed={failed}")
+
+    # Append run summary to vault/wiki/log.md
+    try:
+        resolver_resolved = locals().get("resolver_result", {}).get("resolved", 0)
+        resolver_skipped = locals().get("resolver_result", {}).get("skipped", 0)
+        resolver_stubs = locals().get("resolver_result", {}).get("stubs", 0)
+        resolver_errors = locals().get("resolver_result", {}).get("errors", 0)
+        _append_to_log(
+            vault_path,
+            resolver_resolved=resolver_resolved,
+            resolver_skipped=resolver_skipped,
+            resolver_stubs=resolver_stubs,
+            resolver_errors=resolver_errors,
+            processed=processed,
+            failed=failed,
+            status=status,
+        )
+    except Exception as e:
+        logger.warning(f"Failed to append to log: {e}")
 
     # Push wiki entities if any were created
     if processed > 0:
