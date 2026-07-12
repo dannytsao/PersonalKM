@@ -696,9 +696,9 @@ def ingest_raw_to_wiki(vault_path: Path, max_files: Optional[int] = None) -> dic
 
     # Scan raw files
     raw_files = sorted(raw_path.glob("**/*.md"))
+    ingest_target = max_files  # process up to N files successfully
     if max_files is not None and max_files > 0:
-        raw_files = raw_files[:max_files]
-        logger.info(f"Found {len(raw_files)} files in raw/ (limited to first {max_files})")
+        logger.info(f"Found {len(raw_files)} files in raw/ (will process up to {max_files})")
     else:
         logger.info(f"Found {len(raw_files)} files in raw/")
 
@@ -708,6 +708,9 @@ def ingest_raw_to_wiki(vault_path: Path, max_files: Optional[int] = None) -> dic
     results = []
 
     for raw_file in raw_files:
+        if ingest_target is not None and processed >= ingest_target:
+            logger.info("Reached ingest limit (%d), stopping", ingest_target)
+            break
         # Quick quality check before reading full content
         try:
             content_preview = raw_file.read_text(encoding="utf-8", errors="ignore")[:500].lower()

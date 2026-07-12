@@ -132,15 +132,23 @@ def resolve_raw_notes(
     )
 
     if max_files is not None and max_files > 0:
-        unresolved = unresolved[:max_files]
+        total = len(unresolved)
+        # Don't slice — process all files but stop after resolving `max_files`.
+        # This way we skip social media (no adapter) and actually resolve
+        # GitHub/YouTube/article notes.
+    else:
+        total = len(unresolved)
 
-    total = len(unresolved)
     resolved = 0
     skipped = 0
     stubs = 0
     errors = 0
+    resolve_target = max_files if max_files is not None else None
 
     for raw_path in unresolved:
+        if resolve_target is not None and resolved >= resolve_target:
+            logger.info("Reached resolve limit (%d), stopping", resolve_target)
+            break
         rel = raw_path.relative_to(raw_dir)
         resolved_path = resolved_dir / rel
 
