@@ -67,7 +67,7 @@ if ! git -C "$REPO_ROOT" diff --quiet 2>/dev/null || ! git -C "$REPO_ROOT" diff 
 fi
 
 log "Starting PersonalKM Phase A (raw → wiki entities)."
-if "$PYTHON_BIN" scripts/ingest_wiki.py; then
+if "$PYTHON_BIN" "$REPO_ROOT/scripts/ingest_wiki.py"; then
     log "Finished PersonalKM Phase A (success)."
     write_phase_status "A" 0 "success"
 else

@@ -65,7 +65,7 @@ if ! git -C "$REPO_ROOT" diff --quiet 2>/dev/null || ! git -C "$REPO_ROOT" diff 
 fi
 
 log "Starting PersonalKM Phase B (Ollama wikilink post-link)."
-if "$PYTHON_BIN" scripts/post_link_ollama.py; then
+if "$PYTHON_BIN" "$REPO_ROOT/scripts/post_link_ollama.py"; then
     log "Finished PersonalKM Phase B (success)."
     write_phase_status "B" 0 "success"
 else
