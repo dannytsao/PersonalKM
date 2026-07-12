@@ -3,6 +3,13 @@ set -euo pipefail
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
+# Load LLM API keys (gitignored, outside repo).
+SECRETS_FILE="${PERSONALKM_SECRETS:-$HOME/.personalkm/worker.secrets}"
+if [ -f "$SECRETS_FILE" ]; then
+    # shellcheck source=/dev/null
+    . "$SECRETS_FILE"
+fi
+
 REPO_ROOT="${PERSONALKM_REPO_ROOT:-$HOME/Documents/GitHub/DannyTsao/PersonalKM}"
 LOG_DIR="${PERSONALKM_WORKER_LOG_DIR:-$HOME/Library/Logs/PersonalKM}"
 # Fixed path — does NOT depend on TMPDIR (launchd unsets ALL env vars including TMPDIR)
