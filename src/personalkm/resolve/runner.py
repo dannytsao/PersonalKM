@@ -26,6 +26,7 @@ from typing import Optional
 from src.personalkm.resolve.adapters import (
     GitHubAdapter,
     GenericAdapter,
+    JinaAdapter,
     YouTubeAdapter,
     classify_url,
 )
@@ -41,6 +42,7 @@ logger = logging.getLogger(__name__)
 _ADAPTERS = [
     YouTubeAdapter(),
     GitHubAdapter(),
+    JinaAdapter(),   # Threads/IG/FB via Jina AI Reader (handles JS rendering)
     GenericAdapter(),  # catch-all — must be last
 ]
 
@@ -164,19 +166,21 @@ def resolve_raw_notes(
         adapter = _find_adapter(url)
         if adapter is None:
             logger.warning("No adapter for %s (%s)", url, source_type)
-            skipped += 1
+            logger.info("  📄 Creating stub for unresolvable URL: %s", url)
+            _create_stub(stubs_dir, rel, url, "auth_required", raw_path=raw_path)
+            stubs += 1
             continue
 
         try:
             content = adapter.fetch(url)
         except AuthWallError:
             logger.info("  🔒 Auth wall: %s (%s)", url, rel)
-            _create_stub(stubs_dir, rel, url, "auth_required")
+            _create_stub(stubs_dir, rel, url, "auth_required", raw_path=raw_path)
             stubs += 1
             continue
         except GoneError:
             logger.info("  💀 Gone: %s (%s)", url, rel)
-            _create_stub(stubs_dir, rel, url, "dead")
+            _create_stub(stubs_dir, rel, url, "dead", raw_path=raw_path)
             stubs += 1
             continue
         except Exception:
@@ -248,14 +252,19 @@ def _create_stub(
     rel: Path,
     url: str,
     status: str,
+    raw_path: Path | None = None,
 ) -> None:
     """Create a stub wiki page for an unfetchable URL.
+
+    Preserves the original raw note content in the body so the stub
+    is useful even without fetched article text.
 
     Args:
         stubs_dir: ``wiki/stubs/`` directory
         rel: Relative path of the raw note (used for the stub filename)
         url: The URL that couldn't be fetched
         status: One of ``auth_required``, ``dead``, ``failed_final``
+        raw_path: Path to the original raw note (for preserving content)
     """
     label = _STUB_LABELS.get(status, status)
     note = _STUB_NOTES.get(status, "")
@@ -263,6 +272,19 @@ def _create_stub(
 
     # Derive a title from the raw note filename
     title = _stub_title_from_rel(rel)
+
+    # Include original raw note content if available
+    raw_content = ""
+    if raw_path and raw_path.exists():
+        try:
+            raw_text = raw_path.read_text(encoding="utf-8")
+            # Strip frontmatter for cleaner display
+            import re as _re
+            raw_content = _re.sub(r"^---.*?---\n*", "", raw_text, flags=_re.DOTALL).strip()
+            if raw_content:
+                note = f"{note}\n\n## 原始筆記 (Raw Capture)\n\n{raw_content[:2000]}"
+        except Exception:
+            pass
 
     content = _STUB_TEMPLATE.format(
         title=title,

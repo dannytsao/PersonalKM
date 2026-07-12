@@ -686,35 +686,6 @@ confidence: {confidence}
 # Batch Ingestion
 # ─────────────────────────────────────────────────────────────
 
-def _should_skip_unresolvable(raw_file: Path, vault_path: Path) -> str | None:
-    """Return a reason string if this raw note should be skipped (no resolvable content).
-
-    Checks:
-    1. If the note has a URL classified as threads/instagram → skip (no adapter)
-    2. If the note has no URL at all → don't skip (plain text message)
-    3. If the note has a URL that has an adapter → don't skip
-    """
-    try:
-        from personalkm.resolve.url_extractor import extract_url
-        from personalkm.resolve.adapters.base import classify_url
-
-        url = extract_url(raw_file)
-        if not url:
-            return None  # no URL = plain text message, still ingest
-
-        source_type = classify_url(url)
-        # Known unresolvable source types
-        if source_type in ("threads", "instagram"):
-            return f"unresolvable source type: {source_type}"
-        # Also skip if the URL is clearly a Facebook share link (generic but FB blocks)
-        if "facebook.com" in url or "fb.com" in url:
-            return "unresolvable source type: facebook"
-
-        return None  # resolvable or generic — proceed
-    except Exception:
-        return None  # on error, proceed anyway
-
-
 def ingest_raw_to_wiki(vault_path: Path, max_files: Optional[int] = None) -> dict:
     """
     Main v2 ingestion: process all files in vault_path/raw/
@@ -776,14 +747,6 @@ def ingest_raw_to_wiki(vault_path: Path, max_files: Optional[int] = None) -> dic
                 pass
             trashed += 1
             results.append({"file": str(rel_path), "status": "trashed", "reason": reason})
-            continue
-
-        # Skip notes with no resolvable content (Threads, Instagram, etc.)
-        # Only count toward the max_files limit when we actually process them.
-        _skip_unresolvable = _should_skip_unresolvable(raw_file, vault_path)
-        if _skip_unresolvable:
-            skipped = _skip_unresolvable
-            results.append({"file": raw_file.name, "status": "skipped", "reason": skipped})
             continue
 
         success, result = ingest_file_v2(raw_file, wiki_path)

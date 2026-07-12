@@ -243,6 +243,31 @@ def run_phase_a(vault_path: Path, max_files: Optional[int] = None, dry_run: bool
         except Exception as e:
             logger.warning(f"Phase A: failed to push wiki changes: {e}")
 
+    # ── Write quality feedback loop status ──
+    try:
+        from personalkm.pipeline_status import update_ingest_status
+
+        # Collect errors from results
+        errors = []
+        for r in result.get("results", []):
+            if r.get("status") == "failed":
+                errors.append(f"{r.get('file', '?')}: {r.get('error', 'unknown')}")
+
+        update_ingest_status(
+            phase="A",
+            exit_code=0,
+            processed=processed,
+            failed=failed,
+            skipped=result.get("trashed", 0),  # trashed files are effectively skipped
+            trashed=result.get("trashed", 0),
+            health_status=result.get("health_check", {}).get("status", "unknown"),
+            errors=errors[:10],
+            detail=f"resolver: {locals().get('resolver_resolved', 0)} resolved, {locals().get('resolver_stubs', 0)} stubs",
+        )
+        logger.info("Pipeline status written")
+    except Exception as e:
+        logger.warning(f"Failed to write pipeline status: {e}")
+
     return result
 
 
