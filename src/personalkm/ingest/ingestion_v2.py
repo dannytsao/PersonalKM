@@ -74,6 +74,24 @@ LOW_QUALITY_PATTERNS = [
     "subscription required",
     "paywall",
     "advertisement",
+    # Fetch failure patterns — notes that tried but failed to retrieve content
+    "http 40",
+    "http 41",
+    "http 42",
+    "http 50",
+    "http error",
+    "failed to fetch",
+    "failed to retrieve",
+    "could not fetch",
+    "could not retrieve",
+    "unable to fetch",
+    "unable to retrieve",
+    "retrieval failed",
+    "extraction failed",
+    "website returned an error",
+    "cannot be accessed",
+    "content not accessible",
+    "error fetching",
 ]
 
 
