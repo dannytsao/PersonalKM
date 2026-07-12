@@ -15,7 +15,7 @@ VAULT_ROOT="${PERSONALKM_VAULT_ROOT:-$HOME/Documents/PersonalKM/Personalkm-vault
 LOG_DIR="${PERSONALKM_WORKER_LOG_DIR:-$HOME/Library/Logs/PersonalKM}"
 # Fixed path — does NOT depend on TMPDIR (launchd unsets ALL env vars including TMPDIR)
 LOCK_DIR="${PERSONALKM_LOCK_DIR:-$HOME/Library/Application Support/PersonalKM/phase-a.lock}"
-PYTHON_BIN="${PERSONALKM_PYTHON:-/usr/bin/python3}"
+PYTHON_BIN="/Users/dannytsao/.hermes/hermes-agent/venv/bin/python3"
 
 mkdir -p "$LOG_DIR"
 mkdir -p "$(dirname "$LOCK_DIR")"
