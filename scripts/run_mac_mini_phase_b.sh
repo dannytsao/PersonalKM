@@ -18,7 +18,6 @@ PYTHON_BIN="/Users/dannytsao/.hermes/hermes-agent/venv/bin/python3"
 VAULT_ROOT="${PERSONALKM_VAULT_ROOT:-$HOME/Documents/PersonalKM/Personalkm-vault}"
 
 # Source pipeline status reporter (quality feedback loop)
-# Use ~/.personalkm/ path — launchd cannot access ~/Documents/ (macOS TCC).
 STATUS_SCRIPT="${PERSONALKM_STATUS_SCRIPT:-$HOME/.personalkm/scripts/pipeline_status.sh}"
 if [ -f "$STATUS_SCRIPT" ]; then
     # shellcheck source=/dev/null
@@ -37,13 +36,6 @@ if ! mkdir "$LOCK_DIR" 2>/dev/null; then
     exit 0
 fi
 trap 'rmdir "$LOCK_DIR"' EXIT
-
-# cd to repo root — may fail under launchd if ~/Documents/ is TCC-restricted.
-# If cd fails, proceed without git check (status reports will be minimal).
-cd "$REPO_ROOT" 2>/dev/null || {
-    log "WARNING: Cannot access repo root at $REPO_ROOT (macOS TCC). Proceeding without git check."
-    REPO_ACCESSIBLE=false
-}
 
 if ! command -v git >/dev/null 2>&1; then
     log "git is not available on PATH."
@@ -65,7 +57,8 @@ if ! curl -s --max-time 3 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
     exit 0
 fi
 
-if [ "${REPO_ACCESSIBLE:-true}" = true ] && ( ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null ); then
+# Use git -C instead of cd — macOS TCC may block directory access under launchd.
+if ! git -C "$REPO_ROOT" diff --quiet 2>/dev/null || ! git -C "$REPO_ROOT" diff --cached --quiet 2>/dev/null; then
     log "Repo has local uncommitted changes; skipping Phase B run."
     write_phase_status "B" 0 "skipped" "Vault repo has uncommitted changes"
     exit 0
