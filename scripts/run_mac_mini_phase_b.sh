@@ -38,7 +38,12 @@ if ! mkdir "$LOCK_DIR" 2>/dev/null; then
 fi
 trap 'rmdir "$LOCK_DIR"' EXIT
 
-cd "$REPO_ROOT"
+# cd to repo root — may fail under launchd if ~/Documents/ is TCC-restricted.
+# If cd fails, proceed without git check (status reports will be minimal).
+cd "$REPO_ROOT" 2>/dev/null || {
+    log "WARNING: Cannot access repo root at $REPO_ROOT (macOS TCC). Proceeding without git check."
+    REPO_ACCESSIBLE=false
+}
 
 if ! command -v git >/dev/null 2>&1; then
     log "git is not available on PATH."

@@ -49,7 +49,12 @@ if ! mkdir "$LOCK_DIR" 2>/dev/null; then
 fi
 trap 'rmdir "$LOCK_DIR"' EXIT
 
-cd "$REPO_ROOT"
+# cd to repo root — may fail under launchd if ~/Documents/ is TCC-restricted.
+# If cd fails, proceed without git check (status reports will be minimal).
+cd "$REPO_ROOT" 2>/dev/null || {
+    log "WARNING: Cannot access repo root at $REPO_ROOT (macOS TCC). Proceeding without git check."
+    REPO_ACCESSIBLE=false
+}
 
 if ! command -v git >/dev/null 2>&1; then
     log "git is not available on PATH."
@@ -63,7 +68,7 @@ if [ ! -x "$PYTHON_BIN" ]; then
     exit 1
 fi
 
-if ! git diff --quiet || ! git diff --cached --quiet; then
+if [ "${REPO_ACCESSIBLE:-true}" = true ] && ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
     log "Repo has local uncommitted changes; skipping Phase A run."
     vault_log "Skipped" "Repo has local uncommitted changes"
     write_phase_status "A" 0 "skipped" "Vault repo has uncommitted changes"
