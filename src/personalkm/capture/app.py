@@ -20,6 +20,31 @@ from personalkm.capture.notification import notify as send_notification
 
 app = FastAPI(title="Personal KM LINE Link Bot")
 logger = logging.getLogger(__name__)
+
+# Ensure application logs are visible (uvicorn only shows access logs by default)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+# Also set uvicorn log level for application logs
+uvicorn_logger = logging.getLogger("uvicorn")
+uvicorn_logger.setLevel(logging.INFO)
+
+# Patch to catch background task exceptions that would otherwise be silent
+import functools
+from typing import Callable
+
+def log_background_task(func: Callable) -> Callable:
+    """Wrapper that logs unhandled exceptions in FastAPI background tasks."""
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await func(*args, **kwargs)
+        except Exception:
+            logger.exception("Background task %s crashed", func.__name__)
+    return wrapper
+
 LINE_PARTS_FILE = ".line-message-parts.json"
 LINE_LOG_SEQUENCE_FILE = ".line-log-sequence.json"
 LINE_LOG_TIMEZONE = ZoneInfo("Asia/Taipei")
@@ -224,6 +249,7 @@ async def mark_line_event_as_read(settings, event: LineTextEvent) -> None:
         logger.exception("Failed to mark LINE message as read")
 
 
+@log_background_task
 async def capture_line_messages(events: list[LineTextEvent], background_tasks: BackgroundTasks) -> None:
     settings = get_settings()
     logger.info("Processing %s LINE message(s)", len(events))
