@@ -15,15 +15,37 @@ def run_git(args: list[str], cwd: Path, settings: Settings) -> str:
             "GIT_COMMITTER_EMAIL": settings.git_author_email,
         }
     )
-    completed = subprocess.run(
-        ["git", *args],
-        cwd=cwd,
-        env=env,
-        text=True,
-        check=True,
-        capture_output=True,
-    )
-    return completed.stdout.strip()
+    try:
+        completed = subprocess.run(
+            ["git", *args],
+            cwd=cwd,
+            env=env,
+            text=True,
+            check=True,
+            capture_output=True,
+        )
+        return completed.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        # Log stderr so we can see the actual git error in Render logs
+        import logging
+        stderr = (e.stderr or "").strip()
+        stdout = (e.stdout or "").strip()
+        logging.getLogger(__name__).error(
+            "git %s failed (exit %d)\nstdout: %s\nstderr: %s",
+            " ".join(args), e.returncode, stdout[:500], stderr[:500],
+        )
+        raise GitError(e.returncode, e.cmd, output=e.stdout, stderr=e.stderr)
+
+
+class GitError(subprocess.CalledProcessError):
+    """Extends CalledProcessError to include stderr in the message."""
+
+    def __str__(self) -> str:
+        orig = super().__str__()
+        stderr = (self.stderr or "").strip()
+        if stderr:
+            return f"{orig}\nstderr: {stderr}"
+        return orig
 
 
 def _try_repair_and_checkout(vault_path: Path, settings: Settings) -> bool:
@@ -36,18 +58,19 @@ def _try_repair_and_checkout(vault_path: Path, settings: Settings) -> bool:
         run_git(["checkout", settings.vault_branch], vault_path, settings)
         run_git(["pull", "--ff-only", "origin", settings.vault_branch], vault_path, settings)
         return True
-    except subprocess.CalledProcessError:
-        pass
+    except Exception:
+        import logging
+        logging.getLogger(__name__).debug("Repair attempt 1 failed", exc_info=True)
 
     # Try harder: clean up working tree and orphaned state
     try:
         run_git(["stash"], vault_path, settings)
-        # Try to create a local branch tracking origin if it doesn't exist
         run_git(["checkout", "-B", settings.vault_branch, f"origin/{settings.vault_branch}"], vault_path, settings)
         run_git(["pull", "--ff-only", "origin", settings.vault_branch], vault_path, settings)
         return True
-    except subprocess.CalledProcessError:
-        pass
+    except Exception:
+        import logging
+        logging.getLogger(__name__).debug("Repair attempt 2 failed", exc_info=True)
 
     return False
 
@@ -58,14 +81,31 @@ def ensure_vault(settings: Settings) -> Path:
         if _try_repair_and_checkout(vault_path, settings):
             return vault_path
         # Repair failed — remove and re-clone
-        import shutil
-        shutil.rmtree(vault_path, ignore_errors=True)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning("Vault git repair failed — removing %s for fresh clone", vault_path)
+        for attempt in range(3):
+            try:
+                import shutil
+                shutil.rmtree(vault_path)
+                break
+            except OSError as e:
+                logger.warning("rmtree attempt %d failed: %s", attempt + 1, e)
+                if attempt < 2:
+                    import time
+                    time.sleep(1)
+                else:
+                    import shutil
+                    shutil.rmtree(vault_path, ignore_errors=True)
 
     if not settings.vault_repo_url:
         raise RuntimeError("VAULT_REPO_URL is required when VAULT_PATH is not an existing git repo.")
 
     vault_path.parent.mkdir(parents=True, exist_ok=True)
-    run_git(["clone", "--branch", settings.vault_branch, settings.vault_repo_url, str(vault_path)], Path.cwd(), settings)
+    try:
+        run_git(["clone", "--branch", settings.vault_branch, settings.vault_repo_url, str(vault_path)], Path.cwd(), settings)
+    except subprocess.CalledProcessError:
+        raise  # re-raise so the caller sees the error with stderr
     return vault_path
 
 
