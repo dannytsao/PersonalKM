@@ -55,8 +55,7 @@ def _try_repair_and_checkout(vault_path: Path, settings: Settings) -> bool:
     """
     try:
         run_git(["fetch", "origin", settings.vault_branch], vault_path, settings)
-        run_git(["checkout", settings.vault_branch], vault_path, settings)
-        run_git(["pull", "--ff-only", "origin", settings.vault_branch], vault_path, settings)
+        run_git(["checkout", settings.vault_branch, "--", "raw/"], vault_path, settings)
         return True
     except Exception:
         import logging
@@ -64,9 +63,8 @@ def _try_repair_and_checkout(vault_path: Path, settings: Settings) -> bool:
 
     # Try harder: clean up working tree and orphaned state
     try:
-        run_git(["stash"], vault_path, settings)
-        run_git(["checkout", "-B", settings.vault_branch, f"origin/{settings.vault_branch}"], vault_path, settings)
-        run_git(["pull", "--ff-only", "origin", settings.vault_branch], vault_path, settings)
+        run_git(["read-tree", "--empty"], vault_path, settings)
+        run_git(["checkout", settings.vault_branch, "--", "raw/"], vault_path, settings)
         return True
     except Exception:
         import logging
@@ -103,7 +101,15 @@ def ensure_vault(settings: Settings) -> Path:
 
     vault_path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        run_git(["clone", "--branch", settings.vault_branch, settings.vault_repo_url, str(vault_path)], Path.cwd(), settings)
+        # Clone without checkout to avoid "File name too long" errors on wiki/entities
+        # (Render's /tmp filesystem has a 255-byte filename limit)
+        run_git(
+            ["clone", "--branch", settings.vault_branch, "--no-checkout", "--depth", "1",
+             settings.vault_repo_url, str(vault_path)],
+            Path.cwd(), settings,
+        )
+        # Only checkout the raw/ directory — that's all capture_line_messages needs
+        run_git(["checkout", settings.vault_branch, "--", "raw/"], vault_path, settings)
     except subprocess.CalledProcessError:
         raise  # re-raise so the caller sees the error with stderr
     return vault_path
