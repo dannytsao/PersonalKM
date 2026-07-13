@@ -26,13 +26,40 @@ def run_git(args: list[str], cwd: Path, settings: Settings) -> str:
     return completed.stdout.strip()
 
 
-def ensure_vault(settings: Settings) -> Path:
-    vault_path = settings.vault_path
-    if (vault_path / ".git").exists():
+def _try_repair_and_checkout(vault_path: Path, settings: Settings) -> bool:
+    """Try to repair a broken git repo and checkout the target branch.
+
+    Returns True if checkout succeeded, False if fresh clone is needed.
+    """
+    try:
         run_git(["fetch", "origin", settings.vault_branch], vault_path, settings)
         run_git(["checkout", settings.vault_branch], vault_path, settings)
         run_git(["pull", "--ff-only", "origin", settings.vault_branch], vault_path, settings)
-        return vault_path
+        return True
+    except subprocess.CalledProcessError:
+        pass
+
+    # Try harder: clean up working tree and orphaned state
+    try:
+        run_git(["stash"], vault_path, settings)
+        # Try to create a local branch tracking origin if it doesn't exist
+        run_git(["checkout", "-B", settings.vault_branch, f"origin/{settings.vault_branch}"], vault_path, settings)
+        run_git(["pull", "--ff-only", "origin", settings.vault_branch], vault_path, settings)
+        return True
+    except subprocess.CalledProcessError:
+        pass
+
+    return False
+
+
+def ensure_vault(settings: Settings) -> Path:
+    vault_path = settings.vault_path
+    if (vault_path / ".git").exists():
+        if _try_repair_and_checkout(vault_path, settings):
+            return vault_path
+        # Repair failed — remove and re-clone
+        import shutil
+        shutil.rmtree(vault_path, ignore_errors=True)
 
     if not settings.vault_repo_url:
         raise RuntimeError("VAULT_REPO_URL is required when VAULT_PATH is not an existing git repo.")

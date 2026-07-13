@@ -6,6 +6,8 @@ Requires-Python: >=3.9
 Requires-Dist: pyyaml>=6.0
 Requires-Dist: fastapi>=0.110
 Requires-Dist: uvicorn>=0.29
+Requires-Dist: readability-lxml>=0.8
+Requires-Dist: html2text>=2024.2
 Provides-Extra: llm
 Requires-Dist: anthropic>=0.40; extra == "llm"
 Provides-Extra: dev

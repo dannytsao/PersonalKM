@@ -1,6 +1,8 @@
 pyyaml>=6.0
 fastapi>=0.110
 uvicorn>=0.29
+readability-lxml>=0.8
+html2text>=2024.2
 
 [dev]
 pytest>=8.0
