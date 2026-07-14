@@ -110,6 +110,10 @@ def ensure_vault(settings: Settings) -> Path:
         )
         # Only checkout the raw/ directory — that's all capture_line_messages needs
         run_git(["checkout", settings.vault_branch, "--", "raw/"], vault_path, settings)
+        # Reset the index to match HEAD so non-raw files aren't staged as "deleted"
+        run_git(["reset", "HEAD", "--", "."], vault_path, settings)
+        # Re-checkout raw/ files into both index and working tree
+        run_git(["checkout", settings.vault_branch, "--", "raw/"], vault_path, settings)
     except subprocess.CalledProcessError:
         raise  # re-raise so the caller sees the error with stderr
     return vault_path
