@@ -67,7 +67,8 @@ def _try_repair_and_checkout(vault_path: Path, settings: Settings) -> bool:
     # Try harder: clean up working tree and orphaned state
     try:
         run_git(["read-tree", "--empty"], vault_path, settings)
-        run_git(["checkout", settings.vault_branch, "--", "raw/"], vault_path, settings)
+        run_git(["reset", f"origin/{settings.vault_branch}", "--", "."], vault_path, settings)
+        run_git(["checkout", f"origin/{settings.vault_branch}", "--", "raw/"], vault_path, settings)
         return True
     except Exception:
         import logging
@@ -123,13 +124,45 @@ def ensure_vault(settings: Settings) -> Path:
 
 
 def commit_and_push(settings: Settings, note_path: Path) -> None:
+    """Commit and push a single note file to the vault.
+
+    Uses --only to commit ONLY the specified file, ignoring any other staged
+    changes (e.g. phantom deletions from sparse checkout index state).
+    """
     vault_path = settings.vault_path
     relative_path = note_path.relative_to(vault_path)
+
+    # Stage only the file we intend to commit — never --all
     run_git(["add", str(relative_path)], vault_path, settings)
 
-    status = run_git(["status", "--porcelain"], vault_path, settings)
-    if not status:
+    # Verify our file was actually staged (avoid committing phantom changes)
+    staged = run_git(["diff", "--cached", "--name-only"], vault_path, settings)
+    if str(relative_path) not in staged:
         return
 
-    run_git(["commit", "-m", f"Add LINE link note: {note_path.stem}"], vault_path, settings)
+    # Safety guard: check if other files are staged (deletions, modifications)
+    staged_lines = len(staged.splitlines()) if staged else 0
+    if staged_lines > 2:
+        # More than 2 files staged (our file + possibly a .DS_Store) — abort!
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(
+            "ABORTING commit: %d files staged (expected 1). "
+            "Index state is corrupted — refusing to commit.",
+            staged_lines,
+        )
+        logger.error("Staged files: %s", staged[:2000])
+        raise RuntimeError(
+            f"Refusing to commit {staged_lines} files — aborting to protect vault. "
+            f"Staged: {staged[:200]}"
+        )
+
+    # Commit with --only to ignore any other accidental staged changes
+    run_git(["commit", "--only", str(relative_path),
+             "-m", f"Add LINE link note: {note_path.stem}"], vault_path, settings)
     run_git(["push", "origin", settings.vault_branch], vault_path, settings)
+
+    import logging
+    logging.getLogger(__name__).info(
+        "✅ Pushed %s to vault %s", relative_path, settings.vault_branch,
+    )
