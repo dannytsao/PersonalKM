@@ -55,7 +55,10 @@ def _try_repair_and_checkout(vault_path: Path, settings: Settings) -> bool:
     """
     try:
         run_git(["fetch", "origin", settings.vault_branch], vault_path, settings)
-        run_git(["checkout", settings.vault_branch, "--", "raw/"], vault_path, settings)
+        # Reset index to match fetched origin so non-raw files aren't staged as deleted
+        run_git(["reset", f"origin/{settings.vault_branch}", "--", "."], vault_path, settings)
+        # Only checkout raw/ directory into working tree
+        run_git(["checkout", f"origin/{settings.vault_branch}", "--", "raw/"], vault_path, settings)
         return True
     except Exception:
         import logging
@@ -112,7 +115,7 @@ def ensure_vault(settings: Settings) -> Path:
         run_git(["checkout", settings.vault_branch, "--", "raw/"], vault_path, settings)
         # Reset the index to match HEAD so non-raw files aren't staged as "deleted"
         run_git(["reset", "HEAD", "--", "."], vault_path, settings)
-        # Re-checkout raw/ files into both index and working tree
+        # Re-checkout raw/ files into working tree (index already matches HEAD)
         run_git(["checkout", settings.vault_branch, "--", "raw/"], vault_path, settings)
     except subprocess.CalledProcessError:
         raise  # re-raise so the caller sees the error with stderr
