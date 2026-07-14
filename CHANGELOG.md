@@ -2,7 +2,21 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
-## 2026-07-09
+## 2026-07-14
+
+### Fixed
+
+- **LINE Bot vault corruption**: `--no-checkout` clone + sparse `raw/` checkout left git index in a state where all non-`raw/` files appeared as "deleted". `commit_and_push`'s `git commit` included these phantom deletions, wiping 42K lines (entire `wiki/`) from the vault. Fix: `git reset HEAD -- .` after sparse checkout to reset the index, and `git commit --only <file>` to commit only the intended note.
+- **GitHub vault clone failure**: `wiki/entities/` filenames with Chinese characters exceeded Render's `/tmp` 255-byte ext4 limit, causing `git clone` checkout to fail. Fix: `--no-checkout --depth 1` clone + sparse checkout of only `raw/`.
+- **Unicode normalization mismatch in staged-file check**: Filenames with Chinese chars + zero-width spaces had NFC vs NFD Unicode normalization differences, causing `str(relative_path) in staged` to fail silently — file was written to local vault but never pushed. Fix: use `git diff --cached --name-only -- <path>` with explicit path argument.
+- **`404` low-quality pattern too broad**: Bare `"404"` pattern matched legitimate content (postal codes, company IDs), causing false-positive low-quality rejection of quality articles. Fix: removed from both `ingestion_v2.py` and `ingestion_wiki_helpers.py`; HTTP 404 errors still caught by `"page not found"`, `"not found"`, `"http 40"` patterns.
+- **Application logs invisible**: No `logging.basicConfig` meant `logger.info()` calls never appeared in Render logs. Added logging config and background task exception wrapper.
+- **Phase A skipping due to vault dirty state**: `.obsidian/workspace.json` changed every Obsidian session, blocking Phase A pipeline. Added to `.gitignore`.
+
+### Changed
+
+- **Three-layer commit safety**: `commit_and_push` now: (1) commits only the specific file via `--only`, (2) verifies it's staged via git-diff with explicit path, (3) aborts with `RuntimeError` if >2 files are staged.
+- **`ensure_vault` repair robustness**: Both repair attempts now reset index to `origin/main` before sparse checkout, preventing phantom staged deletions. Falls back to `shutil.rmtree` retry + fresh clone if repair fails.
 
 ### Added
 
