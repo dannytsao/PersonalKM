@@ -135,13 +135,21 @@ def commit_and_push(settings: Settings, note_path: Path) -> None:
     # Stage only the file we intend to commit — never --all
     run_git(["add", str(relative_path)], vault_path, settings)
 
-    # Verify our file was actually staged (avoid committing phantom changes)
-    staged = run_git(["diff", "--cached", "--name-only"], vault_path, settings)
-    if str(relative_path) not in staged:
+    # Verify our file was actually staged using git diff with explicit path
+    # (avoids Unicode normalization mismatches in the path comparison)
+    staged_check = run_git(
+        ["diff", "--cached", "--name-only", "--", str(relative_path)],
+        vault_path, settings,
+    )
+    if not staged_check.strip():
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning("File %s not staged — skipping commit", relative_path)
         return
 
     # Safety guard: check if other files are staged (deletions, modifications)
-    staged_lines = len(staged.splitlines()) if staged else 0
+    staged_all = run_git(["diff", "--cached", "--name-only"], vault_path, settings)
+    staged_lines = len(staged_all.splitlines()) if staged_all else 0
     if staged_lines > 2:
         # More than 2 files staged (our file + possibly a .DS_Store) — abort!
         import logging
@@ -151,10 +159,10 @@ def commit_and_push(settings: Settings, note_path: Path) -> None:
             "Index state is corrupted — refusing to commit.",
             staged_lines,
         )
-        logger.error("Staged files: %s", staged[:2000])
+        logger.error("Staged files: %s", staged_all[:2000])
         raise RuntimeError(
             f"Refusing to commit {staged_lines} files — aborting to protect vault. "
-            f"Staged: {staged[:200]}"
+            f"Staged: {staged_all[:200]}"
         )
 
     # Commit with --only to ignore any other accidental staged changes
