@@ -63,7 +63,6 @@ def _get_wikilinks(wiki_path: Path) -> WikilinkManager:
 
 LOW_QUALITY_PATTERNS = [
     "wait loading",
-    "404",
     "page not found",
     "just a moment",
     "checking your browser",

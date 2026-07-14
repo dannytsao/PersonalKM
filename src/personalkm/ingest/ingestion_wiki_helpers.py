@@ -108,7 +108,6 @@ class ContentQualityChecker:
         r'error loading',
         r'page not found',
         r'not found',
-        r'404',
         r'access denied',
         r'このページは',  # this page (placeholder JP)
     ]
