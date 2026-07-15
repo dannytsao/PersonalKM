@@ -120,15 +120,144 @@ async def fetch_page(url: str, timeout_seconds: float, max_chars: int) -> Extrac
     for element in soup(["script", "style", "noscript", "svg"]):
         element.decompose()
 
+    # Layer 2: Remove common noise elements before text extraction
+    _remove_noise_elements(soup)
+
     title = soup.title.string.strip() if soup.title and soup.title.string else url
     text = " ".join(soup.get_text(" ").split())
     metadata = extract_page_metadata(soup)
     content_text = metadata_text(metadata) or text
+
+    # Layer 2: Clean up noise patterns from extracted text
+    content_text = clean_page_text(content_text)
+
     return ExtractedContent(
         title=(metadata.get("title") or title)[:180],
         text=content_text[:max_chars],
         platform=platform_from_url(url),
     )
+
+
+# ── Layer 2 Content Cleaning ──────────────────────────────────────────
+
+# HTML elements to remove completely before text extraction
+NOISE_SELECTORS = [
+    "nav", "footer", "header", "aside",
+    ".nav", ".navbar", ".navigation", ".menu", ".footer", ".header",
+    ".sidebar", ".aside", ".widget",
+    ".cookie", ".cookies", ".cookie-banner", ".cookie-consent",
+    ".advertisement", ".ad", ".ads", ".adsbygoogle", ".sponsored",
+    ".share", ".sharing", ".social-share", ".social-buttons",
+    ".related", ".related-posts", ".recommended", ".suggestions",
+    ".comment", ".comments", ".comment-form",
+    "[role=navigation]", "[role=contentinfo]", "[role=complementary]",
+    "#nav", "#navbar", "#navigation", "#footer", "#sidebar",
+    "#cookie", "#cookies", "#cookie-notice",
+]
+
+# Text patterns that indicate noise sections (each starts a section to remove)
+NOISE_SECTION_HEADERS = [
+    # Chinese
+    "延伸閱讀", "相關文章", "相關閱讀", "相關推薦", "熱門文章", "熱門推薦",
+    "你可能也喜歡", "你可能還想看", "大家都在看", "更多推薦", "更多文章",
+    "推薦閱讀", "編輯推薦", "精選文章", "猜你喜歡", "為您推薦",
+    "關注我們", "追蹤我們", "訂閱我們",
+    "廣告", "贊助", "廣告商", "合作夥伴",
+    "分享到", "社群分享", "社群平台",
+    "關於我們", "聯絡我們", "服務條款", "隱私權政策", "版權聲明",
+    "網站導覽", "網站地圖", "快速連結",
+    # English
+    "related articles", "related posts", "related stories", "you may also like",
+    "recommended for you", "more from", "trending now", "popular posts",
+    "recommended reading", "editor's picks", "you might also like",
+    "follow us", "subscribe now", "sign up for",
+    "advertisement", "sponsored content", "sponsored post",
+    "share this", "share on facebook", "share on twitter",
+    "cookie policy", "this site uses cookies", "accept cookies",
+    "privacy policy", "terms of service", "terms and conditions",
+    "about us", "contact us", "copyright",
+    # Japanese
+    "関連記事", "おすすめ", "人気の記事", "あなたにおすすめ",
+    "シェアする", "フォローする", "購読する",
+    "プライバシーポリシー", "利用規約", "お問い合わせ",
+]
+
+
+def _remove_noise_elements(soup: BeautifulSoup) -> None:
+    """Remove HTML elements that are clearly noise (nav, footer, ads, etc.)."""
+    for selector in NOISE_SELECTORS:
+        for element in soup.select(selector):
+            element.decompose()
+
+
+def clean_page_text(text: str) -> str:
+    """Remove noise sections and patterns from extracted page text.
+
+    This is Layer 2 content cleaning — runs after fetch_page() extracts the
+    raw HTML text. It removes:
+    - Navigation / footer / header text clusters
+    - Related article recommendations
+    - Advertisement sections
+    - Cookie consent banners
+    - Social sharing sections
+    - Repeated boilerplate (copyright, address, etc.)
+    """
+    lines = text.splitlines()
+    cleaned = []
+    skip_section = False
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            skip_section = False
+            cleaned.append(line)
+            continue
+
+        # Check if this line starts a noise section
+        lower = stripped.lower()
+        if any(header in lower for header in NOISE_SECTION_HEADERS):
+            skip_section = True
+            continue
+
+        # Skip boilerplate lines that are standalone matches
+        if _is_boilerplate_line(stripped):
+            continue
+
+        if not skip_section:
+            cleaned.append(line)
+
+    return "\n".join(cleaned)
+
+
+# Common boilerplate patterns that appear as standalone lines
+BOILERPLATE_PATTERNS = [
+    # Copyright and legal
+    r"©\s*\d{4}.*", r"copyright\s+\d{4}.*", r"all rights reserved",
+    r"版權所有.*", r"著作權.*", r"©.*",
+
+    # Contact / address blocks
+    r"^[^:]{,10}[:：].*@.*\.(com|tw|jp|cn|org|net)",  # email
+    r"^電話[:：].*", r"^tel[:：].*", r"^地址[:：].*", r"^統編[:：].*",
+    r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",  # bare email
+
+    # Social media links
+    r"^(facebook|twitter|instagram|linkedin|youtube|threads|tiktok)\s*[:：]?\s*@",
+    r"^追蹤.*facebook|^follow.*facebook|^like.*facebook",
+
+    # Common nav items
+    r"^(home|about|contact|privacy|terms|sitemap|search|login|sign.?in|sign.?up|subscribe)$",
+    r"^(首頁|關於我們|聯絡我們|隱私權|服務條款|網站導覽|搜尋|登入|註冊|訂閱)$",
+]
+
+
+def _is_boilerplate_line(text: str) -> bool:
+    """Check if a single line is boilerplate (copyright, email, nav, etc.)."""
+    import re
+    lower = text.lower().strip()
+    for pattern in BOILERPLATE_PATTERNS:
+        if re.search(pattern, lower):
+            return True
+    return False
 
 
 def platform_from_url(url: str) -> str:
