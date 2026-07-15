@@ -44,15 +44,20 @@ VAULT_ROOT = Path(os.getenv("VAULT_PATH", str(Path.home() / "Documents/PersonalK
 
 sys.path.insert(0, str(Path(__file__).parent.parent.resolve()))
 
-from bot.entity_dedup import (
+from personalkm.propagate.entity_dedup import (
     EntityRegistry,
     CANONICAL_ENTITIES,
     normalize_entity_name,
     canonical_slug_from_name,
     is_canonical_slug,
     parse_frontmatter,
+    read_frontmatter,
+    append_to_body,
+    add_source_to_frontmatter,
+    update_frontmatter_field,
 )
-from bot.llm_summarizer import detect_entity_mentions, _strip_frontmatter
+
+from personalkm.ingest.llm_summarizer import detect_entity_mentions, _strip_frontmatter
 
 from tools.omnichannel_md.frontmatter import (
     parse_yaml_list,
@@ -177,6 +182,8 @@ def aggregate_entity_content(pages: list[Path]) -> dict:
         content = page.read_text(encoding="utf-8")
         fm, body = safe_read_frontmatter(page)
         title = fm.get("title", page.stem)
+        if isinstance(title, list):
+            title = " ".join(str(t) for t in title)
 
         # Collect metadata
         if "sources" in fm:
@@ -357,8 +364,10 @@ def run_phase6(vault_path: Path, dry_run: bool = False) -> dict:
         if not matched_slug:
             fm, _ = parse_frontmatter(content)
             title = fm.get("title", "")
+            if isinstance(title, list):
+                title = " ".join(str(t) for t in title)
             if title:
-                matched_slug = canonical_slug_from_name(title)
+                matched_slug = canonical_slug_from_name(str(title))
 
         # 3. Body keyword pattern matching (first 400 chars)
         #    Strong signal: keyword appears early in body → score 2
