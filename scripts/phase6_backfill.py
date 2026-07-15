@@ -209,6 +209,8 @@ def aggregate_entity_content(pages: list[Path]) -> dict:
                     tags.add(t)
 
         topic = fm.get("topic", "")
+        if isinstance(topic, list):
+            topic = " ".join(str(t) for t in topic)
         if topic:
             topic_counts[topic] += 1
 

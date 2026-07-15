@@ -20,7 +20,9 @@ All completed implementation reports, one-time analyses, and delivery summaries 
 
 ### Added
 
-- **P0#1: Health monitoring cron job**: Hermes cron `personalkm-health-check` (every 4h) checks Render health, vault last capture, pipeline status, and stale raw files. Reports issues proactively.
+- **P0#1: Health monitoring cron job**: Hermes cron `personalkm-health-check` (every 4h) checks Render health, vault last capture, pipeline status, stale raw files, and vault sync. Reports issues proactively.
+- **P1#4: Layer 2 content cleaning**: Two-layer page noise removal — HTML level (nav, footer, ads, cookie banners removed via BeautifulSoup) and text level (related article sections, boilerplate, copyright lines stripped from extracted text).
+- **P3#9: Phase 6 Canonical Entity Backfill**: Fixed import paths in `scripts/phase6_backfill.py` (bot → src transition) and ran backfill. Created 8 new canonical pages (anges-ai, anthropic, antigravity, cursor, deepseek, inside, openclaw, qwen). 18 total canonical entities now exist. Knowledge graph rebuilt: 85 pages, 112 edges. Phase A cron now runs TCC-safe with Ollama-only local models.
 
 ### Fixed
 
