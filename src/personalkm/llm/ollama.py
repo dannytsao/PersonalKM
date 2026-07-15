@@ -12,6 +12,14 @@ class OllamaProvider(Provider):
         self.name = name
         self.base_url = base_url.rstrip("/")
 
+    @staticmethod
+    def _strip_thinking(text: str) -> str:
+        """Strip thinking tags from model output (e.g. qwen2.5 with thinking capability)."""
+        import re
+        stripped = re.sub(r"^\s*thinking\s*.*?(?:\n|$)", "", text, flags=re.DOTALL | re.IGNORECASE)
+        stripped = stripped.strip()
+        return stripped or text
+
     def complete(
         self,
         model: str,
@@ -36,8 +44,9 @@ class OllamaProvider(Provider):
         )
         with urllib.request.urlopen(req, timeout=timeout_s) as resp:
             data = json.loads(resp.read())
+        raw_text = data.get("response", "")
         return Completion(
-            text=data.get("response", ""),
+            text=self._strip_thinking(raw_text),
             model=f"{self.name}/{model}",
             input_tokens=int(data.get("prompt_eval_count", 0)),
             output_tokens=int(data.get("eval_count", 0)),

@@ -30,13 +30,13 @@ budgets:
 
 defaults:
   max_retries: 2
-  timeout_s: 120
+  timeout_s: 300
 
 stages:
   # Phase A: full wiki note synthesis (quality-critical)
   ingest_synthesis:
-    primary:  minimax/MiniMax-M3
-    fallback: [openai/gpt-4.1-mini, ollama/qwen2.5:latest]
+    primary:  ollama/qwen3:8b
+    fallback: [ollama/qwen2.5:latest]
     max_output_tokens: 2000
 
   # Cheap structured extraction: entities, tags, classification
