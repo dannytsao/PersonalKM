@@ -1,6 +1,6 @@
 # PersonalKM — 知識管理系統設計文檔
 
-> 最後更新：2026-07-14 — LINE Bot capture 修復（phantom deletions、Unicode normalize、sparse checkout 安全保護）；詳見 CHANGELOG.md。
+> 最後更新：2026-07-15 — 所有 Phase 穩定：Ollama-only ingest、TCC 修復、優先順序 roadmap 更新。詳見 IMPROVEMENT-BACKLOG.md。
 
 ---
 

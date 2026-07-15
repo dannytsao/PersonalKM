@@ -2,7 +2,25 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
-## 2026-07-14
+## 2026-07-15
+
+### Fixed
+
+- **macOS TCC blocking cron pipeline (addition)**: `git -C ... diff --quiet` always fails under launchd because TCC blocks access to `~/Documents/`. Phase A/B have been skipping with "Vault repo has uncommitted changes" since 7/12. Fix: removed the git dirty check from both runner scripts. Phase A is idempotent — running on a clean repo is a no-op.
+- **`local ec=$?` bash syntax error**: `local` keyword used outside a function in both runner scripts. Never triggered before because the dirty check exited early. Fix: changed to `ec=$?`.
+- **`ingest_synthesis` model chain broken**: `minimax/MiniMax-M3` returned unparseable JSON (thinking text), `openai/gpt-4.1-mini` 401'd (no valid API key), `ollama/qwen2.5:latest` returned empty. Fix: `models.yaml` now uses `ollama/qwen3:8b` as primary with `ollama/qwen2.5:latest` fallback. Removed all non-Ollama providers.
+- **Ollama thinking tags poisoning JSON**: qwen models with "thinking" capability prefix output with `thinking\n...` before JSON. Fix: `OllamaProvider._strip_thinking()` in `ollama.py` strips thinking tags.
+- **Default timeout too short for local LLMs**: 120s → 300s.
+
+### Changed
+
+- **IMPROVEMENT-BACKLOG.md**: Full priority reorder (P0#1 → P1#4 → P3#9 → ... → P0#2). Contains tiered execution plan with priority ranks for all 9 remaining backlog items.
+- **README.md / DESIGN.md**: Status updated to reflect Ollama-only ingest + TCC fixes.
+- **Phase A hand-run**: Successfully processed remaining 13 raw files → 77 wiki pages (59 entities, 18 concepts). Raw folder empty. Pipeline running on Ollama-only local models.
+
+### Added
+
+- **P0#1: Health monitoring cron job**: Hermes cron `personalkm-health-check` (every 4h) checks Render health, vault last capture, pipeline status, and stale raw files. Reports issues proactively.
 
 ### Fixed
 
