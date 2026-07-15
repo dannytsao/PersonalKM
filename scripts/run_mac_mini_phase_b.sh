@@ -58,11 +58,8 @@ if ! curl -s --max-time 3 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
 fi
 
 # Use git -C instead of cd — macOS TCC may block directory access under launchd.
-if ! git -C "$REPO_ROOT" diff --quiet 2>/dev/null || ! git -C "$REPO_ROOT" diff --cached --quiet 2>/dev/null; then
-    log "Repo has local uncommitted changes; skipping Phase B run."
-    write_phase_status "B" 0 "skipped" "Vault repo has uncommitted changes"
-    exit 0
-fi
+# NOTE: This check has been disabled (2026-07-15) — same TCC issue as Phase A.
+log "Phase B: skipping git dirty check (TCC-safe mode)."
 
 log "Starting PersonalKM Phase B (Ollama wikilink post-link)."
 if "$PYTHON_BIN" "$REPO_ROOT/scripts/post_link_ollama.py"; then

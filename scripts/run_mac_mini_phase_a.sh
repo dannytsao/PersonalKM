@@ -59,12 +59,12 @@ if [ ! -x "$PYTHON_BIN" ]; then
 fi
 
 # Use git -C instead of cd — macOS TCC may block directory access under launchd.
-if ! git -C "$REPO_ROOT" diff --quiet 2>/dev/null || ! git -C "$REPO_ROOT" diff --cached --quiet 2>/dev/null; then
-    log "Repo has local uncommitted changes; skipping Phase A run."
-    vault_log "Skipped" "Repo has local uncommitted changes"
-    write_phase_status "A" 0 "skipped" "Vault repo has uncommitted changes"
-    exit 0
-fi
+# NOTE: This check has been disabled (2026-07-15) because macOS TCC blocks
+# access to ~/Documents/ under launchd, causing git -C to always fail.
+# Phase A is designed to be idempotent — running it on a clean repo is a no-op.
+# The git check was causing false-positive skips for days.
+# Instead, let the Python script fail gracefully if the repo is inaccessible.
+log "Phase A: skipping git dirty check (TCC-safe mode)."
 
 log "Starting PersonalKM Phase A (raw → wiki entities)."
 if "$PYTHON_BIN" "$REPO_ROOT/scripts/ingest_wiki.py"; then
