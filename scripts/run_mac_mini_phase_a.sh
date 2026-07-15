@@ -71,7 +71,7 @@ if "$PYTHON_BIN" "$REPO_ROOT/scripts/ingest_wiki.py"; then
     log "Finished PersonalKM Phase A (success)."
     write_phase_status "A" 0 "success"
 else
-    local ec=$?
+    ec=$?
     log "Phase A Python script failed with exit code $ec."
     write_phase_status "A" "$ec" "failed" "Python runner failed with exit $ec"
     exit "$ec"

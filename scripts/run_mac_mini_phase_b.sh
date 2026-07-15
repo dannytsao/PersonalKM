@@ -66,7 +66,7 @@ if "$PYTHON_BIN" "$REPO_ROOT/scripts/post_link_ollama.py"; then
     log "Finished PersonalKM Phase B (success)."
     write_phase_status "B" 0 "success"
 else
-    local ec=$?
+    ec=$?
     log "Phase B Python script failed with exit code $ec."
     write_phase_status "B" "$ec" "failed" "Python runner failed with exit $ec"
     exit "$ec"
