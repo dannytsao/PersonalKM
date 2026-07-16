@@ -16,6 +16,12 @@ All completed implementation reports, one-time analyses, and delivery summaries 
 ### Changed
 
 - **IMPROVEMENT-BACKLOG.md**: Marked priority sequence 1-10 completed and tested.
+- **Karpathy LLM Wiki checklist**: Updated `CHECKLIST.md` with confirmed-delivered items and remaining gaps. User-confirmed live LINE capture for normal URL, YouTube, pure text, X/Threads auth-limited URLs, plus vault/wiki content quality checks. Remaining gaps are raw frontmatter/status contract, retry/pending semantics, GitHub-specific live capture, Obsidian graph/query/cron/privacy confirmations, canonical registry externalization, and legacy LLM client cleanup.
+- **Obsidian sync latency**: Updated recommended Obsidian Git auto-pull interval from 10 minutes to 3 minutes after local Git/Obsidian Git configuration was confirmed working.
+
+### Fixed
+
+- **Render vault push non-fast-forward**: Hardened capture vault git flow so reused Render clones advance local `HEAD` to `origin/main`, and non-fast-forward pushes retry with fetch + rebase + push. This prevents one stale vault clone from causing following LINE captures to fail.
 
 ## 2026-07-15
 
