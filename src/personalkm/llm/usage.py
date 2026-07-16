@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import sys
+import argparse
 from datetime import date
 from pathlib import Path
 
@@ -68,5 +69,25 @@ def report() -> str:
     return "\n".join(lines)
 
 
-if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "report":
-    print(report())
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Report PersonalKM LLM token usage.")
+    sub = parser.add_subparsers(dest="command")
+    report_parser = sub.add_parser("report", help="Print today's usage")
+    report_parser.add_argument("--notify", action="store_true", help="Send report through configured notification channels")
+    args = parser.parse_args(argv)
+
+    if args.command == "report":
+        text = report()
+        print(text)
+        if args.notify:
+            from personalkm.llm.alerts import notify_usage_report
+
+            notify_usage_report(text)
+        return 0
+
+    parser.print_help()
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

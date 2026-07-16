@@ -2,6 +2,21 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
+## 2026-07-16
+
+### Added
+
+- **P2#7: IG/Threads/X social recovery**: Social URLs with pasted caption text now use that text before attempting auth-walled fetches. Blocked social captures and resolver stubs expose pending local-worker metadata; the omnichannel worker can discover pending notes from pure markdown status blocks.
+- **P4#11: Query search**: Query engine now searches `wiki/`, `raw/`, and `resolved/`, preserving `source_kind`, source URL, and `log_id` where available. CLI path corrected to pass vault root.
+- **P2#6: YouTube deep notes**: Deterministic fallback now creates one-line takeaways, highlights, timestamp bullets, action items, key concepts, concept-node suggestions, and transcript excerpts.
+- **P3#10: Housekeeping reports**: Inbox archive/trash automation now emits structured reports with move counts and skipped reasons; cloud housekeeping writes `outputs/housekeeping/housekeeping-*.md`.
+- **P0#2: Token rotation reminder**: Added `personalkm.security.token_rotation` CLI with safe credentialed-URL detection and stale-token reminders via `VAULT_TOKEN_ROTATED_AT`.
+- **P0#3: LLMError alerts + usage report**: Router sends a best-effort alert when all model candidates are exhausted, while still raising `LLMError`. `python -m personalkm.llm.usage report --notify` sends daily usage through configured notification channels.
+
+### Changed
+
+- **IMPROVEMENT-BACKLOG.md**: Marked priority sequence 1-10 completed and tested.
+
 ## 2026-07-15
 
 ### Fixed

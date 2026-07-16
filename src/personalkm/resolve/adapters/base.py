@@ -45,6 +45,8 @@ _PATTERNS: list[tuple[str, str]] = [
     (r"github\.com/[^/]+/[^/]+", "github"),
     (r"threads\.(net|com)/", "threads"),
     (r"instagram\.com/", "instagram"),
+    (r"(?:^|//)(?:www\.)?(?:x|twitter)\.com/", "x"),
+    (r"(?:^|//)(?:www\.|vm\.)?tiktok\.com/", "tiktok"),
 ]
 
 

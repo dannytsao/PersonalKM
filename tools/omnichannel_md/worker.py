@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -66,6 +67,55 @@ def is_pending_worker_note(metadata: dict[str, Any]) -> tuple[bool, bool]:
     return explicit_pending or legacy_pending, legacy_pending
 
 
+def infer_metadata_from_markdown_body(body: str) -> dict[str, Any]:
+    """Infer worker metadata from pure-markdown raw notes.
+
+    Current capture notes intentionally avoid YAML frontmatter. Their
+    ``## 擷取狀態`` block still contains stable key/value lines that are enough
+    for the local worker queue to identify auth-walled social captures.
+    """
+    metadata: dict[str, Any] = {}
+    key_map = {
+        "平台": "platform",
+        "擷取狀態": "extraction_status",
+        "需要人工確認": "needs_review",
+        "需要本機 worker": "needs_local_worker",
+        "worker_status": "worker_status",
+        "worker_type": "worker_type",
+        "worker_retry_count": "worker_retry_count",
+    }
+    for line in body.splitlines():
+        match = re.match(r"^\s*-\s*([^:：]+)\s*[：:]\s*(.*?)\s*$", line)
+        if not match:
+            continue
+        raw_key, raw_value = match.groups()
+        key = key_map.get(raw_key.strip())
+        if not key:
+            continue
+        value = raw_value.strip()
+        if value in {"是", "true", "True"}:
+            metadata[key] = True
+        elif value in {"否", "false", "False"}:
+            metadata[key] = False
+        elif key == "worker_retry_count":
+            try:
+                metadata[key] = int(value)
+            except ValueError:
+                metadata[key] = 0
+        else:
+            metadata[key] = value
+
+    url_match = re.search(r"^## 原文連結\s*\n\s*(https?://\S+)", body, re.MULTILINE)
+    if url_match:
+        metadata["url"] = url_match.group(1).strip()
+
+    log_id_match = re.search(r"^## Log ID\s*\n\s*([^\n]+)", body, re.MULTILINE)
+    if log_id_match:
+        metadata["log_id"] = log_id_match.group(1).strip()
+
+    return metadata
+
+
 def scan_pending_notes(repo_root: Path) -> list[QueueCandidate]:
     raw_root = repo_root / "raw"
     if not raw_root.exists():
@@ -74,9 +124,10 @@ def scan_pending_notes(repo_root: Path) -> list[QueueCandidate]:
     candidates: list[QueueCandidate] = []
     for path in sorted(raw_root.rglob("*.md")):
         document = parse_markdown(path.read_text(encoding="utf-8"))
-        is_pending, legacy = is_pending_worker_note(document.frontmatter)
+        metadata = document.frontmatter or infer_metadata_from_markdown_body(document.body)
+        is_pending, legacy = is_pending_worker_note(metadata)
         if is_pending:
-            candidates.append(QueueCandidate(path=path, metadata=document.frontmatter, legacy=legacy))
+            candidates.append(QueueCandidate(path=path, metadata=metadata, legacy=legacy))
     return candidates
 
 

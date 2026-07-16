@@ -1,3 +1,6 @@
+import json
+import re
+
 from bot.link_processor import (
     ExtractedContent,
     ensure_food_summary_details,
@@ -27,7 +30,10 @@ from bot.link_processor import (
     platform_from_url,
     restricted_platform_fallback,
     should_capture_line_message_context,
+    social_caption_text,
     to_note,
+    youtube_key_concepts,
+    youtube_timestamp_highlights,
     youtube_video_id,
 )
 from bs4 import BeautifulSoup
@@ -109,6 +115,32 @@ def test_food_note_body_includes_multiple_restaurant_locations():
     assert note.location_city == "臺北市"
 
 
+def test_food_note_exposes_structured_places_json():
+    content = ExtractedContent(
+        title="台北5間森林系咖啡廳",
+        text="一邊欣賞窗外綠意，一邊喝咖啡。",
+    )
+    summary = (
+        "店家資訊：1. 店名：咖朵咖啡 Caldo Cafe，地址：臺北市士林區至善路二段390號；"
+        "2. 店名：CE' & LIB-RARY天母店，地址：臺北市士林區中山北路七段14巷2號；"
+        "摘要：整理台北森林系咖啡廳。"
+    )
+
+    note = to_note(content, "https://example.com/forest-cafes", summary, "food")
+    json_block = re.search(r"## 店家資料\n```json\n(.*?)\n```", note.body_markdown, re.DOTALL)
+
+    assert json_block
+    payload = json.loads(json_block.group(1))
+    assert payload["places"] == list(note.places)
+    assert payload["places"][0] == {
+        "name": "咖朵咖啡 Caldo Cafe",
+        "city": "臺北市",
+        "address": "臺北市士林區至善路二段390號",
+        "google_maps_url": google_maps_url("臺北市士林區至善路二段390號"),
+    }
+    assert payload["places"][1]["google_maps_url"] == google_maps_url("臺北市士林區中山北路七段14巷2號")
+
+
 def test_single_food_note_dedupes_summary_and_body_details():
     content = ExtractedContent(
         title="Chew The Day 嚼日子",
@@ -120,7 +152,7 @@ def test_single_food_note_dedupes_summary_and_body_details():
 
     assert "### 1." not in note.body_markdown
     assert note.body_markdown.count("- 店名：Chew The Day 嚼日子") == 1
-    assert note.body_markdown.count("大同區庫倫街13巷2弄2號") == 2
+    assert note.body_markdown.count("- 地址：大同區庫倫街13巷2弄2號") == 1
     assert "店名：店名" not in note.body_markdown
 
 
@@ -155,6 +187,38 @@ def test_food_summary_details_marks_missing_fields_as_not_provided():
     detailed = ensure_food_summary_details("台北美食推薦", "今天介紹一家餐廳。", "這是一篇美食摘要。", "food")
 
     assert detailed.startswith("店名：未提供；地址：未提供；摘要：")
+
+
+def test_food_note_marks_missing_place_fields_for_review():
+    content = ExtractedContent(
+        title="台北美食推薦",
+        text="今天介紹一家餐廳。",
+    )
+
+    note = to_note(content, "https://example.com/food", "店名：未提供；地址：未提供；摘要：這是一篇美食摘要。", "food")
+
+    assert note.needs_review is True
+    assert note.places == (
+        {
+            "name": "未提供",
+            "city": "未提供",
+            "address": "未提供",
+            "google_maps_url": "",
+        },
+    )
+
+
+def test_food_note_marks_conflicting_address_for_review():
+    content = ExtractedContent(
+        title="五年咖啡",
+        text="店名：五年咖啡，地址：臺北市士林區中山北路六段441巷46弄3號",
+    )
+    summary = "店名：五年咖啡，地址：臺北市士林區中山北路六段999號；摘要：老宅咖啡。"
+
+    note = to_note(content, "https://example.com/food", summary, "food")
+
+    assert note.needs_review is True
+    assert note.places[0]["address"] == "臺北市士林區中山北路六段999號"
 
 
 def test_youtube_video_id_supports_common_url_shapes():
@@ -238,6 +302,18 @@ def test_to_note_quotes_social_original_content():
     assert "## 原始內容\n> 短文第一行\n> 短文第二行" in note.body_markdown
 
 
+def test_blocked_social_note_marks_local_worker_pending():
+    content = restricted_platform_fallback("https://x.com/user/status/1")
+
+    note = to_note(content, "https://x.com/user/status/1", "需要本機補強。", "tech")
+
+    assert note.needs_local_worker
+    assert note.worker_status == "pending"
+    assert "- 需要本機 worker：是" in note.body_markdown
+    assert "- worker_status：pending" in note.body_markdown
+    assert "- worker_type：omnichannel_md" in note.body_markdown
+
+
 def test_platform_from_url_detects_restricted_platforms():
     assert platform_from_url("https://www.instagram.com/reel/abc/") == "instagram"
     assert platform_from_url("https://www.tiktok.com/@user/video/1") == "tiktok"
@@ -281,6 +357,13 @@ def test_google_ai_mode_context_text_removes_share_url():
     text = f"{url}\nAI Mode 回答：這篇內容整理 agent workflow 與自動化。"
 
     assert google_ai_mode_context_text(url, text, 200) == "AI Mode 回答：這篇內容整理 agent workflow 與自動化。"
+
+
+def test_social_caption_text_removes_social_url():
+    url = "https://www.threads.net/@user/post/abc"
+    text = f"{url}\n這篇貼文整理了 AI agent workflow、local-first 知識管理與實作心得。"
+
+    assert social_caption_text(url, text, 200) == "這篇貼文整理了 AI agent workflow、local-first 知識管理與實作心得。"
 
 
 def test_line_message_context_helpers_preserve_pasted_article_text():
@@ -379,7 +462,9 @@ def test_fallback_youtube_deep_note_has_required_sections():
     summary, category, body = fallback_youtube_deep_note(
         "AI 工具教學",
         "https://youtu.be/example",
-        "這支影片介紹 AI 工具如何規劃與執行工作。",
+        "00:15 這支影片介紹 AI 工具如何規劃與執行工作。"
+        "02:30 接著示範 Claude Code 與 GitHub Actions 的自動化流程。"
+        "最後整理實作注意事項與下一步。",
     )
 
     assert summary
@@ -387,6 +472,30 @@ def test_fallback_youtube_deep_note_has_required_sections():
     assert "## 一句話重點" in body
     assert "## 核心摘要" in body
     assert "## 重點條列" in body
+    assert "## 時間戳重點" in body
+    assert "- 00:15：" in body
     assert "## 可行動項目" in body
     assert "## 關鍵概念" in body
+    assert "Claude Code" in body
+    assert "## 適合建立的概念節點" in body
+    assert "[[claude-code]]" in body
+    assert "## 逐字稿摘錄" in body
     assert "## 原文連結\nhttps://youtu.be/example" in body
+
+
+def test_youtube_timestamp_highlights_extracts_timestamped_bullets():
+    items = youtube_timestamp_highlights(
+        "00:10 介紹問題背景與工具選擇。\n01:25:30 - 示範完整自動化流程。"
+    )
+
+    assert items == [
+        ("00:10", "介紹問題背景與工具選擇"),
+        ("01:25:30", "示範完整自動化流程"),
+    ]
+
+
+def test_youtube_key_concepts_extracts_tool_names():
+    concepts = youtube_key_concepts("AI workflow", "Claude Code integrates with GitHub Actions and OpenAI API.")
+
+    assert "Claude Code" in concepts
+    assert "GitHub Actions" in concepts

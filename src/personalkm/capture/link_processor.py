@@ -1,6 +1,6 @@
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Optional
 from urllib.parse import parse_qs, quote_plus, urlparse
@@ -99,6 +99,10 @@ class FoodPlace:
     name: str
     address: str
     city: str
+    google_maps_url: str = ""
+
+    def to_dict(self) -> dict[str, str]:
+        return asdict(self)
 
 
 @dataclass(frozen=True)
@@ -369,6 +373,7 @@ def instagram_fallback_content(content_type: str) -> ExtractedContent:
 def restricted_platform_fallback(url: str) -> ExtractedContent:
     platform = platform_from_url(url)
     labels = {
+        "instagram": "Instagram post",
         "tiktok": "TikTok video",
         "x": "X/Twitter post",
         "threads": "Threads post",
@@ -381,6 +386,30 @@ def google_ai_mode_context_text(url: str, context_text: str, max_chars: int) -> 
     text = re.sub(r"https?://[^\s<>()\"'，。！？、；：「」『』]+", " ", text)
     text = " ".join(text.split())
     return text[:max_chars]
+
+
+def social_caption_text(url: str, context_text: str, max_chars: int) -> str:
+    """Return user-pasted caption text around a social URL, if present."""
+    return google_ai_mode_context_text(url, context_text, max_chars)
+
+
+def social_caption_content(url: str, context_text: str, max_chars: int) -> Optional[ExtractedContent]:
+    caption = social_caption_text(url, context_text, max_chars)
+    if len(caption) < 12:
+        return None
+
+    platform = platform_from_url(url)
+    titles = {
+        "instagram": "Instagram pasted caption",
+        "tiktok": "TikTok pasted caption",
+        "x": "X/Twitter pasted post",
+        "threads": "Threads pasted post",
+    }
+    return ExtractedContent(
+        title=titles.get(platform, f"{platform} pasted social post"),
+        text=f"使用者貼上的社群貼文內容：{caption}",
+        platform=platform,
+    )
 
 
 def google_ai_mode_share_content(url: str, context_text: str = "", max_chars: int = 8000) -> ExtractedContent:
@@ -480,11 +509,16 @@ def links_markdown(primary_url: str, text: str) -> str:
 
 def canonical_body_markdown(content: ExtractedContent, url: str, summary: str) -> str:
     content_type = content_type_for_platform(content.platform)
+    worker = local_worker_metadata(content)
     status_line = (
         f"- 平台：{content.platform}\n"
         f"- 類型：{content_type}\n"
         f"- 擷取狀態：{content.extraction_status}\n"
-        f"- 需要人工確認：{'是' if content.needs_review else '否'}"
+        f"- 需要人工確認：{'是' if content.needs_review else '否'}\n"
+        f"- 需要本機 worker：{'是' if worker['needs_local_worker'] else '否'}\n"
+        f"- worker_status：{worker['worker_status']}\n"
+        f"- worker_type：{worker['worker_type']}\n"
+        f"- worker_retry_count：{worker['worker_retry_count']}"
     )
     source_text = clipped_markdown_text(content.text)
     if content_type == "social_post":
@@ -511,10 +545,20 @@ def canonical_body_markdown(content: ExtractedContent, url: str, summary: str) -
 def to_note(content: ExtractedContent, url: str, summary: str, category: str) -> LinkNote:
     body_markdown = canonical_body_markdown(content, url, summary)
     location_city = ""
+    places: tuple[dict[str, str], ...] = ()
+    needs_review = content.needs_review
     if category == "food":
         food_places = extract_food_places(content.title, content.text, summary)
+        summary_places = extract_food_places("", "", summary)
+        text_places = extract_food_places(content.title, content.text, "")
         body_markdown = food_body_markdown(content.title, content.text, summary, url, food_places)
         location_city = food_location_city(food_places)
+        places = tuple(place.to_dict() for place in food_places)
+        needs_review = (
+            needs_review
+            or food_places_need_review(food_places)
+            or food_places_have_conflict(summary_places, text_places)
+        )
 
     return LinkNote(
         title=content.title,
@@ -524,9 +568,10 @@ def to_note(content: ExtractedContent, url: str, summary: str, category: str) ->
         captured_on=datetime.now(CAPTURE_TIMEZONE).date(),
         platform=content.platform,
         extraction_status=content.extraction_status,
-        needs_review=content.needs_review,
+        needs_review=needs_review,
         body_markdown=body_markdown,
         location_city=location_city if location_city != "未提供" else "",
+        places=places,
         content_type=content_type_for_platform(content.platform),
         **local_worker_metadata(content),
     )
@@ -545,6 +590,7 @@ def to_deep_note(content: ExtractedContent, url: str, summary: str, category: st
         needs_review=note.needs_review,
         body_markdown=body_markdown,
         location_city=note.location_city,
+        places=note.places,
         content_type=note.content_type,
         needs_local_worker=note.needs_local_worker,
         worker_status=note.worker_status,
@@ -794,6 +840,7 @@ def food_place(name: str, address: str) -> FoodPlace:
         name=clean_food_value(name) or "未提供",
         address=clean_address or "未提供",
         city=extract_food_city(clean_address),
+        google_maps_url=google_maps_url(clean_address),
     )
 
 
@@ -862,6 +909,26 @@ def food_location_city(places: list[FoodPlace]) -> str:
     return ", ".join(cities)
 
 
+def food_places_need_review(places: list[FoodPlace]) -> bool:
+    return any(place.name == "未提供" or place.address == "未提供" for place in places)
+
+
+def food_places_have_conflict(primary: list[FoodPlace], secondary: list[FoodPlace]) -> bool:
+    """Return True when the same named place has conflicting concrete addresses."""
+    primary_by_name = {
+        place.name: place.address
+        for place in primary
+        if place.name != "未提供" and place.address != "未提供"
+    }
+    for place in secondary:
+        if place.name == "未提供" or place.address == "未提供":
+            continue
+        existing = primary_by_name.get(place.name)
+        if existing and existing != place.address:
+            return True
+    return False
+
+
 def food_summary_prefix(title: str, page_text: str) -> str:
     corpus = f"{title} {page_text}"
     return f"店名：{extract_food_name(title, corpus)}；地址：{extract_food_address(corpus)}"
@@ -902,6 +969,11 @@ def food_places_markdown(places: list[FoodPlace]) -> str:
     return "\n".join(lines).rstrip()
 
 
+def food_places_json_markdown(places: list[FoodPlace]) -> str:
+    payload = {"places": [place.to_dict() for place in places]}
+    return "## 店家資料\n```json\n" + json.dumps(payload, ensure_ascii=False, indent=2) + "\n```"
+
+
 def food_body_markdown(
     title: str,
     page_text: str,
@@ -913,6 +985,7 @@ def food_body_markdown(
 
     return (
         f"{food_places_markdown(food_places)}\n\n"
+        f"{food_places_json_markdown(food_places)}\n\n"
         "## 摘要\n"
         f"{summary.strip()}\n\n"
         "## 原文連結\n"
@@ -1042,22 +1115,88 @@ async def summarize_with_llm(settings: Settings, title: str, url: str, page_text
 def fallback_youtube_deep_note(title: str, url: str, transcript_text: str) -> tuple[str, str, str]:
     category = fallback_category(title, transcript_text)
     summary = ensure_food_summary_details(title, transcript_text, fallback_summary(title, transcript_text), category)
+    highlights = youtube_highlights(transcript_text)
+    timestamps = youtube_timestamp_highlights(transcript_text)
+    concepts = youtube_key_concepts(title, transcript_text)
+    highlight_lines = "\n".join(f"- {item}" for item in highlights)
+    timestamp_lines = "\n".join(f"- {stamp}：{text}" for stamp, text in timestamps) or "- 逐字稿未包含可辨識時間戳。"
+    concept_lines = "\n".join(f"- {concept}" for concept in concepts) or "- 待補充"
+    node_lines = "\n".join(f"- [[{normalize_concept_slug(concept)}]]" for concept in concepts[:6]) or "- 待補充"
     body = (
         "## 一句話重點\n"
         f"{summary}\n\n"
         "## 核心摘要\n"
         f"{summary}\n\n"
         "## 重點條列\n"
-        "- 逐字稿已擷取，但目前無法使用 LLM 產生深度整理。\n"
-        "- 請直接閱讀逐字稿或稍後補跑整理。\n\n"
+        f"{highlight_lines}\n\n"
+        "## 時間戳重點\n"
+        f"{timestamp_lines}\n\n"
         "## 可行動項目\n"
-        "- 檢查這支影片是否值得深入整理。\n\n"
+        "- 將最有用的重點合併到相關 canonical entity 或 concept page。\n"
+        "- 追查影片中提到的工具、框架或方法，補上來源與實作筆記。\n"
+        "- 若影片是教學內容，挑一個步驟做最小可行實作並記錄結果。\n\n"
         "## 關鍵概念\n"
-        "- 待補充\n\n"
+        f"{concept_lines}\n\n"
+        "## 適合建立的概念節點\n"
+        f"{node_lines}\n\n"
+        "## 逐字稿摘錄\n"
+        f"{clipped_markdown_text(transcript_text, 1200)}\n\n"
         "## 原文連結\n"
         f"{url}"
     )
     return summary, category, body
+
+
+def youtube_highlights(transcript_text: str, max_items: int = 8) -> list[str]:
+    cleaned = re.sub(r"\s+", " ", transcript_text).strip()
+    parts = [
+        part.strip()
+        for part in re.split(r"(?<=[。！？.!?])\s+|[。！？]\s*", cleaned)
+        if len(part.strip()) >= 18
+    ]
+    if not parts and cleaned:
+        parts = [cleaned[i:i + 120].strip() for i in range(0, min(len(cleaned), 600), 120)]
+    return [part[:180].rstrip("，,。.;； ") for part in parts[:max_items]]
+
+
+def youtube_timestamp_highlights(transcript_text: str, max_items: int = 8) -> list[tuple[str, str]]:
+    pattern = re.compile(
+        r"(?P<stamp>(?:\d{1,2}:)?\d{1,2}:\d{2})\s*[-–—:：]?\s*(?P<text>[^。\n]{8,160})"
+    )
+    items: list[tuple[str, str]] = []
+    for match in pattern.finditer(transcript_text):
+        text = " ".join(match.group("text").split()).strip(" -–—:：，,。")
+        if text:
+            items.append((match.group("stamp"), text))
+        if len(items) >= max_items:
+            break
+    return items
+
+
+def youtube_key_concepts(title: str, transcript_text: str, max_items: int = 8) -> list[str]:
+    corpus = f"{title} {transcript_text}"
+    candidates = re.findall(
+        r"(?:[A-Z][A-Za-z0-9.+#/-]+|[A-Z]{2,})"
+        r"(?:\s+(?:[A-Z][A-Za-z0-9.+#/-]+|[A-Z]{2,})){0,2}",
+        corpus,
+    )
+    seen: set[str] = set()
+    result: list[str] = []
+    for candidate in candidates:
+        cleaned = candidate.strip(".,;:!?()[]{}")
+        key = cleaned.lower()
+        if key in seen or key in {"https", "youtube", "video"}:
+            continue
+        seen.add(key)
+        result.append(cleaned)
+        if len(result) >= max_items:
+            break
+    return result
+
+
+def normalize_concept_slug(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", value.lower()).strip("-")
+    return slug or "youtube-concept"
 
 
 async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, transcript_text: str) -> tuple[str, str, str]:
@@ -1074,8 +1213,11 @@ async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, 
             "一句話重點",
             "核心摘要",
             "重點條列",
+            "時間戳重點",
             "可行動項目",
             "關鍵概念",
+            "適合建立的概念節點",
+            "逐字稿摘錄",
             "值得追問的問題",
             "原文連結",
         ],
@@ -1091,7 +1233,8 @@ async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, 
                     "你是資深知識管理助理。請根據 YouTube 逐字稿產生繁體中文深度筆記。"
                     "輸出 JSON，欄位為 summary, category, body_markdown。summary 是 1-2 句。"
                     "category 只能是 photography, food, tech, general。body_markdown 必須是 Markdown，"
-                    "包含指定章節；不要編造逐字稿沒有的事實。若 category 是 food，summary 必須列出可辨識的"
+                    "包含指定章節；重點條列需 5-10 點；若逐字稿含時間戳，時間戳重點要保留時間；"
+                    "可行動項目與適合建立的概念節點都要具體。不要編造逐字稿沒有的事實。若 category 是 food，summary 必須列出可辨識的"
                     "店家資訊；若內容包含多間店，請逐一列出所有可辨識店家，格式為"
                     "「店家資訊：1. 店名：...，地址：...；2. 店名：...，地址：...」。"
                     "若只有一間店，summary 必須明確包含「店名：...」與「地址：...」。"
@@ -1129,6 +1272,12 @@ async def process_url(settings: Settings, url: str, context_text: str = "") -> L
             return to_deep_note(content, url, summary, category, body_markdown)
         summary, category = await summarize_with_llm(settings, content.title, url, content.text)
         return to_note(content, url, summary, category)
+
+    if is_restricted_platform(url):
+        caption_content = social_caption_content(url, context_text, settings.max_page_chars)
+        if caption_content:
+            summary, category = await summarize_with_llm(settings, caption_content.title, url, caption_content.text)
+            return to_note(caption_content, url, summary, category)
 
     instagram_type = instagram_content_type(url)
     if instagram_type:

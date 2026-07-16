@@ -176,7 +176,8 @@ raw/ capture
 
 - CLI: `python3 scripts/query_wiki.py -i` (interactive REPL) 或 `--json`
 - Web: `GET /query?q=hermes+agent&top_k=10`
-- Hybrid search: title (score 3) > frontmatter > body mentions > entity registry
+- Hybrid search: `wiki/` title/frontmatter/body/entity registry + `raw/` / `resolved/` source metadata and excerpts
+- Raw/resolved matches include source URL and `log_id` when available
 - LLM synthesis with `[[wikilink]]` citations (可用 `--no-llm` 關閉)
 
 ### Sanity Check & Repair

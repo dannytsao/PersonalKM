@@ -1,6 +1,6 @@
 import re
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
@@ -32,6 +32,7 @@ class LinkNote:
     needs_review: bool = False
     body_markdown: str = ""
     location_city: str = ""
+    places: tuple[dict[str, str], ...] = field(default_factory=tuple)
     log_id: str = ""
     content_type: str = ""
     needs_local_worker: bool = False

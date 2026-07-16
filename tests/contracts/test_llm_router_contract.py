@@ -91,3 +91,16 @@ def test_all_exhausted_raises_never_silent(fake_env, monkeypatch):
     _patch_providers(monkeypatch, {"a": a, "b": b})
     with pytest.raises(LLMError):
         router_mod.route("test_stage", "prompt")
+
+
+def test_all_exhausted_sends_llm_alert(fake_env, monkeypatch):
+    alerts = []
+    a, b = FakeProvider("a", "boom"), FakeProvider("b", "bad_json")
+    _patch_providers(monkeypatch, {"a": a, "b": b})
+    monkeypatch.setattr(router_mod.alerts, "notify_llm_error", lambda stage, error: alerts.append((stage, str(error))))
+
+    with pytest.raises(LLMError):
+        router_mod.route("test_stage", "prompt")
+
+    assert len(alerts) == 1
+    assert alerts[0][0] == "test_stage"

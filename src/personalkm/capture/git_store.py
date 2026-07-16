@@ -132,6 +132,11 @@ def commit_and_push(settings: Settings, note_path: Path) -> None:
     vault_path = settings.vault_path
     relative_path = note_path.relative_to(vault_path)
 
+    # Render reuses /tmp between webhook events, so a previous sparse-checkout
+    # repair can leave unrelated vault files staged. Clear the index before
+    # staging the new raw note; this does not rewrite the working tree.
+    run_git(["reset", "HEAD", "--", "."], vault_path, settings)
+
     # Stage only the file we intend to commit — never --all
     run_git(["add", str(relative_path)], vault_path, settings)
 

@@ -6,7 +6,6 @@ for the fetch() methods and test business logic directly.
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -57,6 +56,14 @@ class TestClassifyUrl:
 
     def test_instagram(self):
         assert classify_url("https://www.instagram.com/p/abc123/") == "instagram"
+
+    def test_x(self):
+        assert classify_url("https://x.com/user/status/123") == "x"
+        assert classify_url("https://twitter.com/user/status/123") == "x"
+
+    def test_tiktok(self):
+        assert classify_url("https://www.tiktok.com/@user/video/123") == "tiktok"
+        assert classify_url("https://vm.tiktok.com/abc") == "tiktok"
 
     def test_generic_http(self):
         assert classify_url("https://example.com/article") == "generic"
@@ -152,9 +159,13 @@ class TestAdapterSelection:
         assert adapter is not None
         assert adapter.source_type == "generic"
 
-    def test_unknown_url_returns_none(self):
+    def test_threads_url_uses_jina_adapter(self):
         adapter = _find_adapter("https://www.threads.net/@user/post/abc")
-        assert adapter is None
+        assert adapter is not None
+        assert adapter.__class__.__name__ == "JinaAdapter"
+
+    def test_x_url_has_no_cloud_adapter(self):
+        assert _find_adapter("https://x.com/user/status/123") is None
 
 
 # ── Healthy test helper ───────────────────────────────────────
@@ -329,3 +340,27 @@ class TestRunner:
         content = get_resolved_content(raw_path)
         assert content is not None
         assert "Resolved content" in content
+
+    def test_create_social_auth_stub_marks_worker_pending(self, tmp_path: Path):
+        from src.personalkm.resolve.runner import _create_stub
+
+        raw = tmp_path / "vault" / "raw" / "Tech" / "x.md"
+        raw.parent.mkdir(parents=True)
+        raw.write_text("# X post\n\ncaption from user")
+
+        stubs = tmp_path / "vault" / "wiki" / "stubs"
+        _create_stub(
+            stubs,
+            Path("Tech/x.md"),
+            "https://x.com/user/status/123",
+            "auth_required",
+            raw_path=raw,
+        )
+
+        stub = stubs / "Tech" / "x.md"
+        content = stub.read_text(encoding="utf-8")
+        assert "platform: x" in content
+        assert "content_type: social_post" in content
+        assert "needs_local_worker: true" in content
+        assert "worker_status: pending" in content
+        assert "caption from user" in content

@@ -53,7 +53,14 @@ created: {date}
 updated: {date}
 stub: true
 source: {url}
+platform: {platform}
+content_type: {content_type}
 status: {status}
+needs_review: {needs_review}
+needs_local_worker: {needs_local_worker}
+worker_status: {worker_status}
+worker_type: {worker_type}
+worker_retry_count: 0
 ---
 
 ## {title}
@@ -94,6 +101,8 @@ _STUB_NOTES = {
         "The URL and your original note are preserved for reference."
     ),
 }
+
+_SOCIAL_PLATFORMS = {"instagram", "threads", "x", "tiktok"}
 
 
 def resolve_raw_notes(
@@ -269,6 +278,11 @@ def _create_stub(
     label = _STUB_LABELS.get(status, status)
     note = _STUB_NOTES.get(status, "")
     date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    platform = classify_url(url)
+    content_type = "social_post" if platform in _SOCIAL_PLATFORMS else "webpage"
+    needs_local_worker = status == "auth_required" and platform in _SOCIAL_PLATFORMS
+    worker_status = "pending" if needs_local_worker else "not_required"
+    worker_type = "omnichannel_md" if needs_local_worker else "none"
 
     # Derive a title from the raw note filename
     title = _stub_title_from_rel(rel)
@@ -290,7 +304,13 @@ def _create_stub(
         title=title,
         date=date,
         url=url,
+        platform=platform,
+        content_type=content_type,
         status=status,
+        needs_review=str(status == "auth_required").lower(),
+        needs_local_worker=str(needs_local_worker).lower(),
+        worker_status=worker_status,
+        worker_type=worker_type,
         status_label=label,
         note=note,
     )

@@ -42,9 +42,9 @@ logger = logging.getLogger(__name__)
 WIKILINK_RE = re.compile(r"\[\[([^\]]+)\]\]")
 
 SEARCH_RESULT_KEYS = [
-    "page", "slug", "title", "type", "topic", "tags",
+    "page", "slug", "title", "source_kind", "type", "topic", "tags",
     "confidence", "score", "match_reason", "sources",
-    "summary_excerpt",
+    "summary_excerpt", "url", "log_id",
 ]
 
 
@@ -67,6 +67,22 @@ def _parse_frontmatter(content: str) -> tuple[dict, str]:
 
 def _extract_wikilinks(text: str) -> list[str]:
     return WIKILINK_RE.findall(text)
+
+
+def _query_tokens(query: str) -> set[str]:
+    tokens = set(re.findall(r"[a-z0-9\u4e00-\u9fff\-_]+", query.lower().strip()))
+    return {t for t in tokens if len(t) > 1}
+
+
+def _section_text(body: str, heading: str) -> str:
+    pattern = rf"^##\s+{re.escape(heading)}\s*\n(.*?)(?=^##\s+|\Z)"
+    match = re.search(pattern, body, re.MULTILINE | re.DOTALL)
+    return match.group(1).strip() if match else ""
+
+
+def _first_url(text: str) -> str:
+    match = re.search(r"https?://[^\s\])>\"']+", text)
+    return match.group(0).rstrip(".,;:!?)]}") if match else ""
 
 
 def _smart_truncate(text: str, max_chars: int = 300) -> str:
@@ -93,9 +109,7 @@ def search_wiki(
     Returns list of dicts sorted by score (highest first).
     """
     query_lower = query.lower().strip()
-    query_tokens = set(re.findall(r"[a-z0-9\u4e00-\u9fff\-_]+", query_lower))
-    # Remove very short tokens
-    query_tokens = {t for t in query_tokens if len(t) > 1}
+    query_tokens = _query_tokens(query)
 
     if not query_tokens:
         return []
@@ -190,6 +204,7 @@ def search_wiki(
                     "page": str(fpath.relative_to(wiki_path.parent)),
                     "slug": slug,
                     "title": title,
+                    "source_kind": "wiki",
                     "type": fm.get("type", subdir[:-1]),
                     "topic": fm.get("topic", ""),
                     "tags": fm.get("tags", ""),
@@ -206,6 +221,108 @@ def search_wiki(
     return scored[:top_k]
 
 
+def search_raw_and_resolved(
+    query: str,
+    vault_root: Path,
+    top_k: int = 10,
+) -> list[dict]:
+    """Search raw/ and resolved/ notes for supporting source material."""
+    query_lower = query.lower().strip()
+    query_tokens = _query_tokens(query)
+    if not query_tokens:
+        return []
+
+    scored: list[dict] = []
+    for root_name, source_kind in (("raw", "raw"), ("resolved", "resolved")):
+        root = vault_root / root_name
+        if not root.exists():
+            continue
+
+        for fpath in sorted(root.rglob("*.md")):
+            try:
+                content = fpath.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                continue
+
+            fm, body = _parse_frontmatter(content)
+            slug = fpath.stem
+            title = fm.get("title") or ""
+            if not title:
+                for line in body.splitlines():
+                    if line.startswith("# "):
+                        title = line[2:].strip()
+                        break
+            title = title or slug
+
+            haystack = f"{title}\n{body}\n{' '.join(str(v) for v in fm.values())}".lower()
+            title_lower = title.lower()
+            score = 0.0
+            reasons: list[str] = []
+
+            if query_lower == title_lower:
+                score += 12
+                reasons.append("title_exact")
+            elif title_lower.startswith(query_lower) or query_lower.startswith(title_lower):
+                score += 9
+                reasons.append("title_prefix")
+
+            title_tokens = _query_tokens(title)
+            overlap = query_tokens & title_tokens
+            if overlap:
+                score += 4 * len(overlap)
+                reasons.append(f"title_tokens:{','.join(sorted(overlap)[:3])}")
+
+            body_mentions = sum(1 for token in query_tokens if token in haystack)
+            if body_mentions:
+                score += 1.5 * body_mentions
+                reasons.append(f"source_mentions:{body_mentions}")
+
+            if score <= 0:
+                continue
+
+            summary = _section_text(body, "摘要") or _section_text(body, "Summary")
+            source_excerpt = summary or _section_text(body, "原始內容") or _section_text(body, "原始貼文") or body
+            log_id = _section_text(body, "Log ID").splitlines()[0].strip() if _section_text(body, "Log ID") else ""
+            url = fm.get("url") or _section_text(body, "原文連結") or _first_url(body)
+
+            scored.append({
+                "page": str(fpath.relative_to(vault_root)),
+                "slug": slug,
+                "title": title,
+                "source_kind": source_kind,
+                "type": source_kind,
+                "topic": "",
+                "tags": "",
+                "confidence": fm.get("confidence", ""),
+                "score": score,
+                "match_reason": "; ".join(reasons[:3]),
+                "sources": url,
+                "summary_excerpt": _smart_truncate(source_excerpt.strip(), 300),
+                "url": str(url).strip(),
+                "log_id": log_id,
+                "_path": fpath,
+                "_body": body,
+            })
+
+    scored.sort(key=lambda r: -r["score"])
+    return scored[:top_k]
+
+
+def search_vault(
+    query: str,
+    vault_root: Path,
+    top_k: int = 10,
+    registry: Optional[EntityRegistry] = None,
+) -> list[dict]:
+    """Search wiki plus raw/resolved source notes."""
+    wiki_path = vault_root / "wiki"
+    wiki_results = search_wiki(query, wiki_path, top_k=top_k, registry=registry)
+    source_results = search_raw_and_resolved(query, vault_root, top_k=top_k)
+    combined = wiki_results + source_results
+    combined.sort(key=lambda r: -r["score"])
+    return combined[:top_k]
+
+
 def build_llm_context(results: list[dict], max_chars: int = 4000) -> str:
     """Build a context string for the LLM from search results."""
     chunks = []
@@ -219,7 +336,14 @@ def build_llm_context(results: list[dict], max_chars: int = 4000) -> str:
         # Build a compact entry
         entry = f"## {path}\n"
         entry += f"Title: {title}\n"
-        entry += f"Type: {r['type']} | Topic: {r['topic']} | Confidence: {r['confidence']}\n"
+        entry += (
+            f"Kind: {r.get('source_kind', 'wiki')} | "
+            f"Type: {r['type']} | Topic: {r['topic']} | Confidence: {r['confidence']}\n"
+        )
+        if r.get("url"):
+            entry += f"URL: {r['url']}\n"
+        if r.get("log_id"):
+            entry += f"Log ID: {r['log_id']}\n"
         if summary:
             entry += f"Summary: {summary}\n"
         if body_sample:
@@ -290,7 +414,8 @@ def query_wiki(
         total_matches, llm_used, error
     """
     wiki_path = vault_root / "wiki"
-    if not wiki_path.exists():
+    searchable_roots = [vault_root / name for name in ("wiki", "raw", "resolved")]
+    if not any(path.exists() for path in searchable_roots):
         return {
             "query": query,
             "timestamp": datetime.now().isoformat(),
@@ -298,10 +423,10 @@ def query_wiki(
             "total_matches": 0,
             "llm_used": False,
             "answer": None,
-            "error": f"wiki/ not found in {vault_root}",
+            "error": f"No wiki/, raw/, or resolved/ found in {vault_root}",
         }
     registry = EntityRegistry(wiki_path) if wiki_path.exists() else None
-    results = search_wiki(query, wiki_path, top_k=top_k, registry=registry)
+    results = search_vault(query, vault_root, top_k=top_k, registry=registry)
 
     output = {
         "query": query,
@@ -404,9 +529,8 @@ def main():
     args = parser.parse_args()
 
     vault_path = Path(args.vault).resolve()
-    wiki_path = vault_path / "wiki"
-    if not wiki_path.exists():
-        print(f"Error: wiki/ not found in {vault_path}")
+    if not any((vault_path / name).exists() for name in ("wiki", "raw", "resolved")):
+        print(f"Error: no wiki/, raw/, or resolved/ found in {vault_path}")
         sys.exit(1)
 
     if args.interactive:
@@ -419,7 +543,7 @@ def main():
                 break
             if not q or q.lower() in ("/quit", "/exit", "/q"):
                 break
-            result = query_wiki(q, wiki_path, top_k=args.top_k, use_llm=not args.no_llm)
+            result = query_wiki(q, vault_path, top_k=args.top_k, use_llm=not args.no_llm)
             display_cli(result, json_mode=args.json)
         return
 
@@ -427,7 +551,7 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    result = query_wiki(args.query, wiki_path, top_k=args.top_k, use_llm=not args.no_llm)
+    result = query_wiki(args.query, vault_path, top_k=args.top_k, use_llm=not args.no_llm)
     display_cli(result, json_mode=args.json)
 
 

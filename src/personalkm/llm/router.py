@@ -24,6 +24,7 @@ from pathlib import Path
 import yaml
 
 from . import usage
+from . import alerts
 from .base import Completion, LLMError, Provider, parse_json_strict
 
 log = logging.getLogger(__name__)
@@ -115,4 +116,6 @@ def route(
                 log.warning("[%s] %s attempt %d failed: %s", stage, candidate, attempt, e)
                 errors.append(f"{candidate}#{attempt}: {e}")
 
-    raise LLMError(f"All models exhausted for stage '{stage}': {errors}")
+    error = LLMError(f"All models exhausted for stage '{stage}': {errors}")
+    alerts.notify_llm_error(stage, error)
+    raise error

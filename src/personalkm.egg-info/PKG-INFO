@@ -3,8 +3,12 @@ Name: personalkm
 Version: 0.2.0
 Summary: Personal KM pipeline: LINE capture -> resolve -> LLM synthesis -> wiki
 Requires-Python: >=3.9
+Requires-Dist: beautifulsoup4>=4.12
 Requires-Dist: pyyaml>=6.0
 Requires-Dist: fastapi>=0.110
+Requires-Dist: httpx>=0.28
+Requires-Dist: openai>=1.58
+Requires-Dist: pydantic-settings>=2.7
 Requires-Dist: uvicorn>=0.29
 Requires-Dist: readability-lxml>=0.8
 Requires-Dist: html2text>=2024.2

@@ -1,7 +1,7 @@
 # PersonalKM — AI-Powered Second Brain
 
 **Status:** ✅ ALL PHASES STABLE — Render webhook + Mac Mini cron (Ollama-only) + Phase A/B auto
-**Last Updated:** 2026-07-15 — LINE Bot TCC/stability fixes, Ollama-only ingest, priority roadmap updated; see IMPROVEMENT-BACKLOG.md for execution order.
+**Last Updated:** 2026-07-16 — Priority backlog 1-10 completed/tested: social recovery, query search, YouTube deep notes, housekeeping reports, token rotation, and LLM alerts.
 
 LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每月報告追踪過時的技術知識。
 
