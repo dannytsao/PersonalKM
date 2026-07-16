@@ -48,6 +48,27 @@ class GitError(subprocess.CalledProcessError):
         return orig
 
 
+def _is_non_fast_forward(error: GitError) -> bool:
+    stderr = (error.stderr or "").lower()
+    return "non-fast-forward" in stderr or "fetch first" in stderr
+
+
+def _push_with_rebase(vault_path: Path, settings: Settings) -> None:
+    try:
+        run_git(["push", "origin", settings.vault_branch], vault_path, settings)
+    except GitError as e:
+        if not _is_non_fast_forward(e):
+            raise
+        import logging
+        logging.getLogger(__name__).warning(
+            "Vault push rejected as non-fast-forward; rebasing onto origin/%s",
+            settings.vault_branch,
+        )
+        run_git(["fetch", "origin", settings.vault_branch], vault_path, settings)
+        run_git(["rebase", f"origin/{settings.vault_branch}"], vault_path, settings)
+        run_git(["push", "origin", settings.vault_branch], vault_path, settings)
+
+
 def _try_repair_and_checkout(vault_path: Path, settings: Settings) -> bool:
     """Try to repair a broken git repo and checkout the target branch.
 
@@ -55,6 +76,10 @@ def _try_repair_and_checkout(vault_path: Path, settings: Settings) -> bool:
     """
     try:
         run_git(["fetch", "origin", settings.vault_branch], vault_path, settings)
+        # Move HEAD to the fetched remote tip. A pathspec reset below repairs
+        # the index but does not advance HEAD, which makes the next push
+        # non-fast-forward when Render reuses an older /tmp clone.
+        run_git(["reset", "--soft", f"origin/{settings.vault_branch}"], vault_path, settings)
         # Reset index to match fetched origin so non-raw files aren't staged as deleted
         run_git(["reset", f"origin/{settings.vault_branch}", "--", "."], vault_path, settings)
         # Only checkout raw/ directory into working tree
@@ -67,6 +92,7 @@ def _try_repair_and_checkout(vault_path: Path, settings: Settings) -> bool:
     # Try harder: clean up working tree and orphaned state
     try:
         run_git(["read-tree", "--empty"], vault_path, settings)
+        run_git(["reset", "--soft", f"origin/{settings.vault_branch}"], vault_path, settings)
         run_git(["reset", f"origin/{settings.vault_branch}", "--", "."], vault_path, settings)
         run_git(["checkout", f"origin/{settings.vault_branch}", "--", "raw/"], vault_path, settings)
         return True
@@ -173,7 +199,7 @@ def commit_and_push(settings: Settings, note_path: Path) -> None:
     # Commit with --only to ignore any other accidental staged changes
     run_git(["commit", "--only", str(relative_path),
              "-m", f"Add LINE link note: {note_path.stem}"], vault_path, settings)
-    run_git(["push", "origin", settings.vault_branch], vault_path, settings)
+    _push_with_rebase(vault_path, settings)
 
     import logging
     logging.getLogger(__name__).info(
