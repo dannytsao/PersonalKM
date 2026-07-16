@@ -19,6 +19,7 @@
 | 7 | P2#6 YouTube 深化 | 🟠 P2 | 中/中 | ⏳ 待做 |
 | 8 | P3#10 Housekeeping | 🔵 P3 | 低/低 | ⏳ 待做 |
 | 9 | P0#2 Token 輪換 | 🔴 P0 | 低/低 | ⏳ 待做 |
+| 10 | P0#3 LLMError 告警 + 用量報告 | 🔴 P0 | 中/低 | ⏳ 待做（MIGRATION.md 未完成項） |
 
 ---
 
@@ -46,6 +47,21 @@
 - 定期提醒 rotate token。
 - 確認 `VAULT_REPO_URL` 已同步更新到 Render web service 與 housekeeping cron。
 - 未來改用更小權限的 token 或 GitHub deploy key。
+
+### 3. LLMError LINE 告警 + 用量報告 🥉
+
+**優先：第 10 順位（MIGRATION.md 未完成項）**
+
+目標：當 LLM 呼叫失敗時自動通知，並每日檢視用量。
+
+目前狀態：
+- `python -m personalkm.llm.usage report` 指令已存在，可顯示今日 token 用量
+- 但 LLMError 發生時沒有自動通知（LINE/Telegram）
+
+建議做法：
+- LLMError 發生時透過 LINE Notify 或 Telegram bot 發送告警
+- 每日定時執行 usage report，異常時通知
+- 可整合到現有的健康監控 cron job 中
 
 ## P1 — Raw Quality / 進 raw 前與 raw 內清理
 
