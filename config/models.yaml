@@ -38,11 +38,20 @@ defaults:
   timeout_s: 300
 
 stages:
-  # Phase A: full wiki note synthesis (quality-critical)
+  # Phase A: full wiki note synthesis (quality-critical). Cloud-first since
+  # 2026-07-20: side-by-side comparison on real captures via
+  # scripts/compare_ingest_synthesis.py (ingest_synthesis vs the now-retired
+  # ingest_synthesis_trial stage) showed DeepSeek consistently kept more
+  # concrete detail than ollama/qwen3:8b (specific tool/model names, rollout
+  # specifics, named frameworks) at comparable or better speed, on every
+  # sample tried. Every capture goes through this stage, so quality here
+  # matters more than the negligible cost difference at this volume.
   ingest_synthesis:
-    primary:  ollama/qwen3:8b
-    fallback: [ollama/qwen2.5:latest]
-    max_output_tokens: 2000
+    primary:  deepseek/deepseek-v4-flash
+    fallback: [minimax/MiniMax-M2.7-highspeed, ollama/qwen3:8b]
+    # deepseek-v4-flash's internal reasoning pass counts against
+    # max_output_tokens (see entity_distillation below) — sized the same way.
+    max_output_tokens: 4000
 
   # Cheap structured extraction: entities, tags, classification
   entity_extraction:

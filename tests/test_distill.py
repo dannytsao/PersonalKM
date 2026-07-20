@@ -3,6 +3,8 @@ from pathlib import Path
 
 import personalkm.propagate.distill as distill_mod
 from personalkm.propagate.distill import (
+    DistillationPreview,
+    apply_distillation,
     attach_source_links,
     build_distillation_prompt,
     check_trigger,
@@ -229,3 +231,108 @@ def test_build_distillation_prompt_requires_dates_on_key_facts():
     # prompt didn't call out dates on key_facts specifically, only generally.
     prompt = build_distillation_prompt("Claude Code", "body")
     assert "YYYY-MM-DD" in prompt
+
+
+def _make_triggered_page(tmp_path: Path, extra_fm: str = "") -> Path:
+    page = tmp_path / "busy.md"
+    captures = "\n".join(f"### Capture {i} (2026-07-0{i})" for i in range(1, 6))
+    page.write_text(
+        f"---\ntitle: Busy Page\ncreated: 2026-06-01\n{extra_fm}---\n\n{captures}\n",
+        encoding="utf-8",
+    )
+    return page
+
+
+def test_apply_distillation_returns_false_when_not_triggered():
+    preview = DistillationPreview(
+        path=Path("x.md"), title="X", triggered=False, reason="no trigger",
+        captures_count=1, proposed_summary="summary",
+    )
+    assert apply_distillation(Path("x.md"), preview) is False
+
+
+def test_apply_distillation_returns_false_when_no_summary(tmp_path: Path):
+    page = _make_triggered_page(tmp_path)
+    preview = DistillationPreview(
+        path=page, title="Busy Page", triggered=True, reason="captures_count 5 >= 5",
+        captures_count=5, proposed_summary=None, error="LLM failed",
+    )
+    assert apply_distillation(page, preview) is False
+    # Nothing written — original content untouched.
+    assert "Capture 1" in page.read_text(encoding="utf-8")
+
+
+def test_apply_distillation_preserves_original_body_verbatim(tmp_path: Path):
+    page = _make_triggered_page(tmp_path)
+    preview = DistillationPreview(
+        path=page, title="Busy Page", triggered=True, reason="captures_count 5 >= 5",
+        captures_count=5, proposed_summary="濃縮後的摘要",
+        proposed_key_facts=["重點一 (2026-07-01)", "重點二 (2026-07-02)"],
+    )
+
+    assert apply_distillation(page, preview) is True
+    new_content = page.read_text(encoding="utf-8")
+
+    # Nothing from the original body was deleted — it's all still there,
+    # just wrapped in a collapsed block.
+    for i in range(1, 6):
+        assert f"Capture {i} (2026-07-0{i})" in new_content
+    assert "<details>" in new_content and "</details>" in new_content
+    assert "濃縮後的摘要" in new_content
+    assert "重點一 (2026-07-01)" in new_content
+    # The summary appears BEFORE the folded original content.
+    assert new_content.index("濃縮後的摘要") < new_content.index("<details>")
+
+
+def test_apply_distillation_bumps_frontmatter_fields(tmp_path: Path):
+    page = _make_triggered_page(tmp_path)
+    preview = DistillationPreview(
+        path=page, title="Busy Page", triggered=True, reason="captures_count 5 >= 5",
+        captures_count=5, proposed_summary="summary", proposed_key_facts=[],
+    )
+
+    apply_distillation(page, preview)
+    fm, _ = distill_mod._parse_frontmatter(page.read_text(encoding="utf-8"))
+
+    assert fm["distill_count"] == "1"
+    assert fm["captures_count"] == "5"
+    assert fm["active_captures"] == "0"
+    assert "last_distilled" in fm
+    assert "updated" in fm
+
+
+def test_apply_distillation_increments_distill_count_on_repeat_runs(tmp_path: Path):
+    page = _make_triggered_page(tmp_path, extra_fm="distill_count: 2\n")
+    preview = DistillationPreview(
+        path=page, title="Busy Page", triggered=True, reason="captures_count 5 >= 5",
+        captures_count=5, proposed_summary="summary", proposed_key_facts=[],
+    )
+
+    apply_distillation(page, preview)
+    fm, _ = distill_mod._parse_frontmatter(page.read_text(encoding="utf-8"))
+    assert fm["distill_count"] == "3"
+
+
+def test_apply_distillation_does_not_touch_other_frontmatter_fields(tmp_path: Path):
+    # _set_field must only touch its own line — a full reparse/rebuild would
+    # silently drop multi-line YAML values like sources:/tags: lists (this
+    # module's own _parse_frontmatter is line-based and can't round-trip them).
+    page = tmp_path / "busy.md"
+    captures = "\n".join(f"### Capture {i} (2026-07-0{i})" for i in range(1, 6))
+    page.write_text(
+        "---\ntitle: Busy Page\ncreated: 2026-06-01\n"
+        "sources:\n  - \"[[a]]\"\n  - \"[[b]]\"\n"
+        "tags: [foo, bar]\n"
+        f"---\n\n{captures}\n",
+        encoding="utf-8",
+    )
+    preview = DistillationPreview(
+        path=page, title="Busy Page", triggered=True, reason="captures_count 5 >= 5",
+        captures_count=5, proposed_summary="summary", proposed_key_facts=[],
+    )
+
+    apply_distillation(page, preview)
+    new_content = page.read_text(encoding="utf-8")
+    assert '- "[[a]]"' in new_content
+    assert '- "[[b]]"' in new_content
+    assert "tags: [foo, bar]" in new_content

@@ -329,12 +329,19 @@ Respond ONLY with this JSON (no markdown, no code fences):
 _MAX_CONTENT_CHARS = 8000
 
 
-def _synthesize_wiki_note(body: str, *, page_type: str, source_path: str) -> Dict[str, Any]:
+def _synthesize_wiki_note(
+    body: str, *, page_type: str, source_path: str, synthesis_stage: str = "ingest_synthesis",
+) -> Dict[str, Any]:
     """Synthesize a wiki note via the LLM router (two cost-tiered stages).
 
     No skip_llm fallback: if every candidate model for a stage is exhausted,
     `route()` raises LLMError and it propagates unchanged (AGENTS.md rule 3 /
     MIGRATION.md step 3) — the raw note stays pending and is retried next run.
+
+    synthesis_stage defaults to the live "ingest_synthesis" config/models.yaml
+    stage; scripts/compare_ingest_synthesis.py passes a different stage name
+    (e.g. "ingest_synthesis_trial") to compare candidate models on the exact
+    same prompt without touching what production actually uses.
     """
     content = body[:_MAX_CONTENT_CHARS]
 
@@ -350,7 +357,7 @@ def _synthesize_wiki_note(body: str, *, page_type: str, source_path: str) -> Dic
         page_type=page_type, source_path=source_path, content=content,
     )
     synthesis = route(
-        "ingest_synthesis", synthesis_prompt,
+        synthesis_stage, synthesis_prompt,
         system=_SYNTHESIS_SYSTEM_PROMPT, expect_json=True,
     )
 

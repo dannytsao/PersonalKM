@@ -31,8 +31,52 @@
 目前沒有此序列中的待做項；下一輪 backlog 需重新排定。過程中發現幾個未列入本輪、需要另外排優先序的缺口：
 
 - **LINE 目前完全沒有回覆機制**：`src/personalkm/capture/app.py` 的 `/webhook/line` 只做 capture，沒有任何 `reply_message`/`push_message` 呼叫。CHECKLIST.md 第 24-26 項「從 LINE 問問題」實際上連管線都還沒接，不只是缺 live 驗證。P5#15 的 write-back 因此先做在既有 `/query` HTTP endpoint 與 `query_wiki()` 函式層，LINE 對話式問答本身是獨立的較大工作項，需另外排入 backlog。
-- **Entity Distillation Loop 只做到 dry-run**（P5#16）：觸發判斷與 AI 濃縮提議已經可以跑，但刻意還沒有「真的寫回頁面」與「接進 Mac Mini cron」——這兩步等你拿 dry-run 結果對過真實 vault 內容、確認 DeepSeek 濃縮品質沒問題之後才要做。`decay_score_threshold` 也還沒實作，只有 `captures_threshold`/`max_age_days` 兩個觸發條件。
 - **`wiki/stubs/` 頁面的 frontmatter 沒有被 `test_frontmatter_schema.py` 合約涵蓋**：這類頁面（IG/Threads 等抓不到內容時建立）有自己一套欄位（`stub`/`platform`/`worker_status`/...），跟 entities/concepts 頁面完全不同語意，目前沒有任何合約在驗證它。
+- Entity Distillation Loop 的 `decay_score_threshold` 仍未實作，只有 `captures_threshold`/`max_age_days` 兩個簡化版觸發條件。
+
+**2026-07-20：Entity Distillation Loop 寫回機制 + `ingest_synthesis` 雲端化比較工具**
+
+### Entity Distillation Loop 寫回（P5#16 續）
+
+狀態：✅ 寫回機制已完成並測試，**Cron 整合刻意不做**。
+
+目標：把 dry-run 驗證過的折疊保留設計真正實作出來。
+
+目前行為：
+- `distill.py` 新增 `apply_distillation()`：把 AI 摘要 + 重點寫在頁面最上面，原始 body（含所有 `### capture (date)` 全文）完整保留、包進 `<details>` 摺疊區塊，**不刪除任何內容**。Frontmatter 補上 SPEC.md 定義的 `last_distilled`/`distill_count`/`captures_count`/`active_captures` 四個欄位，`distill_count` 會正確遞增。
+- `_set_field()` 只用整行比對（`.*$`），刻意不用完整重新解析再重建 frontmatter——因為 `distill.py` 自己的 `_parse_frontmatter()` 是逐行解析，會漏掉 `sources:`/`tags:` 這種多行 YAML 清單，如果拿它重建整個 frontmatter 會把這些欄位悄悄刪掉（跟 `post_link_ollama.py` 那次 bug 是同一個教訓）。
+- `scripts/distill_entities.py` 新增 `--apply`：每一頁寫回前都會印出提議內容並要求 y/n 個別確認，沒有任何頁面會被無聲寫入；`--apply` 不能跟 `--no-llm` 併用（沒有摘要就沒有東西可以寫）。
+- **Cron 整合刻意沒做**：這次 session 連續在別的地方踩到好幾個「自動化跑了很久才被發現壞掉」的 bug（Kimi 誤路由、`wikilink_processed` 疊加、`sources:` 污染），基於這個真實經驗，建議先讓使用者用 `--apply` 手動跑過幾次、確認品質穩定後，才考慮排進 Mac Mini hourly cron，這個決定留給你。
+- 已知簡化：同一頁被重複濃縮多次時，摺疊區塊會一層包一層，沒有處理巢狀問題——目前觸發頻率低（5 筆 capture 或 30 天），實務上要很多輪才會顯現，先不處理。
+- 測試：`tests/test_distill.py` 新增 8 案例（未觸發/無摘要不寫入、原文逐字保留、frontmatter 正確遞增、重複執行 `distill_count` 累加、不動到 `sources:`/`tags:` 等既有欄位）。
+
+### `ingest_synthesis` 雲端化比較工具（P5 決策準備）
+
+狀態：✅ 比較工具已完成並測試，**還沒改變任何正式行為**。
+
+目標：在不影響 Phase A 正式運作的前提下，讓你能用真實內容比較現行 Ollama 版本跟雲端版本的品質。
+
+目前行為：
+- `ingestion_v2._synthesize_wiki_note()` 新增 `synthesis_stage` 參數（預設 `"ingest_synthesis"`，不影響現有唯一呼叫點的行為），可以指定其他 stage 名稱重跑同一段內容。
+- `config/models.yaml` 新增 `ingest_synthesis_trial` stage（DeepSeek 優先，跟 `entity_distillation` 同一套 fallback 鏈），**只給比較工具用，`ingestion_v2.py` 的正式呼叫路徑完全沒有接到它**。
+- 新增 `scripts/compare_ingest_synthesis.py`：讀一個你指定的真實 raw/resolved 檔案，同一段內容分別跑過 `ingest_synthesis`（現行 Ollama）與 `ingest_synthesis_trial`（DeepSeek），印出兩邊的 topic/tags/confidence/summary 與耗時，方便並排比較。只讀你指定的檔案，不寫入任何東西。
+- 測試：`tests/test_ingestion_synthesis.py`（monkeypatch 驗證預設 stage 名稱不變、自訂 stage 名稱正確傳遞）。
+
+**2026-07-20：`ingest_synthesis` 正式換成雲端優先**
+
+狀態：✅ 已完成，這是這輪唯一真正改動 Phase A 正式行為的決定。
+
+用 `compare_ingest_synthesis.py` 對兩篇真實 resolved 內容（OpenAI ChatGPT Work 更新、Claude Hacks 影片）做並排比較後決定：
+
+- 兩篇 DeepSeek 版本都明顯保留更多具體事實——第一篇多抓到「可在桌面存取本機檔案」「可在 `.chatgpt.site` 建站」「僅付費用戶開放」等 Ollama 版本完全沒提到的細節；第二篇 DeepSeek 正確抓出「六個技巧」「Perfect Prompt Formula」「Apex Mindset 示範專案」「Base 44」「Claude Opus 4.8」，Ollama 版本只給了一段籠統敘述、連「六個技巧」都沒提到。速度上 DeepSeek 也沒有明顯劣勢（其中一篇還更快）。
+- 這個結果跟稍早 Distillation Loop 測試 `claude-code.md` 時觀察到的模式一致（DeepSeek 覆蓋更廣、細節更具體），不是單次巧合。
+- `config/models.yaml` 的 `ingest_synthesis` stage 正式改成 `deepseek/deepseek-v4-flash` 優先，fallback 鏈 `minimax/MiniMax-M2.7-highspeed → ollama/qwen3:8b`；`max_output_tokens` 一併調到 4000（沿用 `entity_distillation` 那次學到的教訓：deepseek-v4-flash 的內部 reasoning 過程會佔用輸出額度）。比較用的 `ingest_synthesis_trial` stage 已移除（決策已定案，不再需要）。
+- 過程中發現使用者環境變數 export 成小寫（`minimax_api_key` 而非 `MINIMAX_API_KEY`）導致兩把 key 一直讀不到——shell 環境變數大小寫敏感，這不是程式碼問題。過程中使用者不慎把兩把真實 API key 貼進對話紀錄，已提醒視為外洩、需要重新產生新 key。
+- 182 個測試全過。
+
+**尚未做，需要你決定：**
+- Distillation Loop 要不要接進 Mac Mini cron，等你手動用 `--apply` 跑過幾次再說
+- 如果之後想再測試其他候選模型（例如 Claude），`compare_ingest_synthesis.py` 這支工具還在，但需要在 `config/models.yaml` 重新加一個 trial stage 才能用（原本的 `ingest_synthesis_trial` 已經因為決策定案被移除）
 
 ---
 

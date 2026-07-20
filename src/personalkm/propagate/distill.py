@@ -1,12 +1,12 @@
 """Entity/concept page distillation — SPEC.md "Entity Distillation Loop".
 
-Status: dry-run only (2026-07-19 decision, see IMPROVEMENT-BACKLOG.md P5).
-This module computes which pages would trigger distillation and what the
-LLM proposes as a concentrated summary — it never writes to a page. Writing
-(fold-preserve retention: proposed summary on top, original ### capture
-entries folded into a <details> block, nothing deleted) is a deliberate
-follow-up once dry-run output has been manually reviewed against real vault
-content, not built here.
+Status (2026-07-20): dry-run (preview_distillation/scan_for_candidates) plus
+fold-preserve write-back (apply_distillation). Write-back is opt-in only —
+scripts/distill_entities.py requires an explicit --apply flag and per-page
+confirmation; nothing here writes on its own. Retention is fold-preserve
+(2026-07-19 decision): the AI summary goes on top, the entire pre-existing
+body is preserved untouched inside a collapsed <details> block — nothing is
+ever deleted, so a bad summary can't destroy the original captures.
 
 Trigger conditions are a simplified subset of SPEC.md's distill_trigger:
 captures_threshold and max_age_days are implemented; decay_score_threshold
@@ -14,6 +14,12 @@ is intentionally omitted. The existing knowledge_decay.py freshness model
 is keyed on DevOps/AI keyword categories for tech-note staleness and doesn't
 map cleanly onto arbitrary entity/concept pages, so it's left as an open
 follow-up rather than force-fit here.
+
+Known simplification: if a page is distilled more than once, the new fold
+wraps around a body that already contains a previous fold, so nesting depth
+grows by one <details> layer per distillation cycle. Not addressed here —
+in practice cycles are infrequent (captures_threshold=5 or 30 days) and this
+would only matter after many repeated cycles on the same page.
 """
 from __future__ import annotations
 
@@ -219,3 +225,71 @@ def scan_for_candidates(wiki_path: Path, call_llm: bool = True) -> list[Distilla
             if preview.triggered:
                 previews.append(preview)
     return previews
+
+
+def _get_int_field(fm_text: str, key: str) -> int:
+    m = re.search(rf"^{re.escape(key)}:\s*(\d+)\s*$", fm_text, re.MULTILINE)
+    return int(m.group(1)) if m else 0
+
+
+def _set_field(fm_text: str, key: str, value: str) -> str:
+    """Set `key: value` in a frontmatter block, appending if the key is
+    missing. Only touches this one field's line — deliberately not a full
+    reparse/rebuild of the frontmatter, because distill.py's own
+    _parse_frontmatter() drops multi-line YAML values (sources:/tags: lists)
+    when it reads line-by-line; rebuilding from that dict would silently
+    delete them. Same lesson as the post_link_ollama.py regex fix: match the
+    whole line (`.*$`), never just part of it.
+    """
+    pattern = re.compile(rf"^{re.escape(key)}:.*$", re.MULTILINE)
+    if pattern.search(fm_text):
+        return pattern.sub(f"{key}: {value}", fm_text, count=1)
+    return fm_text.rstrip("\n") + f"\n{key}: {value}"
+
+
+def apply_distillation(path: Path, preview: DistillationPreview) -> bool:
+    """Write preview's proposed summary back to *path*, fold-preserve style:
+    the summary goes on top, the entire existing body is kept verbatim
+    inside a collapsed <details> block. Returns True if written.
+
+    Only meaningful when preview.triggered and preview.proposed_summary is
+    set (i.e. the LLM call in preview_distillation() succeeded) — callers
+    should check preview.error first and skip pages where it's set.
+    """
+    if not preview.triggered or not preview.proposed_summary:
+        return False
+
+    content = path.read_text(encoding="utf-8")
+    if not content.startswith("---"):
+        return False
+    parts = content.split("---", 2)
+    if len(parts) < 3:
+        return False
+    fm_text, body = parts[1], parts[2]
+
+    today = date.today().isoformat()
+    distill_count = _get_int_field(fm_text, "distill_count") + 1
+
+    fm_text = _set_field(fm_text, "last_distilled", today)
+    fm_text = _set_field(fm_text, "distill_count", str(distill_count))
+    fm_text = _set_field(fm_text, "captures_count", str(preview.captures_count))
+    fm_text = _set_field(fm_text, "active_captures", "0")
+    fm_text = _set_field(fm_text, "updated", today)
+
+    key_facts = preview.proposed_key_facts or []
+    key_facts_md = "\n".join(f"- {fact}" for fact in key_facts)
+    summary_section = f"## 濃縮摘要（{today}）\n\n{preview.proposed_summary}\n"
+    if key_facts_md:
+        summary_section += f"\n{key_facts_md}\n"
+
+    folded = (
+        f"<details>\n"
+        f"<summary>原始 Captures（點擊展開，共 {preview.captures_count} 筆，"
+        f"最後濃縮於 {today}）</summary>\n\n"
+        f"{body.strip()}\n\n"
+        f"</details>\n"
+    )
+
+    new_content = f"---{fm_text}---\n\n{summary_section}\n{folded}"
+    path.write_text(new_content, encoding="utf-8")
+    return True
