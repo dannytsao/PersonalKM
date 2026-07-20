@@ -240,28 +240,42 @@ class IngestionHealthCheck:
             return True  # Still valid, just empty
     
     def check_knowledge_graph(self) -> bool:
-        """Validate knowledge-graph.md (optional)."""
+        """Validate knowledge-graph.md (optional).
+
+        2026-07-20: this used to check for emoji-decorated headers
+        ("# 📊 Knowledge Graph" / "## 🔗 Entities" / "## 💡 Concepts") that
+        personalkm.propagate.knowledge_graph.build_knowledge_graph() has never
+        produced — it emits a plain "# Knowledge Graph" title, and its
+        "## Canonical Entities" / "## Other Entity Pages" / "## Concepts"
+        index sections are each conditional on that category having any
+        pages at all, so none of them are safe to require unconditionally.
+        This silently failed on every single Phase A run without anyone
+        investigating why. Rewritten to check the markers the generator
+        actually, unconditionally emits: the title, timestamp, and the
+        Mermaid flowchart's two subgraph blocks (always present even when
+        empty of nodes).
+        """
         kg_path = self.wiki_path / "knowledge-graph.md"
 
         if not kg_path.exists():
             self.warnings.append("Wiki/knowledge-graph.md MISSING (optional)")
             return True  # Optional, don't fail
-        
+
         content = kg_path.read_text()
-        
+
         # Check structure
-        has_header = "# 📊 Knowledge Graph" in content
-        has_entities_section = "## 🔗 Entities" in content
-        has_concepts_section = "## 💡 Concepts" in content
+        has_header = "# Knowledge Graph" in content
+        has_mermaid = "```mermaid" in content
+        has_subgraphs = "subgraph Entities" in content and "subgraph Concepts" in content
         has_timestamp = "Last updated:" in content
-        
-        all_valid = has_header and has_entities_section and has_concepts_section and has_timestamp
-        
+
+        all_valid = has_header and has_mermaid and has_subgraphs and has_timestamp
+
         if all_valid:
             self.checks_passed.append("knowledge-graph.md valid ✅")
         else:
             self.checks_failed.append("knowledge-graph.md structure invalid ❌")
-        
+
         return all_valid
     
     def check_cross_references(self) -> bool:

@@ -357,8 +357,20 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 - **`sources:` 欄位混入不相關 wiki 頁面路徑，根因是同一個 bug 出現在兩個地方**：`ingestion_v2.py::_auto_promote_entities()` 與 `scripts/phase6_backfill.py::_create_missing_stubs()` 都把「哪些既有頁面提到這個詞」誤寫進 `sources:`（該欄位語意應為「這個 entity 自己的原始 capture 來源」），這筆資訊其實已經在 body 的「## Mentions」區塊正確記錄過一次。已修正兩處，改成 `sources: []`，用假資料驗證兩處輸出都乾淨。**只影響之後新產生的 stub**；已受影響的舊頁面（`antigravity.md`、`deepseek.md`、`inside.md`、`kimi-k3.md`、`openclaw.md`、`qwen.md`）不會自動修正。
 - **`anthropic.md` 額外還有第二個根因，屬於一次性遷移的設計取捨，沒有動**：`phase6_backfill.py::aggregate_entity_content()`/`build_canonical_content()` 在 2026-07-15 執行 Phase 6 遷移時，把多個舊的分散頁面全文直接塞進「## Captures」（不截斷、不做 AI 濃縮），這不是明確的 bug，是遷移工具「先求資料不丟失」的取捨；這支腳本已經跑過、不會再自動執行，修改它的邏輯不會讓 `anthropic.md` 現有內容自動變乾淨，需要你手動決定要不要整理。
 
-**尚未做，需要你回來後決定：**
-- Phase A `ingest_synthesis` stage 是否換成雲端優先——今天真實跑到的 `entity_extraction` JSON 解析失敗、Ollama 逾時，加上速度量測（每筆 capture 約 1.5-2 分鐘），支持雲端化的論點更具體了，但這會改變每小時自動跑的正式行為，需要你用真實資料驗證過品質後再決定，沒有自己動手改
+**尚未做，需要你回來後決定（2026-07-20 更新，移除已解決項目）：**
 - Phase B（`post_link_ollama.py` → `ollama_wikilink.py`）目前完全繞過 `personalkm.llm.router`，直接寫死呼叫 Ollama HTTP API，違反 AGENTS.md hard rule 2；要改成走 router 需要真的改寫這個模組，工程量較大，列為之後的架構債，這次沒有動
-- `anthropic.md`（以及可能其他經過 Phase 6 遷移的頁面）現有內容的手動清理——需要你決定要保留、精簡還是重建
 - `antigravity.md`/`deepseek.md`/`inside.md`/`kimi-k3.md`/`openclaw.md`/`qwen.md` 這 6 個 stub 頁面既有的錯誤 `sources:` 內容，等它們之後有真實 capture 合併進來自然覆蓋，或你手動清理
+- `detect_entity_mentions()` 持續過度偵測垃圾實體（`topic-下載`、`topic-五步驟剪片流程` 這類中文片段被誤判成實體），每次真實 Phase A 跑都看得到，累積出 broken wikilinks 逐漸增加（212 → 223），還沒查根因
+
+~~Phase A `ingest_synthesis` stage 是否換成雲端優先~~ ✅ 已決定並執行，見上方「2026-07-20：`ingest_synthesis` 正式換成雲端優先」。
+~~`anthropic.md` 現有內容的手動清理~~ ✅ 使用者已手動整理完成（拿掉污染的 `sources:` 清單、去除重複內容），已 commit + push。
+
+**2026-07-20：`knowledge-graph.md` health check 長期誤報，已修復**
+
+狀態：✅ 已完成並測試。
+
+每次真實 Phase A 執行的 health check 都回報 `knowledge-graph.md structure invalid ❌`，這個從 session 一開始就每次都看到、但從沒被查過的既有問題，這次查出根因：
+
+- `ingestion_health_check.py::check_knowledge_graph()` 要求檔案裡要有 `"# 📊 Knowledge Graph"`、`"## 🔗 Entities"`、`"## 💡 Concepts"` 這幾個帶 emoji 的標題，但 `personalkm.propagate.knowledge_graph.build_knowledge_graph()` 從來沒有產生過這個格式——實際輸出是純文字的 `"# Knowledge Graph"`，而且 `## Canonical Entities`/`## Concepts` 這些索引區塊是**條件式**的（該分類沒有任何頁面時整段都不會出現），沒有一個是能無條件要求的標記。這是這次 session 第三次遇到同一類問題（`sanity_check.py`、`test_frontmatter_schema.py` 也是檢查邏輯描述一個從沒被實作過的理想格式，不是真實產出）。
+- 修法：改成檢查產生器**真正保證會有**的東西——標題、時間戳、Mermaid 區塊、以及一定會出現的 `subgraph Entities`/`subgraph Concepts`（即使沒有任何節點，這兩個區塊骨架也一定存在）。
+- 新增 `tests/test_ingestion_health_check.py`（真實產出通過驗證 / 真的壞掉的內容仍正確判定失敗 / 檔案不存在時視為可選不算失敗），185 個測試全過。
