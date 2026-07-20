@@ -555,9 +555,15 @@ def _create_missing_stubs(
             continue
 
         # Build stub content
+        # NOTE (2026-07-19): `sources:` used to be filled with the mentioning
+        # PAGES themselves (str(s[0].relative_to(wiki_path.parent)) — full
+        # "wiki/entities/..." paths), same bug as ingestion_v2.py's
+        # _auto_promote_entities. sanity_check.py flags this as "Source
+        # points to wiki/... — expected raw/...": those are cross-references,
+        # not this entity's own raw-capture provenance, and they're already
+        # correctly recorded below in "## Mentions". Starts empty until a
+        # real capture about this entity gets merged in.
         context = mention_sources[0][1][:300]
-        source_paths = [str(s[0].relative_to(wiki_path.parent)) for s in mention_sources[:5]]
-        source_yaml = "\n".join(f'  - "{s}"' for s in source_paths)
 
         if dry_run:
             logger.info(
@@ -573,8 +579,7 @@ created: {today}
 updated: {today}
 type: entity
 topic: Tech-Trends-&-Insights
-sources:
-{source_yaml}
+sources: []
 tags: []
 confidence: medium
 ---

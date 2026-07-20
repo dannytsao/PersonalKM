@@ -30,6 +30,20 @@ log() {
     printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')" "$*"
 }
 
+# Stale lock recovery: `trap ... EXIT` below does not fire on a hard power
+# loss or kill -9, so a crash mid-run can leave the lock directory behind
+# forever, silently skipping every future hourly launch with no recovery.
+# Treat a lock older than this as abandoned, not still-running — a generous
+# margin over any observed run (~17 min for a normal batch).
+STALE_LOCK_MAX_AGE_SECONDS=10800
+if [ -d "$LOCK_DIR" ]; then
+    lock_age=$(( $(date +%s) - $(stat -f %m "$LOCK_DIR" 2>/dev/null || echo 0) ))
+    if [ "$lock_age" -gt "$STALE_LOCK_MAX_AGE_SECONDS" ]; then
+        log "Stale lock (${lock_age}s old) — removing and proceeding."
+        rmdir "$LOCK_DIR" 2>/dev/null || rm -rf "$LOCK_DIR"
+    fi
+fi
+
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then
     log "Phase B already running; skipping this launch."
     write_phase_status "B" 0 "skipped" "Already running (lock file exists)"
