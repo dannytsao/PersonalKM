@@ -1,8 +1,8 @@
 # PersonalKM Improvement Backlog
 
-更新日期：2026-07-19
+更新日期：2026-07-20
 
-這份文件整理目前 LINE Bot + Obsidian 個人知識系統的後續改善事項，按執行優先順序排列。2026-07-16 優先序 1-10 已完成並測試；2026-07-19 新增優先序 11-15（Karpathy LLM-Wiki 差距收斂第一輪 + Entity Distillation Loop dry-run）已完成並測試。
+這份文件整理目前 LINE Bot + Obsidian 個人知識系統的後續改善事項，按執行優先順序排列。2026-07-16 優先序 1-10 已完成並測試；2026-07-19 新增優先序 11-15（Karpathy LLM-Wiki 差距收斂第一輪 + Entity Distillation Loop dry-run）已完成並測試；2026-07-20 新增優先序 17-25（Karpathy LLM-Wiki 差距收斂第二輪，對照實際 vault 數據驗證後排定，並將先前散落在「剩下待做」的 5 個缺口依邏輯依賴關係一併排入，待處理）。
 
 已完成的 LLM-Wiki v2 已移至 `docs/llm-wiki-v2-plan.md`。
 
@@ -25,14 +25,23 @@
 | 13 | P5#14 1 source → N pages | 🔵 P5 | 中/中 | ✅ 已完成（見範圍限定） |
 | 14 | P5#15 Query → write-back | 🔵 P5 | 中/中 | ✅ 已完成（API/CLI 層，定案不接 LINE） |
 | 15 | P5#16 Entity Distillation Loop dry-run | 🔵 P5 | 高/中 | ✅ dry-run 已完成（未寫回、未接 cron）|
+| 16 | P6#17 detect_entity_mentions() 過度偵測根因修復 | 🔵 P6 | 高/中 | 🔲 待開始 |
+| 17 | P6#18 Stub 頁面 sources: 污染清理（6 頁） | 🔵 P6 | 中/低 | 🔲 待開始 |
+| 18 | P6#19 Propagation 回溯補跑 | 🔵 P6 | 高/低 | 🔲 待開始（前置：#16） |
+| 19 | P6#20 entities.yaml 動態白名單取代硬編碼 | 🔵 P6 | 高/中 | 🔲 待開始 |
+| 20 | P6#21 Entity 合併路由改用 LLM 偵測結果 | 🔵 P6 | 高/中 | 🔲 待開始 |
+| 21 | P6#22 Phase B 遷移到 personalkm.llm.router | 🔵 P6 | 中/中 | 🔲 待開始 |
+| 22 | P6#23 Distillation Loop decay_score_threshold 決定 | 🔵 P6 | 低/低 | 🔲 待開始 |
+| 23 | P6#24 Entity Distillation Loop 接進 cron | 🔵 P6 | 中/低 | 🔲 待開始（前置：#16、#21、#22） |
+| 24 | P6#25 wiki/stubs/ frontmatter 合約補齊 | 🔵 P6 | 低/低 | 🔲 待開始 |
 
 ## 剩下待做（照順序）
 
 目前沒有此序列中的待做項；下一輪 backlog 需重新排定。過程中發現幾個未列入本輪、需要另外排優先序的缺口：
 
 - **2026-07-20 定案：LINE 不做對話式問答，維持純 capture 角色，不再是待排入的工作項**。`src/personalkm/capture/app.py` 的 `/webhook/line` 只做 capture，沒有任何 `reply_message`/`push_message` 呼叫，這是刻意的，不是缺工。理由：(1) AGENTS.md hard rule 規定 LINE webhook「Must stay dumb... NO fetching, NO LLM here」，LINE 問句觸發查詢會直接違反這條規則；(2) 查詢回答的核心呈現方式是 `[[wikilink]]` 引用，這是 Obsidian 原生語法，離開 Obsidian 就是死掉的文字，點不了、跳不了。Query 功能正式定位為 CLI（`scripts/query_wiki.py`）與 Obsidian 端，`/query` HTTP endpoint 與 `query_wiki()` 函式層（含 P5#15 write-back）已經是正確且最終的交付範圍，不需要再往 LINE 擴充。同步更新 SPEC.md 第五層、CHECKLIST.md 第 24-26 項。
-- **`wiki/stubs/` 頁面的 frontmatter 沒有被 `test_frontmatter_schema.py` 合約涵蓋**：這類頁面（IG/Threads 等抓不到內容時建立）有自己一套欄位（`stub`/`platform`/`worker_status`/...），跟 entities/concepts 頁面完全不同語意，目前沒有任何合約在驗證它。
-- Entity Distillation Loop 的 `decay_score_threshold` 仍未實作，只有 `captures_threshold`/`max_age_days` 兩個簡化版觸發條件。
+~~`wiki/stubs/` 頁面的 frontmatter 沒有被 `test_frontmatter_schema.py` 合約涵蓋~~ 📋 2026-07-20 已排入 P6#25（見下方，低優先，可獨立處理）。
+~~Entity Distillation Loop 的 `decay_score_threshold` 仍未實作~~ 📋 2026-07-20 已排入 P6#23，作為 P6#24（接進 cron）的前置決策。
 
 **2026-07-20：Entity Distillation Loop 寫回機制 + `ingest_synthesis` 雲端化比較工具**
 
@@ -358,9 +367,9 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 - **`anthropic.md` 額外還有第二個根因，屬於一次性遷移的設計取捨，沒有動**：`phase6_backfill.py::aggregate_entity_content()`/`build_canonical_content()` 在 2026-07-15 執行 Phase 6 遷移時，把多個舊的分散頁面全文直接塞進「## Captures」（不截斷、不做 AI 濃縮），這不是明確的 bug，是遷移工具「先求資料不丟失」的取捨；這支腳本已經跑過、不會再自動執行，修改它的邏輯不會讓 `anthropic.md` 現有內容自動變乾淨，需要你手動決定要不要整理。
 
 **尚未做，需要你回來後決定（2026-07-20 更新，移除已解決項目）：**
-- Phase B（`post_link_ollama.py` → `ollama_wikilink.py`）目前完全繞過 `personalkm.llm.router`，直接寫死呼叫 Ollama HTTP API，違反 AGENTS.md hard rule 2；要改成走 router 需要真的改寫這個模組，工程量較大，列為之後的架構債，這次沒有動
-- `antigravity.md`/`deepseek.md`/`inside.md`/`kimi-k3.md`/`openclaw.md`/`qwen.md` 這 6 個 stub 頁面既有的錯誤 `sources:` 內容，等它們之後有真實 capture 合併進來自然覆蓋，或你手動清理
-- `detect_entity_mentions()` 持續過度偵測垃圾實體（`topic-下載`、`topic-五步驟剪片流程` 這類中文片段被誤判成實體），每次真實 Phase A 跑都看得到，累積出 broken wikilinks 逐漸增加（212 → 223），還沒查根因
+~~Phase B（`post_link_ollama.py` → `ollama_wikilink.py`）目前完全繞過 `personalkm.llm.router`，違反 AGENTS.md hard rule 2~~ 📋 2026-07-20 已排入 P6#22，排在接 cron（P6#24）之前處理，避免把同樣的架構債複製進新的自動化。
+~~`antigravity.md`/`deepseek.md`/`inside.md`/`kimi-k3.md`/`openclaw.md`/`qwen.md` 這 6 個 stub 頁面既有的錯誤 `sources:` 內容~~ 📋 2026-07-20 已排入 P6#18。
+~~`detect_entity_mentions()` 持續過度偵測垃圾實體，broken wikilinks 逐漸增加（212 → 223），還沒查根因~~ 📋 2026-07-20 已排入 P6#17，且刻意排在 P6 最前面——在根因未修前若先跑 P6#19 回溯 propagation，會把垃圾實體摘錄擴散到更多頁面，讓清理更困難。
 
 ~~Phase A `ingest_synthesis` stage 是否換成雲端優先~~ ✅ 已決定並執行，見上方「2026-07-20：`ingest_synthesis` 正式換成雲端優先」。
 ~~`anthropic.md` 現有內容的手動清理~~ ✅ 使用者已手動整理完成（拿掉污染的 `sources:` 清單、去除重複內容），已 commit + push。
@@ -374,3 +383,140 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 - `ingestion_health_check.py::check_knowledge_graph()` 要求檔案裡要有 `"# 📊 Knowledge Graph"`、`"## 🔗 Entities"`、`"## 💡 Concepts"` 這幾個帶 emoji 的標題，但 `personalkm.propagate.knowledge_graph.build_knowledge_graph()` 從來沒有產生過這個格式——實際輸出是純文字的 `"# Knowledge Graph"`，而且 `## Canonical Entities`/`## Concepts` 這些索引區塊是**條件式**的（該分類沒有任何頁面時整段都不會出現），沒有一個是能無條件要求的標記。這是這次 session 第三次遇到同一類問題（`sanity_check.py`、`test_frontmatter_schema.py` 也是檢查邏輯描述一個從沒被實作過的理想格式，不是真實產出）。
 - 修法：改成檢查產生器**真正保證會有**的東西——標題、時間戳、Mermaid 區塊、以及一定會出現的 `subgraph Entities`/`subgraph Concepts`（即使沒有任何節點，這兩個區塊骨架也一定存在）。
 - 新增 `tests/test_ingestion_health_check.py`（真實產出通過驗證 / 真的壞掉的內容仍正確判定失敗 / 檔案不存在時視為可選不算失敗），185 個測試全過。
+
+## P6 — Karpathy LLM-Wiki 差距收斂（第二輪）
+
+背景：2026-07-20 對照真實 vault 數據驗證（`entities/`=89、`concepts/`=31、日期前綴 legacy=70、canonical=19、`knowledge-graph.md` edges=282，平均 1.8 backlinks/page）後排定。原本散落在「剩下待做」的 5 個缺口（entity 過度偵測、stub sources 污染、Phase B router bypass、decay_score_threshold、stub frontmatter 合約）與原本獨立的 4 項差距收斂待辦，一併依邏輯依賴關係重新排序——核心原則：**先止血（避免自動化把問題擴散），再補回溯，再動架構，最後才接更多 cron**。
+
+### 17. detect_entity_mentions() 過度偵測根因修復 🥇
+
+**優先：第 16 順位**
+
+狀態：🔲 待開始。
+
+目標：查出 `detect_entity_mentions()` 為何持續把中文主題片段（如 `topic-下載`、`topic-五步驟剪片流程`）誤判成 entity，導致 broken wikilinks 持續增加（212 → 223，每次真實 Phase A 跑都在惡化）。
+
+排序理由：這是本輪**唯一每小時都在自動惡化**的問題，且直接影響 #19（回溯補跑）與 #20（entity 白名單）的資料品質——如果先做 #19 再回頭修這個，等於把垃圾實體的摘錄再擴散進更多既有頁面，之後要清理的範圍只會更大。必須排在所有會擴大 entity 圖譜覆蓋範圍的動作之前。
+
+計畫：
+- 針對已知誤判樣本（中文 `topic-*` 片段）反查 `detect_entity_mentions()` 的抽取規則，確認是規則過寬還是缺少停用詞/長度過濾。
+- 修復後跑一次全 vault 掃描，確認新誤判樣本不再產生；已存在的 broken wikilinks 是否需要一次性清理另外評估。
+
+### 18. Stub 頁面 sources: 污染清理（6 頁）🥇
+
+**優先：第 17 順位**
+
+狀態：🔲 待開始。
+
+目標：清理 `antigravity.md`/`deepseek.md`/`inside.md`/`kimi-k3.md`/`openclaw.md`/`qwen.md` 這 6 個 stub 頁面裡誤寫入的 `sources:` 內容（根因已在 `ingestion_v2.py::_auto_promote_entities()` 與 `phase6_backfill.py::_create_missing_stubs()` 修復，但只影響之後新產生的 stub，這 6 頁是舊資料殘留）。
+
+排序理由：這 6 頁都已經是 canonical entity page，屬於 #20（entities.yaml 白名單）會直接管理的同一批頁面；在建立正式的 canonical 登記檔之前，先把已知會被登記進去的頁面資料清乾淨，比登記完才發現要回頭清理更省事。工時低、無風險，適合跟 #17 一起當作本輪的「止血」步驟。
+
+計畫：
+- 手動或寫一支一次性腳本，對這 6 頁的 `sources:` 欄位重設為 `[]`（跟修復後的正確行為一致），不動其他欄位。
+
+### 19. Propagation 回溯補跑 🥈
+
+**優先：第 18 順位（前置：#17 完成）**
+
+狀態：🔲 待開始。
+
+目標：驗證「1 source → N pages」（P5#14 `_propagate_to_entity_pages()`）對既有 157 頁是否也有效，而不是只對 2026-07-19 之後的新 capture 生效。
+
+背景：P5#14 已完成並測試，但**只在 propagation 上線後新進的 capture 上跑過**；現有 157 頁裡大多數是上線前建立的，從未被回溯掃描過。目前 knowledge-graph.md 只有 1.8 backlinks/page（282 edges / 157 pages），這個數字有可能是「機制沒問題、只是舊頁面沒補跑」造成，也可能真的還有覆蓋率問題——兩者需要先用一次回溯跑分開來看，才知道下一步該做 #20/#21 還是別的。
+
+計畫：
+- 確認 #17 已修復，避免這次回溯把垃圾實體摘錄擴散到更多頁面。
+- 寫一支一次性腳本，對 `wiki/entities/` 與 `wiki/concepts/` 既有頁面的 body 重跑 `detect_entity_mentions()` + `_propagate_to_entity_pages()`，只做「新增」不做「覆寫」既有內容。
+- 跑完後重新產生 `knowledge-graph.md`，比較回溯前後的 edges/page 數字。
+- 若密度回升明顯 → 這條缺口視為解決，不需要再動 propagation 邏輯本身。
+- 若密度回升有限 → 才進一步查是 `detect_entity_mentions()` 覆蓋率不足，還是摘錄式 append（非 LLM 蒸餾）本身限制了連結密度。
+
+### 20. entities.yaml 動態白名單取代硬編碼 CANONICAL_ENTITIES 🥈
+
+**優先：第 19 順位**
+
+狀態：🔲 待開始。
+
+目標：解決 70/89 entity 頁面仍是日期前綴檔名的根本原因。
+
+背景：`entity_dedup.py` 的 `CANONICAL_ENTITIES` 是一個**手動維護、目前只有 34 個 slug** 的硬編碼字典，19/34 已有對應頁面。任何 capture 主題只要不在這 34 個裡面，就必然落到日期前綴檔名——這是設計限制，不是 bug，因此不需要（也不會找到）「呼叫路徑沒被觸發」這類問題。SPEC.md 原始 P2 待辦「entities.yaml 取代 code 內硬編碼」正是同一件事，此輪正式排入執行。
+
+計畫：
+- 把 `CANONICAL_ENTITIES` 從程式碼內常數改為 `wiki/_registry/entities.yaml`（SPEC.md 第三層已提到的檔案位置），程式讀檔取代讀常數。
+- 新增自動晉升規則：非 canonical 的日期前綴頁面若累積達到一定 capture 次數或被 `detect_entity_mentions()` 多次提及，提示（不自動）候選晉升為 canonical entity，寫入 `entities.yaml`。
+- 對現有 70 個日期前綴頁面：晉升清單確定後，跑一次 migration 合併到對應 canonical page（沿用 P3#9 `phase6_backfill.py` 的既有 backfill 邏輯）。
+- 測試涵蓋：讀取 `entities.yaml` 取代常數後既有行為不變、新增晉升候選不影響現有 34 個 canonical 判斷。
+
+### 21. Entity 合併路由改用 LLM 偵測結果 🥉
+
+**優先：第 20 順位**
+
+狀態：🔲 待開始（需你先拍板容錯門檻，見下方風險）。
+
+目標：新 capture 合併到既有 entity/concept page 時，用 LLM 實際判斷出的 entity 名稱去比對，而不是只看 capture **標題文字**。
+
+背景：P5#12 已經點名這個問題「比時間戳更根本」，但當時刻意不動，因為改動合併目標的判斷邏輯屬於行為變更，可能造成內容誤併。2026-07-19 真實測試就踩到對應案例（Kimi K3 影片因為標題比對規則被誤合併進 `claude-code.md`/`anthropic.md`），雖然那次的 bug（字典比對順序）已修，但**用標題文字而非 LLM entity 判斷**這個更根本的問題本身還在。排在 #20 之後，因為合併目標的候選池（canonical slug 清單）要等 #20 的動態白名單定案後才穩定。
+
+風險與需要你決定的事：
+- 需要設定信心門檻——LLM 判斷的 entity 要多確定才觸發合併，避免把不相關內容誤併進一個熱門 entity 頁面（例如什麼都往 `claude-code.md` 塞）。
+- 建議先在既有的 `entity_distillation`/`entity_extraction` LLM stage 之外新增一個「合併目標判定」的獨立 LLM 呼叫，回傳候選 slug + 信心分數，只有信心分數超過門檻才自動合併，否則 fallback 回現有的標題文字比對規則（不改變現況、不會更差）。
+- 測試涵蓋：高信心正確合併、低信心 fallback 到標題比對、以及 2026-07-19 踩到的 Kimi K3 案例作為回歸測試。
+
+### 22. Phase B 遷移到 personalkm.llm.router 🔵
+
+**優先：第 21 順位**
+
+狀態：🔲 待開始。
+
+目標：把 Phase B（`post_link_ollama.py` → `ollama_wikilink.py`）目前直接寫死呼叫 Ollama HTTP API 的部分，改成走 `personalkm.llm.router`，修正對 AGENTS.md hard rule 2 的長期違反。
+
+排序理由：這是架構債，不阻塞 #17-21，但必須排在 #24（Distillation Loop 接進 cron）之前——如果 Distillation Loop 真的併入 Phase B 尾端執行，應該接在已經修正、走 router 的版本上，而不是把同樣繞過 router、缺乏 fallback/告警覆蓋的架構債複製進新的自動化。
+
+計畫：
+- 改寫 `post_link_ollama.py`/`ollama_wikilink.py`，呼叫改走 `router.route("wikilink_analysis")`（或等效新 stage），保留 Ollama 為 fallback 鏈末端。
+- 確認 router 的 `LLMError` 告警機制（P0#3）也涵蓋到 Phase B 呼叫路徑。
+
+### 23. Distillation Loop decay_score_threshold 決定 🔵
+
+**優先：第 22 順位**
+
+狀態：🔲 待開始。
+
+目標：決定 SPEC.md `distill_trigger` 定義的第三個觸發條件 `decay_score_threshold` 要不要實作、如何實作，而不是無限期擱置。
+
+排序理由：這是 #24（接進 cron）正式上線前必須拍板的最後一個懸而未決的觸發條件，因此緊接排在 #24 之前，避免 #24 上線後才發現觸發邏輯還缺一塊。
+
+計畫：
+- 評估 `bot/knowledge_decay.py` 現有的新鮮度模型（針對 DevOps/AI 關鍵字設計）是否能泛化到任意 entity/concept page，或需要另一套更通用的版本。
+- 拍板後：要嘛實作一個通用版 decay score 並接上 `distill_trigger`，要嘛正式在 SPEC.md 註記「刻意省略」並說明理由，不留模糊地帶。
+
+### 24. Entity Distillation Loop 接進 hourly cron 🔵
+
+**優先：第 23 順位（前置：#17、#21、#22、#23）**
+
+狀態：🔲 待開始。
+
+目標：把 P5#16 已經 dry-run + 寫回機制驗證過的 Distillation Loop 真正接進 Mac Mini hourly cron，讓「知識越存越濃縮」變成自動發生，而不是手動 `--apply` 才會發生。
+
+背景：`distill.py` 的折疊保留寫回機制（P5#16 續）已完成並測試，`scripts/distill_entities.py --apply` 可用但需要逐頁人工 y/n 確認。上一輪決定先手動跑過幾次確認品質穩定再排進 cron，理由是同一 session 連續踩到好幾個「自動化跑很久才被發現壞掉」的 bug（Kimi 誤路由、`wikilink_processed` 疊加、`sources:` 污染）。這個顧慮依然成立，此輪排在 #17（止血）、#21（合併精準度）、#22（架構債）、#23（觸發條件拍板）都處理過之後才執行，是本輪風險最高、也最晚才動的自動化，刻意疊加最多前置確認。
+
+計畫：
+- 完成 backlog 上一輪標記為「你尚未完成」的動作：對 DeepSeek 輸出的 `key_facts` 逐句核對是否有胡編。
+- 手動 `--apply` 再跑 3-5 輪不同 entity 頁面，確認折疊保留格式、`distill_count` 遞增、來源反向連結都穩定無誤。
+- 品質確認後，新增 Phase C（或併入已遷移到 router 的 Phase B 尾端）呼叫 `distill.py` 的 `apply_distillation()`，觸發條件沿用 SPEC.md `distill_trigger`（`captures_threshold: 5` / `max_age_days: 30` / #23 拍板後的 `decay_score_threshold`）。
+- 新增 launchd plist 或延伸現有 Phase B plist，並比照 Phase A/B 現有的 lock 機制（含過期鎖自動清除）與斷電韌性設計。
+- 測試涵蓋：cron 觸發路徑的 mock 呼叫、與既有 `tests/test_distill.py` 十案例整合不衝突。
+
+### 25. wiki/stubs/ frontmatter 合約補齊 🔵
+
+**優先：第 24 順位**
+
+狀態：🔲 待開始。
+
+目標：`wiki/stubs/` 頁面（IG/Threads 等抓不到內容時建立的 stub，欄位為 `stub`/`platform`/`worker_status`/... ，跟 entities/concepts 頁面語意完全不同）目前沒有任何合約在驗證其 frontmatter，`test_frontmatter_schema.py` 只涵蓋 entities/concepts 兩種形狀。
+
+排序理由：純粹的測試覆蓋缺口，不阻塞、也不被本輪任何其他項目阻塞，適合排在最後、有餘裕時處理。這類「合約描述跟實際產出脫節」的問題本輪已經在別處踩過三次（`sanity_check.py`、`test_frontmatter_schema.py` 舊版、`knowledge-graph.md` health check），補上這個合約可以避免同類問題第四次發生。
+
+計畫：
+- 對照 `wiki/stubs/` 實際產出的 frontmatter 形狀（而非理想設計），新增獨立的 stub schema 合約測試，比照 `test_ingestion_health_check.py` 這次「先看真實輸出再寫合約」的做法。
