@@ -138,7 +138,13 @@ def set_frontmatter_value(content: str, key: str, value: str) -> str:
     body = parts[2]
 
     # Check if key already exists
-    key_pattern = re.compile(rf"^{re.escape(key)}:\s*\S", re.MULTILINE)
+    # NOTE: this pattern must match the WHOLE old value (to end of line), not
+    # just the first non-whitespace character — `\S` only matches one char,
+    # so `sub()` used to replace just that one character and leave the rest
+    # of the old value dangling right after the new one with no separator.
+    # Every hourly cron run then concatenated another timestamp onto that
+    # leftover tail, e.g. "2026-07-19T01:18:02026-07-18T23:42:56...".
+    key_pattern = re.compile(rf"^{re.escape(key)}:.*$", re.MULTILINE)
     if key_pattern.search(fm_text):
         # Replace existing value
         fm_text = key_pattern.sub(f"{key}: {value}", fm_text)

@@ -370,7 +370,7 @@ AI Mode 回答：
    - Templater - 模板系統
 
 3. **Obsidian Git 設定**
-   - Auto pull: 每 10 分鐘
+   - Auto pull: 每 3 分鐘
    - Auto commit: 每 10 分鐘
    - Auto push: 每 10 分鐘 (pull first)
 

@@ -57,6 +57,7 @@ CANONICAL_ENTITIES: dict[str, str] = {
     "z-ai": "Z.AI",
     "cometapi": "CometAPI",
     "deepseek": "DeepSeek",
+    "kimi-k3": "Kimi K3",
     "qwen": "Qwen",
     "minimax-m3": "MiniMax M3",
     "siliconflow": "SiliconFlow",
@@ -84,15 +85,44 @@ def is_canonical_slug(slug: str) -> bool:
     return slug in CANONICAL_ENTITIES
 
 
+def set_updated_timestamp(text: str, date_str: str) -> str:
+    """
+    Set the `updated:` frontmatter field to date_str, inserting it after
+    `created:` if the field is missing (a bare re.sub silently no-ops when
+    there is nothing to replace, which is how merged pages have been going
+    stale without any error surfacing).
+    """
+    new_text, count = re.subn(r'^updated: .+$', f'updated: {date_str}', text, flags=re.MULTILINE)
+    if count > 0:
+        return new_text
+    new_text, count = re.subn(
+        r'(^created: .+$)', rf'\1\nupdated: {date_str}', text, count=1, flags=re.MULTILINE
+    )
+    if count > 0:
+        return new_text
+    # No created: field either — insert right after the opening frontmatter delimiter.
+    return re.sub(r'^(---\s*\n)', rf'\1updated: {date_str}\n', text, count=1, flags=re.MULTILINE)
+
+
 def canonical_slug_from_name(name: str) -> Optional[str]:
     """
     Given a raw entity name, return the canonical slug if it matches.
-    
+
     Examples:
         "Hermes Agent"          → "hermes-agent"
         "hermes-agent-learn-ai"  → "hermes-agent" (contains canonical slug)
         "Claude Code"           → "claude-code"
         "random topic"          → None
+
+    2026-07-19 fix: when a long title mentions several canonical entities,
+    prefer whichever occurs EARLIEST in the normalized name, not whichever
+    happens to be enumerated first in CANONICAL_ENTITIES. Titles conventionally
+    lead with their primary subject — e.g. a capture titled "Kimi K3 ...
+    tested inside Claude Code" is primarily about Kimi, with Claude Code only
+    the incidental test harness mentioned later. The old first-in-dict
+    behavior merged that capture straight into claude-code.md instead of a
+    Kimi page, because "claude-code" happened to be enumerated before
+    whichever entity actually led the title.
     """
     normalized = normalize_entity_name(name)
     if not normalized:
@@ -102,9 +132,19 @@ def canonical_slug_from_name(name: str) -> Optional[str]:
     if normalized in CANONICAL_ENTITIES:
         return normalized
 
-    # Check if normalized name contains a canonical slug or vice versa
+    # Prefer the canonical slug that appears earliest in the title.
+    best_slug, best_pos = None, None
     for slug in CANONICAL_ENTITIES:
-        if slug in normalized or normalized in slug:
+        pos = normalized.find(slug)
+        if pos != -1 and (best_pos is None or pos < best_pos):
+            best_slug, best_pos = slug, pos
+    if best_slug:
+        return best_slug
+
+    # Fallback: the normalized name itself is a substring of a longer
+    # canonical slug (e.g. a short/partial name close to the canonical spelling).
+    for slug in CANONICAL_ENTITIES:
+        if normalized in slug:
             return slug
 
     return None
@@ -632,9 +672,9 @@ class EntityRegistry:
             if len(parts) >= 3:
                 fm = parts[1]
                 body = parts[2]
-                
+
                 # Update updated date
-                fm = re.sub(r'^updated: .+$', f'updated: {date_str}', fm, flags=re.MULTILINE)
+                fm = set_updated_timestamp(fm, date_str)
                 
                 # Add source if provided and not already present
                 if source and source not in existing:

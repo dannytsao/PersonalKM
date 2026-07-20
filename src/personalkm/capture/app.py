@@ -56,14 +56,22 @@ async def health() -> dict[str, str]:
 
 
 @app.get("/query")
-async def query_vault(q: str = "", top_k: int = 10) -> dict:
-    """Search the vault with natural language. Returns JSON with matched pages."""
+async def query_vault(q: str = "", top_k: int = 10, confirm: bool = False) -> dict:
+    """
+    Search the vault with natural language. Returns JSON with matched pages.
+
+    confirm=true opts into write-back: if the LLM answer cites an existing
+    wiki page, the Q&A is appended to that page and pushed to the vault repo.
+    Defaults to False — a plain query never writes anything.
+    """
     if not q:
         return {"error": "Missing 'q' parameter (e.g. /query?q=hermes+agent)"}
     from personalkm.query.query_engine import query_wiki
     settings = get_settings()
     vault_path = await asyncio.to_thread(ensure_vault, settings)
-    result = query_wiki(q, vault_path, top_k=top_k, use_llm=True)
+    result = query_wiki(q, vault_path, top_k=top_k, use_llm=True, confirm_write_back=confirm)
+    if result.get("written_back"):
+        await asyncio.to_thread(_commit_and_push_wiki, vault_path)
     return result
 
 

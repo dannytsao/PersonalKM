@@ -14,6 +14,19 @@ log() {
   printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')" "$*"
 }
 
+# Stale lock recovery: `trap ... EXIT` below does not fire on a hard power
+# loss or kill -9, so a crash mid-run can leave the lock directory behind
+# forever, silently skipping every future launch with no recovery. Treat a
+# lock older than this as abandoned, not still-running.
+STALE_LOCK_MAX_AGE_SECONDS=10800
+if [ -d "$LOCK_DIR" ]; then
+  lock_age=$(( $(date +%s) - $(stat -f %m "$LOCK_DIR" 2>/dev/null || echo 0) ))
+  if [ "$lock_age" -gt "$STALE_LOCK_MAX_AGE_SECONDS" ]; then
+    log "Stale lock (${lock_age}s old) — removing and proceeding."
+    rmdir "$LOCK_DIR" 2>/dev/null || rm -rf "$LOCK_DIR"
+  fi
+fi
+
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then
   log "Worker already running; skipping this launch."
   exit 0

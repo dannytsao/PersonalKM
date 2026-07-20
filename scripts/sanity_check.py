@@ -235,19 +235,6 @@ def _fix_source_path(val: str, indent: str) -> str:
     return val
 
 
-def _clean_extra_fields(fm_text: str) -> (str, bool):
-    """Remove non-schema fields like ``wikilink_processed``."""
-    changed = False
-    lines = fm_text.split("\n")
-    new_lines: List[str] = []
-    for line in lines:
-        if re.match(r"\s*wikilink_processed\s*:", line):
-            changed = True
-            continue
-        new_lines.append(line)
-    return "\n".join(new_lines), changed
-
-
 def _ensure_date_fields(fm_text: str, filename_stem: str) -> (str, bool):
     """Add ``created`` / ``updated`` if missing."""
     changed = False
@@ -324,10 +311,11 @@ def check_and_repair(page: Path, check_only: bool = False) -> dict:
     if sources_changed:
         result["fixes"].append("Cleaned empty sources entries")
 
-    # ── 5. Remove extra non-schema fields ──
-    fm, extra_changed = _clean_extra_fields(fm)
-    if extra_changed:
-        result["fixes"].append("Removed non-schema field: wikilink_processed")
+    # (step 5 removed 2026-07-19: it stripped `wikilink_processed` as a
+    # "non-schema field", but that field is load-bearing state written by
+    # post_link_ollama.py to skip pages already analyzed for wikilinks.
+    # Running repair mode was silently wiping it vault-wide, which would
+    # make Phase B re-run Ollama analysis on every single page next time.)
 
     # ── 6. Ensure required date fields ──
     fm, dates_changed = _ensure_date_fields(fm, page.stem)

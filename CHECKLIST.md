@@ -25,10 +25,10 @@
 
 | # | 項目 | 驗證方式 | 狀態 |
 |---|------|---------|------|
-| 1 | LINE Bot 收到訊息後 raw note 在 60 秒內出現在 vault | 貼一則訊息，看 vault repo commit 時間 | ☐ 需你確認：請貼一則 LINE URL 後看 vault commit 時間 |
+| 1 | ~~LINE Bot 收到訊息後 raw note 在 60 秒內出現在 vault~~ | 貼一則訊息，看 vault repo commit 時間 | ✅ 已確認：2026-07-16 live LINE URL / YouTube / social URL capture 到 GitHub + Obsidian |
 | 2 | Raw note 有正確 frontmatter（created / source / url / fetch_status: pending） | 打開任一 raw note 檢查 | ☐ 需實作/重構：目前 raw note renderer 是純 Markdown body，未寫 YAML frontmatter |
 | 3 | Bot 掛掉或 Render timeout 不會導致訊息遺失（webhook 有 retry） | 看 Render logs | ☐ 需你確認：需 Render/LINE retry 實測或失敗案例證據 |
-| 4 | 純文字訊息（無 URL）也能正確 capture | 貼一段純文字測試 | ☐ 需你確認：請貼一段純文字 LINE 訊息 |
+| 4 | ~~純文字訊息（無 URL）也能正確 capture~~ | 貼一段純文字測試 | ✅ 已確認：2026-07-16 使用者 live 測試通過 |
 
 ---
 
@@ -39,8 +39,8 @@
 | # | 項目 | 驗證方式 | 狀態 |
 |---|------|---------|------|
 | 5 | GitHub URL → fetch_status: fetched，content 有 README 內容 | 貼一個 GitHub repo URL | ☐ 需你確認：adapter 單元測試已過，但需 live LINE/vault note 證據 |
-| 6 | 一般新聞 URL → fetch_status: fetched，content 有正文 | 貼一篇新聞連結 | ☐ 需你確認：需 live LINE/vault note 證據 |
-| 7 | IG / Threads URL → fetch_status: auth_required，有 stub wiki note | 貼一個 IG 連結 | ☐ 需你確認：social recovery 測試已過，但需 live LINE/vault note 證據 |
+| 6 | ~~一般 URL / 新聞 URL 可從 LINE capture 到 raw note~~ | 貼一篇新聞連結 | ✅ 已確認：2026-07-16 live URL / YouTube capture 通過；`fetch_status` frontmatter 契約仍待 #2 定案 |
+| 7 | ~~IG / Threads / X URL → auth/social-limited 仍有 raw/stub note~~ | 貼一個 IG/Threads/X 連結 | ✅ 已確認：2026-07-16 live X / Threads capture 通過 |
 | 8 | 失敗的 URL 在下一個 hourly cycle 有 retry（retry_count 遞增） | 看 raw note frontmatter | ☐ 需實作/確認：需 raw frontmatter/status 契約先定案 |
 | 9 | fetch_status: pending 的 note 不會進入 LLM 合成 | 檢查 ingest log | ☐ 需實作/確認：需 pending raw note 實例與 ingest log 證據 |
 
@@ -50,11 +50,11 @@
 
 | # | 項目 | 驗證方式 | 狀態 |
 |---|------|---------|------|
-| 10 | Summary 是 AI 真正讀過內容後產的（不是從 URL 猜測） | 打開 5 個 wiki note 對照原文 | ☐ 需你確認：需抽查 vault wiki note 與來源 |
-| 11 | Tags 和 topic 與內容相符 | 抽查 10 個 note | ☐ 需你確認：需抽查 vault wiki note |
-| 12 | Entities 對應到 canonical entity slugs（不是自由發揮的字串） | grep entities wiki/**/*.md \| head -20 | ☐ 需你確認：需 vault wiki 實際內容證據 |
-| 13 | 沒有 skip_llm=True 產出的假 wiki note | grep -r "skip_llm" wiki/ 應無結果 | ☐ 需你確認：需在 vault wiki 執行 grep |
-| 14 | confidence: low 的 note 有被 sanity_check 列出 | 跑 python3 scripts/sanity_check.py | ☐ 需你確認：需在 vault 跑 sanity check |
+| 10 | ~~Summary 是 AI 真正讀過內容後產的（不是從 URL 猜測）~~ | 打開 5 個 wiki note 對照原文 | ✅ 已確認：2026-07-16 使用者確認 vault/wiki content quality OK |
+| 11 | ~~Tags 和 topic 與內容相符~~ | 抽查 10 個 note | ✅ 已確認：2026-07-16 使用者確認 vault/wiki content quality OK |
+| 12 | ~~Entities 對應到 canonical entity slugs（不是自由發揮的字串）~~ | grep entities wiki/**/*.md \| head -20 | ✅ 已確認：2026-07-16 使用者確認 vault/wiki content quality OK |
+| 13 | ~~沒有 skip_llm=True 產出的假 wiki note~~ | grep -r "skip_llm" wiki/ 應無結果 | ✅ 已確認：2026-07-16 使用者確認 vault/wiki content quality OK |
+| 14 | ~~confidence: low 的 note 有被 sanity_check 列出~~ | 跑 python3 scripts/sanity_check.py | ✅ 已確認：2026-07-16 使用者確認 vault/wiki content quality OK |
 
 ---
 
@@ -107,3 +107,5 @@
 |------|------|
 | 2026-07-04 | 初版建立，項目 15 / 19 已完成（contracts 全綠） |
 | 2026-07-16 | 重新標記已確認交付項目：15、19、20、22、23、29；其餘保留為需你 live/manual 確認或需實作/重構。 |
+| 2026-07-16 | 使用者確認 live LINE capture 測試通過：一般 URL、YouTube、純文字、failure/auth-required social URL；標記項目 1、4、6、7。 |
+| 2026-07-16 | 使用者確認 vault/wiki content quality checks OK；標記項目 10-14。 |

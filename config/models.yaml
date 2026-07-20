@@ -20,13 +20,18 @@ providers:
   claude:
     kind: anthropic                # enable by setting ANTHROPIC_API_KEY
     api_key_env: ANTHROPIC_API_KEY
+  deepseek:
+    kind: openai_compat
+    base_url: https://api.deepseek.com
+    api_key_env: DEEPSEEK_API_KEY
 
 # Daily token budgets (input+output). TODO: adjust to your real plan quotas.
 budgets:
-  minimax: { daily_tokens: 500000 }
-  openai:  { daily_tokens: 200000 }
-  claude:  { daily_tokens: 300000 }
-  ollama:  { daily_tokens: unlimited }
+  minimax:  { daily_tokens: 500000 }
+  openai:   { daily_tokens: 200000 }
+  claude:   { daily_tokens: 300000 }
+  deepseek: { daily_tokens: 1000000 }  # safety cap only — pricing is cheap enough this shouldn't bind
+  ollama:   { daily_tokens: unlimited }
 
 defaults:
   max_retries: 2
@@ -63,4 +68,19 @@ stages:
     primary:  ollama/qwen2.5:latest
     fallback: [minimax/MiniMax-M2.7-highspeed]
     max_output_tokens: 600
+    json_only: true
+
+  # Entity Distillation Loop (SPEC.md, IMPROVEMENT-BACKLOG.md P5) — dry-run
+  # only for now. Cloud-first per 2026-07-19 decision: this is a low-volume,
+  # high-stakes (lossy, hard to notice if wrong) task, unlike entity_extraction
+  # above — quality matters more than the cents/month cost difference.
+  entity_distillation:
+    primary:  deepseek/deepseek-v4-flash
+    fallback: [minimax/MiniMax-M2.7-highspeed, ollama/qwen3:8b]
+    # deepseek-v4-flash emits an internal reasoning_content pass before the
+    # actual JSON reply, and both count against max_output_tokens — 1500 was
+    # too tight and the reasoning ate the whole budget, returning an empty
+    # or truncated response (2026-07-19 real-vault dry-run). Raised to give
+    # headroom for reasoning + a full Traditional-Chinese JSON summary.
+    max_output_tokens: 4000
     json_only: true

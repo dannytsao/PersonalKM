@@ -30,7 +30,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import yaml
 
-from personalkm.propagate.entity_dedup import EntityRegistry, normalize_entity_name, canonical_slug_from_name
+from personalkm.propagate.entity_dedup import EntityRegistry, normalize_entity_name, canonical_slug_from_name, set_updated_timestamp
 from personalkm.ingest.llm_summarizer import distill_to_markdown, detect_entity_mentions, _strip_frontmatter
 from personalkm.propagate.wikilinks import WikilinkManager
 from personalkm.llm.router import route
@@ -479,7 +479,9 @@ def ingest_file_v2(
         existing_content = page_path.read_text(encoding="utf-8")
         existing_body = _strip_frontmatter(existing_content)
 
-        merged_body = existing_body.rstrip() + f"\n\n---\n\n## {title} ({timestamp})\n\n{distilled}\n"
+        merged_body = existing_body.rstrip() + (
+            f"\n\n---\n\n## {title} ({timestamp})\n\n{distilled}\n\nSource: {raw_path_str}\n"
+        )
 
         if existing_content.startswith("---"):
             parts = existing_content.split("---", 2)
@@ -509,7 +511,7 @@ def ingest_file_v2(
         else:
             new_content = merged_body
 
-        new_content = re.sub(r'^updated: .+$', f'updated: {timestamp}', new_content, flags=re.MULTILINE)
+        new_content = set_updated_timestamp(new_content, timestamp)
 
         if raw_path_str not in new_content:
             try:
@@ -566,13 +568,15 @@ confidence: {confidence}
             action = "merged"
             existing = page_path.read_text(encoding="utf-8")
             body = _strip_frontmatter(existing)
-            merged = body.rstrip() + f"\n\n---\n\n### {title} ({timestamp})\n\n{distilled}\n"
+            merged = body.rstrip() + (
+                f"\n\n---\n\n### {title} ({timestamp})\n\n{distilled}\n\nSource: {raw_path_str}\n"
+            )
             if existing.startswith("---"):
                 parts = existing.split("---", 2)
                 new_content = f"---\n{parts[1]}\n---\n\n{merged}"
             else:
                 new_content = merged
-            new_content = re.sub(r'^updated: .+$', f'updated: {timestamp}', new_content, flags=re.MULTILINE)
+            new_content = set_updated_timestamp(new_content, timestamp)
             if raw_path_str not in new_content:
                 try:
                     existing_fm = yaml.safe_load(parts[1])
@@ -826,13 +830,7 @@ def _add_capture_to_entity(
         content = content.rstrip("\n") + "\n\n## Captures\n" + capture_entry + "\n"
 
     # Bump frontmatter updated date
-    content = re.sub(
-        r"^updated: \d{4}-\d{2}-\d{2}",
-        f"updated: {timestamp}",
-        content,
-        count=1,
-        flags=re.MULTILINE,
-    )
+    content = set_updated_timestamp(content, timestamp)
 
     entity_path.write_text(content, encoding="utf-8")
 
@@ -844,19 +842,23 @@ def _propagate_to_entity_pages(
     raw_path: Optional[Path],
     body: str,
 ) -> int:
-    """Append a capture excerpt to each canonical entity page mentioned in *body*."""
-    from personalkm.propagate.entity_dedup import CANONICAL_ENTITIES
-
+    """
+    Append a capture excerpt to every existing entity/concept page mentioned
+    in *body* (1 source → N pages). Previously this only touched canonical
+    entities/ pages, so a capture that also covered a related concept page
+    left that page stale — this now checks entities/ and concepts/ for any
+    slug detect_entity_mentions() found, canonical or not.
+    """
     if not body or not body.strip():
         return 0
 
-    entities_dir = wiki_path / "entities"
-    if not entities_dir.exists():
+    page_stem = page_path.stem
+    candidate_dirs = [wiki_path / "entities", wiki_path / "concepts"]
+    if not any(d.exists() for d in candidate_dirs):
         return 0
 
     updated = 0
     timestamp = datetime.now().strftime("%Y-%m-%d")
-    page_stem = page_path.stem
 
     excerpt = body.strip()[:300].replace("\n", " ").strip()
     if len(body.strip()) > 300:
@@ -865,11 +867,14 @@ def _propagate_to_entity_pages(
     raw_path_str = str(raw_path) if raw_path else ""
 
     for slug in detected_entities:
-        if slug not in CANONICAL_ENTITIES:
-            continue
+        if slug == page_stem:
+            continue  # don't append the page's own capture to itself
 
-        entity_path = entities_dir / f"{slug}.md"
-        if not entity_path.exists():
+        entity_path = next(
+            (d / f"{slug}.md" for d in candidate_dirs if (d / f"{slug}.md").exists()),
+            None,
+        )
+        if entity_path is None:
             continue
 
         # Idempotent: skip if this capture is already present
@@ -979,7 +984,13 @@ def _auto_promote_entities(wiki_path: Path, min_mentions: int = 3) -> int:
             context = f"Mentioned in {count} pages"
 
         display = CANONICAL_ENTITIES[slug]
-        source_yaml = "\n".join(f'  - "{s.name}"' for s in sources[:5])
+        # NOTE: `sources` here is which OTHER wiki pages mention this term,
+        # not this entity's own raw-capture provenance — it used to get
+        # written into `sources:` (semantically wrong: sanity_check.py flags
+        # it as "Source points to wiki/... — expected raw/..."). That
+        # cross-reference is already captured correctly below in the body's
+        # "## Mentions" section, so `sources:` starts empty until a real
+        # capture about this entity actually gets merged in.
 
         stub = f"""---
 title: {display}
@@ -988,8 +999,7 @@ created: {today}
 updated: {today}
 type: entity
 topic: Tech-Trends-&-Insights
-sources:
-{source_yaml}
+sources: []
 tags: []
 confidence: medium
 ---

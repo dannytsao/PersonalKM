@@ -308,16 +308,25 @@ def search_raw_and_resolved(
     return scored[:top_k]
 
 
+# Wiki pages are the distilled, curated surface — raw/resolved notes are
+# supporting source material. Dampen raw/resolved scores so a wiki page wins
+# any comparable-relevance tie instead of being outscored by a long raw note
+# that happens to repeat the query keywords many times.
+RAW_SOURCE_SCORE_DAMPENING = 0.6
+
+
 def search_vault(
     query: str,
     vault_root: Path,
     top_k: int = 10,
     registry: Optional[EntityRegistry] = None,
 ) -> list[dict]:
-    """Search wiki plus raw/resolved source notes."""
+    """Search wiki plus raw/resolved source notes. Wiki results are prioritized."""
     wiki_path = vault_root / "wiki"
     wiki_results = search_wiki(query, wiki_path, top_k=top_k, registry=registry)
     source_results = search_raw_and_resolved(query, vault_root, top_k=top_k)
+    for r in source_results:
+        r["score"] *= RAW_SOURCE_SCORE_DAMPENING
     combined = wiki_results + source_results
     combined.sort(key=lambda r: -r["score"])
     return combined[:top_k]
@@ -395,11 +404,58 @@ Answer (cite sources with [[wikilink]], e.g. [[hermes-agent]]):"""
     }
 
 
+def write_back_answer(
+    vault_root: Path,
+    query: str,
+    answer_text: str,
+    cited: list[str],
+) -> Optional[str]:
+    """
+    Append a Q&A entry to the first cited wiki page that already exists.
+
+    Deliberately conservative: only writes to a page the LLM actually cited
+    and that already exists (never creates a new page from a query answer —
+    that would let an unverified LLM answer invent wiki structure). Returns
+    the relative page path written, or None if no cited page exists.
+    """
+    from personalkm.propagate.entity_dedup import set_updated_timestamp
+
+    wiki_path = vault_root / "wiki"
+    target_path = None
+    for slug in cited:
+        for subdir in ("entities", "concepts"):
+            candidate = wiki_path / subdir / f"{slug}.md"
+            if candidate.exists():
+                target_path = candidate
+                break
+        if target_path:
+            break
+
+    if target_path is None:
+        return None
+
+    timestamp = datetime.now().strftime("%Y-%m-%d")
+    content = target_path.read_text(encoding="utf-8")
+    entry = f"\n\n### Q: {query} ({timestamp})\n\n{answer_text}\n"
+
+    m = re.search(r"^##\s+問答記錄\s*$", content, re.MULTILINE)
+    if m:
+        pos = m.end()
+        content = content[:pos] + entry + content[pos:]
+    else:
+        content = content.rstrip("\n") + "\n\n## 問答記錄\n" + entry + "\n"
+
+    content = set_updated_timestamp(content, timestamp)
+    target_path.write_text(content, encoding="utf-8")
+    return str(target_path.relative_to(vault_root))
+
+
 def query_wiki(
     query: str,
     vault_root: Path,
     top_k: int = 10,
     use_llm: bool = True,
+    confirm_write_back: bool = False,
 ) -> dict:
     """
     Full query pipeline: search → (optional LLM) → result.
@@ -408,10 +464,13 @@ def query_wiki(
         query: Natural language question.
         vault_root: Vault root path (parent of wiki/ directory).
         top_k: Max search results to return.
+        confirm_write_back: If True and the LLM answer cites an existing wiki
+            page, append the Q&A to that page. Defaults to False — write-back
+            never happens implicitly, only on explicit caller confirmation.
 
     Returns dict with keys:
         query, timestamp, matched_pages (list), answer (optional),
-        total_matches, llm_used, error
+        total_matches, llm_used, error, written_back
     """
     wiki_path = vault_root / "wiki"
     searchable_roots = [vault_root / name for name in ("wiki", "raw", "resolved")]
@@ -439,6 +498,7 @@ def query_wiki(
         "llm_used": False,
         "answer": None,
         "error": None,
+        "written_back": None,
     }
 
     if use_llm and results:
@@ -452,6 +512,10 @@ def query_wiki(
                 "text": llm_result["answer"],
                 "sources": llm_result["sources"],
             }
+            if confirm_write_back and llm_result["sources"]:
+                output["written_back"] = write_back_answer(
+                    vault_root, query, llm_result["answer"], llm_result["sources"]
+                )
     elif not results:
         output["error"] = "No matching pages found"
 
