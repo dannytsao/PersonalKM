@@ -85,9 +85,9 @@
 
 | # | 項目 | 驗證方式 | 狀態 |
 |---|------|---------|------|
-| 24 | 從 LINE 問一個 wiki 裡有答案的問題，得到正確回答 | 實際測試 3 個問題 | ☐ 需你確認：query engine 已有測試，但 LINE 查詢體驗需 live 測 |
-| 25 | 問一個 wiki 裡沒有的問題，AI 明確說不知道（不是亂答） | 實際測試 | ☐ 需你確認：需 live query 測試 |
-| 26 | 查詢回應在 10 秒內 | 計時 | ☐ 需你確認：需 live latency 測試 |
+| 24 | ~~從 LINE 問一個 wiki 裡有答案的問題，得到正確回答~~ 問一個 wiki 裡有答案的問題，透過 CLI/Obsidian 端得到正確回答 | 實際測試 3 個問題（`python scripts/query_wiki.py "..."`） | ☐ 需你確認：query engine 已有測試，但 CLI 查詢體驗需 live 測。**2026-07-20 定案：不透過 LINE**——AGENTS.md hard rule 禁止 LINE webhook 呼叫 LLM，且回答的 `[[wikilink]]` 引用離開 Obsidian 就失效，詳見 SPEC.md 第五層 |
+| 25 | 問一個 wiki 裡沒有的問題，AI 明確說不知道（不是亂答） | 實際測試（CLI） | ☐ 需你確認：需 live query 測試 |
+| 26 | 查詢回應在 10 秒內 | 計時（CLI） | ☐ 需你確認：需 live latency 測試 |
 
 ---
 
@@ -109,3 +109,4 @@
 | 2026-07-16 | 重新標記已確認交付項目：15、19、20、22、23、29；其餘保留為需你 live/manual 確認或需實作/重構。 |
 | 2026-07-16 | 使用者確認 live LINE capture 測試通過：一般 URL、YouTube、純文字、failure/auth-required social URL；標記項目 1、4、6、7。 |
 | 2026-07-16 | 使用者確認 vault/wiki content quality checks OK；標記項目 10-14。 |
+| 2026-07-20 | 定案：Query（項目 24-26）不透過 LINE Bot，改為 CLI/Obsidian 端——AGENTS.md hard rule 禁止 LINE webhook 呼叫 LLM，且 `[[wikilink]]` 引用離開 Obsidian 就失效。同步更新 SPEC.md 第五層與 IMPROVEMENT-BACKLOG.md。 |

@@ -23,14 +23,14 @@
 | 11 | P5#12 Entity dedup merge 修復 | 🔵 P5 | 中/低 | ✅ 已完成 |
 | 12 | P5#13 Query 優先回 wiki | 🔵 P5 | 高/低 | ✅ 已完成 |
 | 13 | P5#14 1 source → N pages | 🔵 P5 | 中/中 | ✅ 已完成（見範圍限定） |
-| 14 | P5#15 Query → write-back | 🔵 P5 | 中/中 | ✅ 已完成（API/CLI 層，未接 LINE） |
+| 14 | P5#15 Query → write-back | 🔵 P5 | 中/中 | ✅ 已完成（API/CLI 層，定案不接 LINE） |
 | 15 | P5#16 Entity Distillation Loop dry-run | 🔵 P5 | 高/中 | ✅ dry-run 已完成（未寫回、未接 cron）|
 
 ## 剩下待做（照順序）
 
 目前沒有此序列中的待做項；下一輪 backlog 需重新排定。過程中發現幾個未列入本輪、需要另外排優先序的缺口：
 
-- **LINE 目前完全沒有回覆機制**：`src/personalkm/capture/app.py` 的 `/webhook/line` 只做 capture，沒有任何 `reply_message`/`push_message` 呼叫。CHECKLIST.md 第 24-26 項「從 LINE 問問題」實際上連管線都還沒接，不只是缺 live 驗證。P5#15 的 write-back 因此先做在既有 `/query` HTTP endpoint 與 `query_wiki()` 函式層，LINE 對話式問答本身是獨立的較大工作項，需另外排入 backlog。
+- **2026-07-20 定案：LINE 不做對話式問答，維持純 capture 角色，不再是待排入的工作項**。`src/personalkm/capture/app.py` 的 `/webhook/line` 只做 capture，沒有任何 `reply_message`/`push_message` 呼叫，這是刻意的，不是缺工。理由：(1) AGENTS.md hard rule 規定 LINE webhook「Must stay dumb... NO fetching, NO LLM here」，LINE 問句觸發查詢會直接違反這條規則；(2) 查詢回答的核心呈現方式是 `[[wikilink]]` 引用，這是 Obsidian 原生語法，離開 Obsidian 就是死掉的文字，點不了、跳不了。Query 功能正式定位為 CLI（`scripts/query_wiki.py`）與 Obsidian 端，`/query` HTTP endpoint 與 `query_wiki()` 函式層（含 P5#15 write-back）已經是正確且最終的交付範圍，不需要再往 LINE 擴充。同步更新 SPEC.md 第五層、CHECKLIST.md 第 24-26 項。
 - **`wiki/stubs/` 頁面的 frontmatter 沒有被 `test_frontmatter_schema.py` 合約涵蓋**：這類頁面（IG/Threads 等抓不到內容時建立）有自己一套欄位（`stub`/`platform`/`worker_status`/...），跟 entities/concepts 頁面完全不同語意，目前沒有任何合約在驗證它。
 - Entity Distillation Loop 的 `decay_score_threshold` 仍未實作，只有 `captures_threshold`/`max_age_days` 兩個簡化版觸發條件。
 
@@ -292,14 +292,14 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 **優先：第 14 順位**
 
-狀態：✅ 已完成並測試，2026-07-19（API/CLI 層，未接 LINE）。
+狀態：✅ 已完成並測試，2026-07-19（API/CLI 層——2026-07-20 定案這就是最終交付範圍，不接 LINE）。
 
 目標：好問題的答案可以選擇性寫回 wiki。
 
 目前行為：
 - 新增 `write_back_answer()`：只會寫回 LLM 答案**實際引用**（`[[wikilink]]`）且**已存在**的 entity/concept page，用 `## 問答記錄` 區塊 append 問答紀錄；找不到符合的既有頁面就回傳 `None`，**絕不會**因為一次查詢答案就新建一個 wiki 頁面。
 - `query_wiki()` 新增 `confirm_write_back: bool = False` 參數，預設不寫回；只有明確傳 `True` 且 LLM 答案有引用來源時才觸發寫回。`/query` HTTP endpoint 對應新增 `confirm` 查詢參數，寫回成功後才會 commit/push。
-- **重大發現，範圍限定**：`src/personalkm/capture/app.py` 的 LINE webhook（`/webhook/line`）目前只做 capture，完全沒有 `reply_message`/`push_message`——也就是說「LINE 問問題」這個對話式體驗本身還沒有被接上，write-back 目前只能透過既有的 `/query` HTTP endpoint 或 CLI 觸發。要讓 write-back（或任何 query 功能）真的在 LINE 對話中可用，需要先建一個 LINE 問答回覆流程，這是獨立於本輪的較大工作項，已記錄在上方「剩下待做」。
+- **範圍定案（2026-07-20 更新）**：`src/personalkm/capture/app.py` 的 LINE webhook（`/webhook/line`）只做 capture，沒有 `reply_message`/`push_message`，write-back 只透過既有的 `/query` HTTP endpoint 或 CLI 觸發——這現在是**確定的最終交付範圍**，不是待補的缺口。LINE 對話式問答已定案不做（見上方「剩下待做」與 SPEC.md 第五層），理由是 AGENTS.md hard rule 禁止 LINE webhook 呼叫 LLM，且 `[[wikilink]]` 引用離開 Obsidian 會失效。
 - 測試：`tests/test_query_engine.py`（`write_back_answer` 寫入既有頁面 / 找不到引用頁面回 None / `confirm_write_back=True` 但 `use_llm=False` 時仍不寫回三個案例）。
 
 ### 16. Entity Distillation Loop — dry-run 第一版 🥇

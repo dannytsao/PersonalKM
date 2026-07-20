@@ -92,12 +92,12 @@ Entity extraction（便宜任務）：
 
 ### 第五層：Query（我問）
 
-**執行者：LINE Bot 問句觸發**
+**執行者：CLI / Obsidian 端（`scripts/query_wiki.py`、FastAPI `/query` endpoint）**
 **LLM：`route("query_answer")` → MiniMax M2.7-highspeed → Ollama qwen3:8b**
 
 - Hybrid search：keyword（title > frontmatter > body）+ entity graph
 - LLM synthesis + `[[wikilink]]` citations
-- 回答直接推回 LINE
+- 2026-07-20 定案：不透過 LINE Bot 回覆。理由有二：(1) AGENTS.md hard rule 規定 LINE webhook「Must stay dumb: receive → write raw → push. NO fetching, NO LLM here」，LINE 問句觸發查詢會直接呼叫 LLM，違反這條規則；(2) 回答的核心呈現方式是 `[[wikilink]]` 引用，這是 Obsidian 原生語法，離開 Obsidian（例如變成 LINE 文字訊息）就只是死掉的文字，點不了、跳不了，引用機制的價值會歸零。LINE 維持純 capture 角色，查詢透過 CLI 或 Obsidian 端進行。
 
 ---
 
