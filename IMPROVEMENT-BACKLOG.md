@@ -424,7 +424,16 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 狀態：🔲 待開始。
 
-目標：清理 `antigravity.md`/`deepseek.md`/`inside.md`/`kimi-k3.md`/`openclaw.md`/`qwen.md` 這 6 個 stub 頁面裡誤寫入的 `sources:` 內容（根因已在 `ingestion_v2.py::_auto_promote_entities()` 與 `phase6_backfill.py::_create_missing_stubs()` 修復，但只影響之後新產生的 stub，這 6 頁是舊資料殘留）。
+目標：清理以下 6 個 stub 頁面裡誤寫入的 `sources:` 內容（根因已在 `ingestion_v2.py::_auto_promote_entities()` 與 `phase6_backfill.py::_create_missing_stubs()` 修復，但只影響之後新產生的 stub，這 6 頁是舊資料殘留）：
+
+- `wiki/entities/antigravity.md`
+- `wiki/entities/deepseek.md`
+- `wiki/entities/inside.md`
+- `wiki/entities/kimi-k3.md`
+- `wiki/entities/openclaw.md`
+- `wiki/entities/qwen.md`
+
+2026-07-21 複查：以上 6 個檔案的 `sources:` 目前仍指向其他 wiki 頁面路徑（或裸檔名），不是正確的 `[[Archive/raw/...]]` 格式，確認尚未清理。
 
 排序理由：這 6 頁都已經是 canonical entity page，屬於 #20（entities.yaml 白名單）會直接管理的同一批頁面；在建立正式的 canonical 登記檔之前，先把已知會被登記進去的頁面資料清乾淨，比登記完才發現要回頭清理更省事。工時低、無風險，適合跟 #17 一起當作本輪的「止血」步驟。
 
@@ -570,7 +579,11 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 狀態：🔲 待調查（本輪刻意不動）。
 
-目標：`entities/claude-code.md`、`entities/2026-07-12-柏克萊推出-pixelrag讓-ai-用看的讀網頁超越純文字-rag-準確率-18-電腦王阿達.md`、`concepts/2026-06-28-obsidian-with-ollama.md` 這 3 個檔案在修復 #26 時被順帶掃到，但情況比另外 6 個更嚴重——`title:` 完全不存在於檔案的任何區塊（不是被孤立區塊擋住，是真的整段遺失），`scripts/fix_duplicate_frontmatter.py` 正確判斷「找不到含 title: 的區塊」而選擇不動它們，沒有造成進一步損害。
+目標：以下 3 個檔案在修復 #26 時被順帶掃到，但情況比另外 6 個更嚴重——`title:` 完全不存在於檔案的任何區塊（不是被孤立區塊擋住，是真的整段遺失），`scripts/fix_duplicate_frontmatter.py` 正確判斷「找不到含 title: 的區塊」而選擇不動它們，沒有造成進一步損害：
+
+- `wiki/entities/claude-code.md`
+- `wiki/entities/2026-07-12-柏克萊推出-pixelrag讓-ai-用看的讀網頁超越純文字-rag-準確率-18-電腦王阿達.md`
+- `wiki/concepts/2026-06-28-obsidian-with-ollama.md`
 
 背景：`claude-code.md` 是 backlog 先前 Distillation Loop dry-run 測試時反覆操作過的頁面（11 筆累積 capture），且經歷過 Phase 6 canonical entity backfill、`sanity_check.py` 等多次歷史處理，根因可能跟 P7#26 不同，需要另外用 `git log`/`git show` 回溯查證，可能需要從更早的 commit 手動救回 frontmatter，而不是像 #26 一樣能自動重建。
 
