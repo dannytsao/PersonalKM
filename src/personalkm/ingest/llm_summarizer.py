@@ -209,8 +209,7 @@ def distill_to_markdown(result: Dict[str, Any], page_type: str = "entity") -> st
         if entities:
             lines.append("## Related Entities\n")
             for entity in entities[:10]:  # Cap at 10
-                slug = _slugify(entity)
-                lines.append(f"- [[{entity}]]")
+                lines.append(f"- {_wikilink(entity)}")
             lines.append("")
 
     # Related Concepts (for concepts)
@@ -222,19 +221,19 @@ def distill_to_markdown(result: Dict[str, Any], page_type: str = "entity") -> st
         if concepts:
             lines.append("## Related Concepts\n")
             for c in concepts[:10]:
-                lines.append(f"- [[{c}]]")
+                lines.append(f"- {_wikilink(c)}")
             lines.append("")
 
         if prerequisites:
             lines.append("## Prerequisites\n")
             for p in prerequisites[:5]:
-                lines.append(f"- [[{p}]]")
+                lines.append(f"- {_wikilink(p)}")
             lines.append("")
 
         if tools:
             lines.append("## Tools\n")
             for t in tools[:10]:
-                lines.append(f"- [[{t}]]")
+                lines.append(f"- {_wikilink(t)}")
             lines.append("")
 
     # Source provenance
@@ -262,6 +261,14 @@ def detect_entity_mentions(content: str) -> List[str]:
           capture pipeline, not entity mentions.
         - URL string fragments (YouTube IDs, etc.) are stripped before
           CamelCase/Acronym matching to avoid fake entities like 'mawlxat'.
+        - Does NOT attempt free-form Chinese entity detection: matching any
+          run of 2-12 CJK characters has no signal to distinguish a proper
+          noun from an ordinary phrase fragment (Chinese has no
+          capitalization to mark names), so it mostly produced junk
+          `topic-*` slugs from arbitrary sentence fragments. Real Chinese
+          entity/concept names come from the LLM's own
+          `entities_mentioned`/`related_concepts` output instead, which has
+          actual semantic understanding of what's a named entity.
     """
     # Strip frontmatter
     body = _strip_frontmatter(content)
@@ -326,16 +333,6 @@ def detect_entity_mentions(content: str) -> List[str]:
         pattern = re.escape(tool).replace(r"\-", r"[-\s]")
         if re.search(r'\b' + pattern + r'\b', cleaned_lower):
             entities.add(tool)
-
-    # Pattern: Chinese entity mentions like "克劳德" or "Claude" — only
-    # extracted from the cleaned body (no scaffolding). Require length ≥ 2
-    # (was silently ≥3 before via the regex quantifier `{1,10}` → min 2 chars).
-    chinese_names = re.findall(r'[\u4e00-\u9fff]{2,12}', cleaned)
-    for name in chinese_names:
-        # Filter out generic Chinese stop-words that show up in capture scaffolding
-        if name in {"內容", "字幕", "影片", "連結", "建議", "資訊", "詳細", "觀看"}:
-            continue
-        entities.add(f"topic-{name}")
 
     return sorted(list(entities))
 
@@ -529,6 +526,24 @@ def _slugify(text: str) -> str:
     slug = slug.strip('-')
 
     return slug
+
+
+def _wikilink(name: str) -> str:
+    """
+    Build a `[[slug|display]]` wikilink from a raw LLM-generated name.
+
+    Page filenames always follow `_slugify()` conventions, but the LLM
+    outputs free-form casing/spacing ("KIMI K3", "GLM-5.2"). Linking to the
+    raw name instead of its slug produces a wikilink that can never resolve
+    to the actual page — the display alias keeps the readable name while
+    the link target matches what the page is actually saved as.
+    """
+    slug = _slugify(name)
+    if not slug:
+        return f"[[{name}]]"
+    if slug == name.lower():
+        return f"[[{slug}]]"
+    return f"[[{slug}|{name}]]"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
