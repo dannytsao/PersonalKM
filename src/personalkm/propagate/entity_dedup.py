@@ -104,6 +104,41 @@ def set_updated_timestamp(text: str, date_str: str) -> str:
     return re.sub(r'^(---\s*\n)', rf'\1updated: {date_str}\n', text, count=1, flags=re.MULTILINE)
 
 
+def _append_source_to_frontmatter(fm: str, source: str) -> str:
+    """
+    Append *source* to the frontmatter's `sources:` list, after any existing
+    entries — never in the middle of the list.
+
+    The previous version matched only the `sources:` line itself (`.*$` with
+    MULTILINE doesn't cross into the following indented `  - "..."` lines),
+    so `re.sub` replaced just that one line with `sources:\\n  - "new"`,
+    inserting the new entry directly under the header and pushing every
+    pre-existing entry down by one line — i.e. the new source landed
+    *before* older ones instead of after. On a page whose `sources:` list
+    was formatted with unusual spacing this also produced non-YAML-parsable
+    frontmatter, which is a distinct (and worse) bug: every downstream
+    frontmatter reader used elsewhere in this codebase splits content on the
+    first two `---` occurrences, so once the frontmatter block itself is
+    malformed, `title`/`canonical`/`tags`/etc. silently stop being visible
+    as metadata to any of them.
+    """
+    lines = fm.split('\n')
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped == 'sources: []':
+            lines[i] = f'sources:\n  - "{source}"'
+            return '\n'.join(lines)
+        if stripped.startswith('sources:'):
+            j = i + 1
+            while j < len(lines) and lines[j].startswith(' '):
+                if source in lines[j]:
+                    return fm  # already present
+                j += 1
+            lines.insert(j, f'  - "{source}"')
+            return '\n'.join(lines)
+    return fm.rstrip('\n') + f'\nsources:\n  - "{source}"'
+
+
 def canonical_slug_from_name(name: str) -> Optional[str]:
     """
     Given a raw entity name, return the canonical slug if it matches.
@@ -678,21 +713,16 @@ class EntityRegistry:
                 
                 # Add source if provided and not already present
                 if source and source not in existing:
-                    if 'sources:' in fm:
-                        fm = re.sub(
-                            r'(^sources:\s*).*$',
-                            lambda m: 'sources: ["' + source + '"]'
-                                if m.group(0).strip() == 'sources: []'
-                                else m.group(0).rstrip(']') + f', "{source}"]'
-                                if m.group(0).strip().endswith(']')
-                                else m.group(0) + f'\n  - "{source}"',
-                            fm,
-                            flags=re.MULTILINE,
-                        )
-                    else:
-                        fm += f'\nsources:\n  - "{source}"'
+                    fm = _append_source_to_frontmatter(fm, source)
                 
-                body = body.rstrip() + f'\n\n---\n\n### {title} ({date_str})\n\n{content}\n'
+                # No "---" divider here (unlike the old behavior): a literal
+                # "---" inside the body is indistinguishable from a
+                # frontmatter delimiter to every reader in this codebase
+                # that splits content on the first two "---" occurrences —
+                # one stray body divider is enough to permanently orphan
+                # this page's real frontmatter as unparsed text the next
+                # time anything re-parses it.
+                body = body.rstrip() + f'\n\n### {title} ({date_str})\n\n{content}\n'
                 path.write_text(f'---\n{fm}\n---\n\n{body}', encoding='utf-8')
                 return
         

@@ -1,4 +1,11 @@
-from personalkm.propagate.entity_dedup import canonical_slug_from_name, set_updated_timestamp
+from pathlib import Path
+
+from personalkm.propagate.entity_dedup import (
+    EntityRegistry,
+    _append_source_to_frontmatter,
+    canonical_slug_from_name,
+    set_updated_timestamp,
+)
 
 
 def test_set_updated_timestamp_replaces_existing_field():
@@ -45,3 +52,85 @@ def test_canonical_slug_prefers_entity_leading_the_title_over_later_mention():
     # should still resolve to Anthropic, since it leads the title.
     title = "Anthropic's downfall... kimi-k3.1, grok-4.6, deepseek-v4-ga"
     assert canonical_slug_from_name(title) == "anthropic"
+
+
+def test_append_source_to_frontmatter_appends_after_existing_entries():
+    # Regression: the old regex matched only the "sources:" line itself
+    # (`.*$` doesn't cross into the following indented list lines), so
+    # re.sub replaced just that line with "sources:\n  - new", inserting
+    # the new source BEFORE existing ones instead of after.
+    fm = (
+        "title: Anthropic\n"
+        "sources:\n"
+        '  - "[[Archive/raw/Tech/first]]"\n'
+        '  - "[[Archive/raw/Tech/second]]"\n'
+        "confidence: medium\n"
+    )
+    result = _append_source_to_frontmatter(fm, "[[Archive/raw/Tech/third]]")
+    lines = result.splitlines()
+    first_idx = lines.index('  - "[[Archive/raw/Tech/first]]"')
+    second_idx = lines.index('  - "[[Archive/raw/Tech/second]]"')
+    third_idx = lines.index('  - "[[Archive/raw/Tech/third]]"')
+    assert first_idx < second_idx < third_idx
+    assert "confidence: medium" in result
+
+
+def test_append_source_to_frontmatter_handles_empty_inline_list():
+    fm = "title: Foo\nsources: []\nconfidence: medium\n"
+    result = _append_source_to_frontmatter(fm, "[[new-source]]")
+    assert "sources: []" not in result
+    assert '  - "[[new-source]]"' in result
+
+
+def test_append_source_to_frontmatter_creates_field_when_missing():
+    fm = "title: Foo\nconfidence: medium\n"
+    result = _append_source_to_frontmatter(fm, "[[new-source]]")
+    assert 'sources:\n  - "[[new-source]]"' in result
+
+
+def test_append_source_to_frontmatter_skips_duplicate():
+    fm = 'title: Foo\nsources:\n  - "[[existing]]"\n'
+    result = _append_source_to_frontmatter(fm, "[[existing]]")
+    assert result.count("existing") == 1
+
+
+def test_append_capture_preserves_single_frontmatter_block(tmp_path: Path):
+    # Regression: this exact sequence (merging a capture with a source into
+    # a page whose sources: list already had entries) previously corrupted
+    # the frontmatter delimiter structure, orphaning title/canonical/etc. as
+    # plain body text invisible to any frontmatter reader.
+    page = tmp_path / "anthropic.md"
+    page.write_text(
+        "---\n"
+        "title: Anthropic\n"
+        "canonical: true\n"
+        "created: 2026-07-17\n"
+        "updated: 2026-07-20\n"
+        "sources:\n"
+        '  - "[[Archive/raw/Tech/first]]"\n'
+        '  - "[[Archive/raw/Tech/second]]"\n'
+        "confidence: medium\n"
+        "---\n\n"
+        "## Summary\n\nExisting summary.\n",
+        encoding="utf-8",
+    )
+
+    registry = EntityRegistry.__new__(EntityRegistry)
+    registry._append_capture(
+        page,
+        title="qwen",
+        content="Qwen mentions Anthropic in passing.",
+        source="[[Archive/raw/Tech/third]]",
+        date_str="2026-07-20",
+    )
+
+    result = page.read_text(encoding="utf-8")
+    assert result.count("---") == 2
+    assert result.startswith("---\n")
+    assert "title: Anthropic" in result
+    assert "canonical: true" in result
+    lines = result.splitlines()
+    first_idx = lines.index('  - "[[Archive/raw/Tech/first]]"')
+    second_idx = lines.index('  - "[[Archive/raw/Tech/second]]"')
+    third_idx = lines.index('  - "[[Archive/raw/Tech/third]]"')
+    assert first_idx < second_idx < third_idx

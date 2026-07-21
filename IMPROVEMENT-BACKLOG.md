@@ -34,6 +34,8 @@
 | 22 | P6#23 Distillation Loop decay_score_threshold 決定 | 🔵 P6 | 低/低 | 🔲 待開始 |
 | 23 | P6#24 Entity Distillation Loop 接進 cron | 🔵 P6 | 中/低 | 🔲 待開始（前置：#16、#21、#22） |
 | 24 | P6#25 wiki/stubs/ frontmatter 合約補齊 | 🔵 P6 | 低/低 | 🔲 待開始 |
+| 25 | P7#26 `_append_capture()` frontmatter 損毀根因修復 | 🔴 P7 | 高/中 | ✅ 已完成並測試 |
+| 26 | P7#27 3 個檔案 title/canonical 等欄位疑似永久遺失 | 🔴 P7 | 高/待評估 | 🔲 待調查 |
 
 ## 剩下待做（照順序）
 
@@ -534,3 +536,44 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 計畫：
 - 對照 `wiki/stubs/` 實際產出的 frontmatter 形狀（而非理想設計），新增獨立的 stub schema 合約測試，比照 `test_ingestion_health_check.py` 這次「先看真實輸出再寫合約」的做法。
+
+## P7 — Frontmatter 損毀根因修復（2026-07-21，使用者直接發現）
+
+背景：使用者貼出 `wiki/entities/anthropic.md` 的真實內容，發現 frontmatter 被拆成兩層——外層只有一個孤立的 `wikilink_processed` 欄位，前後塞了大量空行，真正的 `title`/`canonical`/`sources` 等欄位被推到後面，變成任何用「切前兩個 `---`」邏輯讀 frontmatter 的程式眼中的純文字 body。這不是 P5/P6 已知的任何一個 bug，是這次才第一次被抓到。
+
+### 26. `_append_capture()` frontmatter 損毀根因修復 🔴
+
+**優先：第 25 順位**
+
+狀態：✅ 已完成並測試，2026-07-21。Branch: `fix/append-capture-frontmatter-corruption`。
+
+目標：找出並修復讓 entity 頁面 frontmatter 被孤立/損毀的根因。
+
+**調查過程**：用 git history 逐一排除候選函式——`post_link_ollama.py::set_frontmatter_value()`（已確認是先前 bug，且已修好，用真實內容模擬三次連續呼叫，結構不會繼續惡化）、`set_updated_timestamp()`（用全文 regex 比對，不受既有損毀影響，安全）、`_add_capture_to_entity()`（直接重現測試，不會損毀）。最後用 `git log`/`git show` 對 `anthropic.md` 逐 commit 二分搜尋，鎖定損毀發生在 `entity_dedup.py::EntityRegistry._append_capture()`——用真實的損毀前檔案內容直接重現：
+
+- **根因 1**：`sources:` 欄位的正規表達式 `r'(^sources:\s*).*$'` 只比對「sources:」那一行本身（`.*$` 不會跨行比對到底下縮排的清單項），導致 `re.sub` 把新來源插進清單**最前面**、既有項目往下推，而不是附加在最後。
+- **根因 2**：每次合併新 capture 都會在內文插入一個 `---` 分隔線（`f'\n\n---\n\n### {title}...'`）。這個字面上的 `---` 一旦落入 body，就跟 frontmatter 分隔線無法區分——這個 codebase 裡所有讀 frontmatter 的函式（`parse_frontmatter`、`has_frontmatter_key`、`get_frontmatter_value`、`strip_frontmatter`）都是用「切前兩個 `---`」的簡化邏輯，多一個字面 `---` 就足以讓後續處理把真正的 frontmatter 誤判成 body。
+- 這解釋了為什麼受影響的都是 `anthropic.md`、`cursor.md` 這種被合併次數最多的熱門 entity：合併次數越多，中這個 bug 的機率越高。也解釋了為什麼 `needs_processing()` 對這些頁面永遠回傳 True（`updated:` 欄位被孤立、讀不到）——導致 Phase B 每小時對這幾頁做不必要的 Ollama 重複呼叫。
+
+修復內容：
+- 新增 `_append_source_to_frontmatter()`：正確找到既有 `sources:` 清單的**結尾**再插入，而不是清單開頭；`sources: []` 與缺欄位兩種情況都處理；重複來源會跳過不重複加入。
+- 移除 `_append_capture()` 內文插入的 `---` 分隔線，改跟 `_add_capture_to_entity()` 一致（不用 `---` 當分隔）。
+- 新增 5 個測試（`tests/test_entity_dedup.py`）：來源正確附加在最後、`sources: []` 正確處理、缺欄位正確建立、重複來源不重複、完整 `_append_capture()` 呼叫後 frontmatter 只有 2 個 `---`。206 個測試全過，contracts/ruff 乾淨。
+
+真實 vault 修復：
+- 新增 `scripts/fix_duplicate_frontmatter.py`（tests/fixtures 測試；AGENTS.md hard rule 1，真實套用需使用者確認）：找出「有 3+ 個 `---` 但第一個區塊沒有 `title:`」的頁面，定位真正含 `title:` 的區塊，取所有孤立區塊裡最新的 `wikilink_processed` 時間戳合併回真正的 frontmatter，其餘欄位與 body 原樣保留。
+- 2026-07-21 已對真實 vault 執行 `--apply`（使用者已確認）：6 個檔案修復（`anthropic.md`、`cursor.md`、`2026-07-12-obsidian-sharpen-your-thinking.md`、`2026-07-15-openai-...-gpt-56-...md`、`2026-07-12-39k-views-...-高遶天空吊橋.md`、`2026-06-28-opencode-基本功-ep03-...md`），全部從 3-6 個 `---` 收斂回 2 個，`title`/`canonical`/`sources`/`tags`/`confidence` 全部復原並保留最新時間戳。
+
+### 27. 3 個檔案 title/canonical 等欄位疑似永久遺失 🔴
+
+**優先：第 26 順位**
+
+狀態：🔲 待調查（本輪刻意不動）。
+
+目標：`entities/claude-code.md`、`entities/2026-07-12-柏克萊推出-pixelrag讓-ai-用看的讀網頁超越純文字-rag-準確率-18-電腦王阿達.md`、`concepts/2026-06-28-obsidian-with-ollama.md` 這 3 個檔案在修復 #26 時被順帶掃到，但情況比另外 6 個更嚴重——`title:` 完全不存在於檔案的任何區塊（不是被孤立區塊擋住，是真的整段遺失），`scripts/fix_duplicate_frontmatter.py` 正確判斷「找不到含 title: 的區塊」而選擇不動它們，沒有造成進一步損害。
+
+背景：`claude-code.md` 是 backlog 先前 Distillation Loop dry-run 測試時反覆操作過的頁面（11 筆累積 capture），且經歷過 Phase 6 canonical entity backfill、`sanity_check.py` 等多次歷史處理，根因可能跟 P7#26 不同，需要另外用 `git log`/`git show` 回溯查證，可能需要從更早的 commit 手動救回 frontmatter，而不是像 #26 一樣能自動重建。
+
+計畫：
+- 對這 3 個檔案分別跑 `git log --oneline -- <file>`，二分搜尋找出 title 欄位消失的確切 commit 與根因（可能是 Phase 6 backfill 或 `sanity_check.py` 的問題，不一定是 `_append_capture()`）。
+- 找到根因後評估：是否能從某個歷史 commit 找回完整 frontmatter 手動合併回目前版本（保留之後累積的所有 capture 內容），或是否需要重新用 raw 內容跑一次 ingest 重建。
