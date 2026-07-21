@@ -1,8 +1,8 @@
 # PersonalKM Improvement Backlog
 
-更新日期：2026-07-20
+更新日期：2026-07-21
 
-這份文件整理目前 LINE Bot + Obsidian 個人知識系統的後續改善事項，按執行優先順序排列。2026-07-16 優先序 1-10 已完成並測試；2026-07-19 新增優先序 11-15（Karpathy LLM-Wiki 差距收斂第一輪 + Entity Distillation Loop dry-run）已完成並測試；2026-07-20 新增優先序 17-25（Karpathy LLM-Wiki 差距收斂第二輪，對照實際 vault 數據驗證後排定，並將先前散落在「剩下待做」的 5 個缺口依邏輯依賴關係一併排入，待處理）。
+這份文件整理目前 LINE Bot + Obsidian 個人知識系統的後續改善事項，按執行優先順序排列。2026-07-16 優先序 1-10 已完成並測試；2026-07-19 新增優先序 11-15（Karpathy LLM-Wiki 差距收斂第一輪 + Entity Distillation Loop dry-run）已完成並測試；2026-07-20 新增優先序 17-25（Karpathy LLM-Wiki 差距收斂第二輪，對照實際 vault 數據驗證後排定，並將先前散落在「剩下待做」的 5 個缺口依邏輯依賴關係一併排入）；2026-07-21 完成 #16、#17（範圍皆有調整，見下方），並在執行過程中發現 3 項新缺口，排入 P7（#26 已完成，#27、#28 待調查）。
 
 已完成的 LLM-Wiki v2 已移至 `docs/llm-wiki-v2-plan.md`。
 
@@ -25,7 +25,7 @@
 | 13 | P5#14 1 source → N pages | 🔵 P5 | 中/中 | ✅ 已完成（見範圍限定） |
 | 14 | P5#15 Query → write-back | 🔵 P5 | 中/中 | ✅ 已完成（API/CLI 層，定案不接 LINE） |
 | 15 | P5#16 Entity Distillation Loop dry-run | 🔵 P5 | 高/中 | ✅ dry-run 已完成（未寫回、未接 cron）|
-| 16 | P6#17 detect_entity_mentions() 過度偵測根因修復 | 🔵 P6 | 高/中 | ✅ 已完成並測試（範圍擴大，見下方；branch 未 push） |
+| 16 | P6#17 detect_entity_mentions() 過度偵測根因修復 | 🔵 P6 | 高/中 | ✅ 已完成並測試（範圍擴大，見下方） |
 | 17 | P6#18 Stub 頁面 sources: 污染清理（6 頁） | 🔵 P6 | 中/低 | ✅ 已完成並測試（範圍調整，見下方） |
 | 18 | P6#19 Propagation 回溯補跑 | 🔵 P6 | 高/低 | 🔲 待開始（前置：#16） |
 | 19 | P6#20 entities.yaml 動態白名單取代硬編碼 | 🔵 P6 | 高/中 | 🔲 待開始 |
@@ -395,7 +395,7 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 **優先：第 16 順位**
 
-狀態：✅ 已完成並測試，2026-07-21（範圍比原計畫更大，見下方）。Branch: `fix/entity-mention-overdetection`（尚未 push/merge）。
+狀態：✅ 已完成並測試，2026-07-21（範圍比原計畫更大，見下方）。Branch `fix/entity-mention-overdetection` 已 push 並 merge 進 main。
 
 目標：查出 `detect_entity_mentions()` 為何持續把中文主題片段（如 `topic-下載`、`topic-五步驟剪片流程`）誤判成 entity，導致 broken wikilinks 持續增加（212 → 223，每次真實 Phase A 跑都在惡化）。
 
@@ -416,8 +416,7 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 2026-07-21 已對真實 vault 執行 `--apply`（你已確認）：9 個檔案變更，24 個 `topic-*` 連結移除，4 個連結修正為正確 slug。套用前後重新掃描驗證：bare-slug 斷連結從 258 降到 230，其中 `topic-*` 前綴的斷連結從 24 降到 **0**。剩餘 230 個斷連結全部是「提到但從未建頁」類型，如預期留給 #20 處理，不屬於這次修復範圍。
 
-尚未做：
-- Branch 尚未 push 到 origin，等你確認後再進行（AGENTS.md hard rule 6：不可直接 commit 到 main）。
+~~Branch 尚未 push 到 origin~~ ✅ 已 push 並 merge 進 main，2026-07-21。
 
 ### 18. Stub 頁面 sources: 污染清理（6 頁）🥇
 
