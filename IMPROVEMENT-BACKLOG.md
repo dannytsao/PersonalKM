@@ -404,8 +404,16 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 - 新增 `tests/test_llm_summarizer.py`（5 案例，這兩個函式先前完全沒有測試覆蓋）：中文過度偵測不再產生 `topic-*`、英文偵測不受影響、entities/concepts/tools/prerequisites 都改用 slug+alias、slug 與原名相同時不加多餘 alias。
 - `pytest tests/contracts` 與全套 190 個測試（含新增 5 個）全過。
 
+**既有頁面回溯清理：已完成並套用到真實 vault，2026-07-21**
+
+新增 `scripts/fix_legacy_entity_wikilinks.py`（tests/fixtures 測試，未在真實 vault 上測試——AGENTS.md hard rule 1，實際套用由你確認後執行）：
+- `[[topic-*]]` 連結：獨立項目符號整行移除，內文出現則拆掉 `[[]]` 只留底層文字。
+- 大小寫/格式不一致但目標頁面確實存在的連結（如 `[[KIMI K3]]` 而 `kimi-k3.md` 存在）：改寫成 `[[kimi-k3|KIMI K3]]`。
+- 提到但從未建頁的 entity（`[[claude]]`、`[[obsidian]]` 等）：不動，留給 #20（entities.yaml 動態白名單）處理。
+
+2026-07-21 已對真實 vault 執行 `--apply`（你已確認）：9 個檔案變更，24 個 `topic-*` 連結移除，4 個連結修正為正確 slug。套用前後重新掃描驗證：bare-slug 斷連結從 258 降到 230，其中 `topic-*` 前綴的斷連結從 24 降到 **0**。剩餘 230 個斷連結全部是「提到但從未建頁」類型，如預期留給 #20 處理，不屬於這次修復範圍。
+
 尚未做：
-- 已存在頁面裡舊的錯誤格式連結（如 `[[KIMI K3]]`）不會自動修正，回溯清理留給 #19（Propagation 回溯補跑）評估時一併考慮。
 - Branch 尚未 push 到 origin，等你確認後再進行（AGENTS.md hard rule 6：不可直接 commit 到 main）。
 
 ### 18. Stub 頁面 sources: 污染清理（6 頁）🥇
