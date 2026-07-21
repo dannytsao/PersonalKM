@@ -25,7 +25,7 @@
 | 13 | P5#14 1 source → N pages | 🔵 P5 | 中/中 | ✅ 已完成（見範圍限定） |
 | 14 | P5#15 Query → write-back | 🔵 P5 | 中/中 | ✅ 已完成（API/CLI 層，定案不接 LINE） |
 | 15 | P5#16 Entity Distillation Loop dry-run | 🔵 P5 | 高/中 | ✅ dry-run 已完成（未寫回、未接 cron）|
-| 16 | P6#17 detect_entity_mentions() 過度偵測根因修復 | 🔵 P6 | 高/中 | 🔲 待開始 |
+| 16 | P6#17 detect_entity_mentions() 過度偵測根因修復 | 🔵 P6 | 高/中 | ✅ 已完成並測試（範圍擴大，見下方；branch 未 push） |
 | 17 | P6#18 Stub 頁面 sources: 污染清理（6 頁） | 🔵 P6 | 中/低 | 🔲 待開始 |
 | 18 | P6#19 Propagation 回溯補跑 | 🔵 P6 | 高/低 | 🔲 待開始（前置：#16） |
 | 19 | P6#20 entities.yaml 動態白名單取代硬編碼 | 🔵 P6 | 高/中 | 🔲 待開始 |
@@ -392,15 +392,21 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 **優先：第 16 順位**
 
-狀態：🔲 待開始。
+狀態：✅ 已完成並測試，2026-07-21（範圍比原計畫更大，見下方）。Branch: `fix/entity-mention-overdetection`（尚未 push/merge）。
 
 目標：查出 `detect_entity_mentions()` 為何持續把中文主題片段（如 `topic-下載`、`topic-五步驟剪片流程`）誤判成 entity，導致 broken wikilinks 持續增加（212 → 223，每次真實 Phase A 跑都在惡化）。
 
-排序理由：這是本輪**唯一每小時都在自動惡化**的問題，且直接影響 #19（回溯補跑）與 #20（entity 白名單）的資料品質——如果先做 #19 再回頭修這個，等於把垃圾實體的摘錄再擴散進更多既有頁面，之後要清理的範圍只會更大。必須排在所有會擴大 entity 圖譜覆蓋範圍的動作之前。
+**實際調查發現，範圍比原計畫大**：對真實 vault 做過一次完整掃描（821 個 wikilink，排除指向 raw/ 的正常來源引用後有 258 個斷連結），發現帶 `topic-` 前綴的只有 24 個（~9%），並非原本假設的主因。真正佔多數的根因是 `distill_to_markdown()`（`llm_summarizer.py:212`）——computed `slug = _slugify(entity)` 但從未使用，實際寫入的是 `[[{entity}]]`（LLM 原始輸出，如 `"KIMI K3"`、`"GLM-5.2"`），而不是頁面實際存檔用的 slug（`kimi-k3.md`）；`related_concepts`/`prerequisites`/`related_tools` 三處甚至完全沒嘗試 slugify。已在真實 vault 頁面（`wiki/entities/2026-07-19-ai-世界變天了kimi-k3-....md`）驗證到這個確切模式。
 
-計畫：
-- 針對已知誤判樣本（中文 `topic-*` 片段）反查 `detect_entity_mentions()` 的抽取規則，確認是規則過寬還是缺少停用詞/長度過濾。
-- 修復後跑一次全 vault 掃描，確認新誤判樣本不再產生；已存在的 broken wikilinks 是否需要一次性清理另外評估。
+修復內容：
+- 新增 `_wikilink()` helper：用 slug 當連結目標，slug 與原始名稱不同時附加 `|display` alias（`[[kimi-k3|KIMI K3]]`），保留人類可讀名稱同時讓連結能真正解析。`distill_to_markdown()` 四處 wikilink 產生（entities/concepts/prerequisites/tools）全部改用這個 helper。
+- 移除 `detect_entity_mentions()` 裡過度寬鬆的中文比對（任意 2-12 個連續中文字元 + 8 個詞的停用詞清單）——中文沒有大小寫可以標記專有名詞，這個規則本質上無法區分專有名詞跟普通句子片段。真正的中文 entity/concept 名稱交給 LLM 自己的 `entities_mentioned`/`related_concepts` 輸出處理，那裡有實際語意理解。
+- 新增 `tests/test_llm_summarizer.py`（5 案例，這兩個函式先前完全沒有測試覆蓋）：中文過度偵測不再產生 `topic-*`、英文偵測不受影響、entities/concepts/tools/prerequisites 都改用 slug+alias、slug 與原名相同時不加多餘 alias。
+- `pytest tests/contracts` 與全套 190 個測試（含新增 5 個）全過。
+
+尚未做：
+- 已存在頁面裡舊的錯誤格式連結（如 `[[KIMI K3]]`）不會自動修正，回溯清理留給 #19（Propagation 回溯補跑）評估時一併考慮。
+- Branch 尚未 push 到 origin，等你確認後再進行（AGENTS.md hard rule 6：不可直接 commit 到 main）。
 
 ### 18. Stub 頁面 sources: 污染清理（6 頁）🥇
 
