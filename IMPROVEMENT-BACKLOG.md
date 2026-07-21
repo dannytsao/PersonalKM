@@ -26,7 +26,7 @@
 | 14 | P5#15 Query → write-back | 🔵 P5 | 中/中 | ✅ 已完成（API/CLI 層，定案不接 LINE） |
 | 15 | P5#16 Entity Distillation Loop dry-run | 🔵 P5 | 高/中 | ✅ dry-run 已完成（未寫回、未接 cron）|
 | 16 | P6#17 detect_entity_mentions() 過度偵測根因修復 | 🔵 P6 | 高/中 | ✅ 已完成並測試（範圍擴大，見下方；branch 未 push） |
-| 17 | P6#18 Stub 頁面 sources: 污染清理（6 頁） | 🔵 P6 | 中/低 | 🔲 待開始 |
+| 17 | P6#18 Stub 頁面 sources: 污染清理（6 頁） | 🔵 P6 | 中/低 | ✅ 已完成並測試（範圍調整，見下方） |
 | 18 | P6#19 Propagation 回溯補跑 | 🔵 P6 | 高/低 | 🔲 待開始（前置：#16） |
 | 19 | P6#20 entities.yaml 動態白名單取代硬編碼 | 🔵 P6 | 高/中 | 🔲 待開始 |
 | 20 | P6#21 Entity 合併路由改用 LLM 偵測結果 | 🔵 P6 | 高/中 | 🔲 待開始 |
@@ -36,6 +36,7 @@
 | 24 | P6#25 wiki/stubs/ frontmatter 合約補齊 | 🔵 P6 | 低/低 | 🔲 待開始 |
 | 25 | P7#26 `_append_capture()` frontmatter 損毀根因修復 | 🔴 P7 | 高/中 | ✅ 已完成並測試 |
 | 26 | P7#27 3 個檔案 title/canonical 等欄位疑似永久遺失 | 🔴 P7 | 高/待評估 | 🔲 待調查 |
+| 27 | P7#28 `kimi-k3.md` body 混入另一頁完整 frontmatter | 🔴 P7 | 中/待評估 | 🔲 待調查 |
 
 ## 剩下待做（照順序）
 
@@ -422,23 +423,26 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 **優先：第 17 順位**
 
-狀態：🔲 待開始。
+狀態：✅ 已完成並測試，2026-07-21。
 
-目標：清理以下 6 個 stub 頁面裡誤寫入的 `sources:` 內容（根因已在 `ingestion_v2.py::_auto_promote_entities()` 與 `phase6_backfill.py::_create_missing_stubs()` 修復，但只影響之後新產生的 stub，這 6 頁是舊資料殘留）：
+目標：清理 stub 頁面裡誤寫入的 `sources:` 內容（根因已在 `ingestion_v2.py::_auto_promote_entities()` 與 `phase6_backfill.py::_create_missing_stubs()` 修復，但只影響之後新產生的 stub，舊頁面是殘留資料）。
 
+**範圍調整**：實際執行時發現原本列出的 `kimi-k3.md` 情況跟其他 5 頁不同——不是單純的 `sources:` 污染，而是 body 裡混進了另一篇（OpenAI GPT-5.6）entity 頁面完整的 frontmatter（沒有 `---` 包起來、直接變成裸文字，還有一個沒關閉的 `[[` wikilink）。這是一個新的、獨立的損毀模式，不屬於這次的清理範圍，已排除、記錄為 #28（見下方）。同時發現 `cursor.md` 雖然不在原始清單裡，但符合同樣的污染模式（`sources: ["wiki/entities/github.md"]`），一併清理。
+
+最終修復的 6 個檔案：
 - `wiki/entities/antigravity.md`
+- `wiki/entities/cursor.md`（新增，原清單漏列）
 - `wiki/entities/deepseek.md`
 - `wiki/entities/inside.md`
-- `wiki/entities/kimi-k3.md`
 - `wiki/entities/openclaw.md`
 - `wiki/entities/qwen.md`
 
-2026-07-21 複查：以上 6 個檔案的 `sources:` 目前仍指向其他 wiki 頁面路徑（或裸檔名），不是正確的 `[[Archive/raw/...]]` 格式，確認尚未清理。
+排序理由：這幾頁都已經是 canonical entity page，屬於 #20（entities.yaml 白名單）會直接管理的同一批頁面；在建立正式的 canonical 登記檔之前，先把已知會被登記進去的頁面資料清乾淨，比登記完才發現要回頭清理更省事。工時低、無風險，適合跟 #17 一起當作本輪的「止血」步驟。
 
-排序理由：這 6 頁都已經是 canonical entity page，屬於 #20（entities.yaml 白名單）會直接管理的同一批頁面；在建立正式的 canonical 登記檔之前，先把已知會被登記進去的頁面資料清乾淨，比登記完才發現要回頭清理更省事。工時低、無風險，適合跟 #17 一起當作本輪的「止血」步驟。
-
-計畫：
-- 手動或寫一支一次性腳本，對這 6 頁的 `sources:` 欄位重設為 `[]`（跟修復後的正確行為一致），不動其他欄位。
+修復內容：
+- 新增 `scripts/fix_stub_sources_pollution.py`（tests/fixtures 測試；AGENTS.md hard rule 1，真實套用需使用者確認）：偵測條件為「`sources:` 清單裡每一項都是 `wiki/...` 路徑（不是真正的 raw 引用）且頁面已有 `## Mentions` 區塊佐證同樣資訊」，符合才重設為 `sources: []`，避免誤動到真正有原始來源的頁面。
+- 6 個測試（`tests/test_fix_stub_sources_pollution.py`）：正確偵測污染／有真實來源不誤判／混合真假來源不誤判／沒有 `## Mentions` 佐證不誤判／空清單不誤判／修復後正確清空且不動其他欄位。212 個測試全過，contracts/ruff 乾淨。
+- 2026-07-21 已對真實 vault 執行 `--apply`（使用者已確認）：6 個檔案的 `sources:` 全部重設為 `[]`，`## Mentions` 與其他內容原樣保留。
 
 ### 19. Propagation 回溯補跑 🥈
 
@@ -590,3 +594,18 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 計畫：
 - 對這 3 個檔案分別跑 `git log --oneline -- <file>`，二分搜尋找出 title 欄位消失的確切 commit 與根因（可能是 Phase 6 backfill 或 `sanity_check.py` 的問題，不一定是 `_append_capture()`）。
 - 找到根因後評估：是否能從某個歷史 commit 找回完整 frontmatter 手動合併回目前版本（保留之後累積的所有 capture 內容），或是否需要重新用 raw 內容跑一次 ingest 重建。
+
+### 28. `kimi-k3.md` body 混入另一頁完整 frontmatter 🔴
+
+**優先：第 27 順位**
+
+狀態：🔲 待調查（本輪刻意不動，處理 P6#18 時發現）。
+
+目標：`wiki/entities/kimi-k3.md` 的損毀模式跟 P6#18（6 頁）、P7#26/27 都不一樣——它有兩層看起來都「正常」的 frontmatter：第一層（line 1-20）是真正的 `kimi-k3.md` 自己的 frontmatter（`title: Kimi K3`），關閉後 body 從 `# Kimi K3`（line 25）開始，但緊接著（line 27-34）出現了另一篇頁面（`OpenAI 官方釋出 GPT-5.6 提示詞指南...`）完整的 frontmatter 內容——`title:`/`created:`/`updated:`/`tags:`/`sources:` 一應俱全，但**沒有 `---` 包起來**，直接是裸文字混在 body 裡；其中 `sources:` 底下那個 `[[Archive/raw/Tech/...]]` wikilink 甚至沒有關閉方括號就被截斷。
+
+背景：這不符合 P6#18 的偵測條件（`is_polluted()` 要求 `sources:` 清單每一項都是 `wiki/...` 路徑，這裡第一層 `sources:` 是裸檔名、第二層根本沒被當成 frontmatter 讀到），也不符合 P7#26 的偵測條件（`is_corrupted()` 要求第一個區塊沒有 `title:`，這裡第一個區塊有正確的 `title: Kimi K3`）。看起來像是某次合併/摘錄流程把另一頁的 frontmatter 誤當成一般文字內容摘錄進來，但確切是哪個函式、哪次呼叫造成的，本輪沒有查。
+
+計畫：
+- 跑 `git log --oneline -- wiki/entities/kimi-k3.md`，二分搜尋找出這段裸 frontmatter 文字第一次出現的 commit。
+- 確認是否為 `_add_capture_to_entity()` 的 300 字摘錄邏輯（`body.strip()[:300]`）截到了來源本身就已經格式不正確的內容，或是另一個獨立的合併路徑問題。
+- 找到根因後決定：手動移除這段裸文字（其資訊已經在下面的 `## Mentions` 正確記錄過），或視根因決定是否需要類似 P6#18/P7#26 的通用修復腳本。
