@@ -80,6 +80,62 @@ CANONICAL_ENTITIES: dict[str, str] = {
 }
 
 
+# Immutable snapshot of the built-in defaults above. CANONICAL_ENTITIES is
+# the LIVE registry: load_canonical_registry() replaces its contents from
+# wiki/_registry/entities.yaml when the vault provides one (P6#20). Always
+# mutate it in place — every importer binds the dict object itself, so
+# reassignment would silently detach them from updates.
+DEFAULT_CANONICAL_ENTITIES: dict[str, str] = dict(CANONICAL_ENTITIES)
+
+REGISTRY_FILE_RELPATH = Path("_registry") / "entities.yaml"
+
+
+def load_canonical_registry(wiki_root: Path) -> str:
+    """
+    Load the canonical-entity whitelist from wiki/_registry/entities.yaml
+    into the live CANONICAL_ENTITIES dict (in place).
+
+    The file's `canonical:` mapping (slug -> display name) becomes the
+    whole whitelist — removing an entry there demotes the entity. A
+    missing or unparseable file falls back to the built-in defaults, so
+    tests and fresh vaults keep working. Returns the source used:
+    "file" or "defaults".
+    """
+    import yaml
+
+    registry_path = wiki_root / REGISTRY_FILE_RELPATH
+    if registry_path.exists():
+        try:
+            data = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
+            canonical = (data or {}).get("canonical")
+            if isinstance(canonical, dict) and canonical:
+                entries = {
+                    str(slug): str(name)
+                    for slug, name in canonical.items()
+                    if slug and name
+                }
+                if entries:
+                    CANONICAL_ENTITIES.clear()
+                    CANONICAL_ENTITIES.update(entries)
+                    logger.info(
+                        "Canonical registry loaded from %s (%d entries)",
+                        registry_path, len(entries),
+                    )
+                    return "file"
+            logger.warning(
+                "Canonical registry %s has no usable canonical: mapping — "
+                "falling back to built-in defaults", registry_path,
+            )
+        except Exception as e:
+            logger.warning(
+                "Could not parse %s (%s) — falling back to built-in defaults",
+                registry_path, e,
+            )
+    CANONICAL_ENTITIES.clear()
+    CANONICAL_ENTITIES.update(DEFAULT_CANONICAL_ENTITIES)
+    return "defaults"
+
+
 def is_canonical_slug(slug: str) -> bool:
     """Check if a slug is a known canonical entity name."""
     return slug in CANONICAL_ENTITIES
@@ -467,6 +523,10 @@ class EntityRegistry:
         self.wiki_root = wiki_root
         self.entities_dir = wiki_root / 'entities'
         self.concepts_dir = wiki_root / 'concepts'
+
+        # P6#20: the vault's wiki/_registry/entities.yaml (when present)
+        # is the canonical-entity whitelist; built-in defaults otherwise.
+        load_canonical_registry(wiki_root)
 
         # Map: normalized_name → file path (includes both canonical + filename-based)
         self._name_to_path: dict[str, Path] = {}

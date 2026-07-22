@@ -28,7 +28,7 @@
 | 16 | P6#17 detect_entity_mentions() 過度偵測根因修復 | 🔵 P6 | 高/中 | ✅ 已完成並測試（範圍擴大，見下方） |
 | 17 | P6#18 Stub 頁面 sources: 污染清理（6 頁） | 🔵 P6 | 中/低 | ✅ 已完成並測試（範圍調整，見下方） |
 | 18 | P6#19 Propagation 回溯補跑 | 🔵 P6 | 高/低 | ✅ 已完成（診斷：瓶頸在偵測覆蓋率，#20 是真解方） |
-| 19 | P6#20 entities.yaml 動態白名單取代硬編碼 | 🔵 P6 | 高/中 | 🔲 待開始 |
+| 19 | P6#20 entities.yaml 動態白名單取代硬編碼 | 🔵 P6 | 高/中 | ✅ 檔案化完成；proposed 40 條待你審核，migration 待審核後執行 |
 | 20 | P6#21 Entity 合併路由改用 LLM 偵測結果 | 🔵 P6 | 高/中 | 🔲 待開始 |
 | 21 | P6#22 Phase B 遷移到 personalkm.llm.router | 🔵 P6 | 中/中 | 🔲 待開始 |
 | 22 | P6#23 Distillation Loop decay_score_threshold 決定 | 🔵 P6 | 低/低 | 🔲 待開始 |
@@ -462,17 +462,19 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 **優先：第 19 順位**
 
-狀態：🔲 待開始。
+狀態：✅ 檔案化 + 候選掃描已完成並套用，2026-07-22。**Legacy migration 留待你審核 proposed 清單後執行（見下方）。**
 
-目標：解決 70/89 entity 頁面仍是日期前綴檔名的根本原因。
+目標：解決 70/89 entity 頁面仍是日期前綴檔名的根本原因。P6#19 的診斷結論讓這一項從「架構清理」升級為「連結密度的真正解方」。
 
-背景：`entity_dedup.py` 的 `CANONICAL_ENTITIES` 是一個**手動維護、目前只有 34 個 slug** 的硬編碼字典，19/34 已有對應頁面。任何 capture 主題只要不在這 34 個裡面，就必然落到日期前綴檔名——這是設計限制，不是 bug，因此不需要（也不會找到）「呼叫路徑沒被觸發」這類問題。SPEC.md 原始 P2 待辦「entities.yaml 取代 code 內硬編碼」正是同一件事，此輪正式排入執行。
+執行結果（2026-07-22）：
+- `entity_dedup.py` 新增 `load_canonical_registry(wiki_root)`：讀取 `wiki/_registry/entities.yaml` 的 `canonical:` 對映（slug → 顯示名稱）作為**完整白名單**（從檔案移除即降級）；檔案缺失/壞損時 fallback 到內建 `DEFAULT_CANONICAL_ENTITIES`，測試與全新 vault 不受影響。`EntityRegistry.__init__` 每次建構時重載——pipeline 每小時自動吃到最新名單，**晉升/降級 entity 只要改檔案，不用改程式碼**。關鍵實作細節：所有 importer 綁定的是 dict 物件本身，載入用 in-place `clear()+update()`，絕不重新指派。
+- 新增 `scripts/build_entities_registry.py`：bootstrap registry 檔（首次從內建預設種子化；之後**保留檔案的 canonical 區塊不動**——檔案是 source of truth，腳本永不降級）+ 掃描晉升候選（日期前綴頁面的 capture 區段數 + 入鏈數 ≥ 門檻即列入 `proposed:`，僅提示、不自動晉升，符合原計畫）。
+- 已對真實 vault 執行 `--apply`（你已確認）：`canonical:` 35 條 + `proposed:` 40 條候選寫入，並驗證 `EntityRegistry` 建構時正確從檔案載入。vault commit `e85a5ff`。
+- 測試：`tests/test_canonical_registry.py` 5 案例（檔案缺失 fallback／檔案成為完整白名單（含晉升生效與降級停用）／壞檔 fallback／`EntityRegistry` 建構時載入／候選掃描計分），全套 242 個測試通過。
 
-計畫：
-- 把 `CANONICAL_ENTITIES` 從程式碼內常數改為 `wiki/_registry/entities.yaml`（SPEC.md 第三層已提到的檔案位置），程式讀檔取代讀常數。
-- 新增自動晉升規則：非 canonical 的日期前綴頁面若累積達到一定 capture 次數或被 `detect_entity_mentions()` 多次提及，提示（不自動）候選晉升為 canonical entity，寫入 `entities.yaml`。
-- 對現有 70 個日期前綴頁面：晉升清單確定後，跑一次 migration 合併到對應 canonical page（沿用 P3#9 `phase6_backfill.py` 的既有 backfill 邏輯）。
-- 測試涵蓋：讀取 `entities.yaml` 取代常數後既有行為不變、新增晉升候選不影響現有 34 個 canonical 判斷。
+尚未做（刻意留給你）：
+- **審核 `proposed:` 40 條候選**：全部是 0 captures + N 入鏈，不少是美食/旅遊一次性貼文——請把真正值得成為 canonical entity 的條目移到 `canonical:` 區塊（給定 slug 與顯示名稱）。
+- **70 頁 legacy migration**：晉升清單定案後，跑一次 migration 把日期前綴頁面合併到對應 canonical page（沿用 `phase6_backfill.py` 邏輯）。在此之前 legacy 頁面維持現狀，無害。
 
 ### 21. Entity 合併路由改用 LLM 偵測結果 🥉
 
