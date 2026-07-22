@@ -27,7 +27,7 @@
 | 15 | P5#16 Entity Distillation Loop dry-run | 🔵 P5 | 高/中 | ✅ dry-run 已完成（未寫回、未接 cron）|
 | 16 | P6#17 detect_entity_mentions() 過度偵測根因修復 | 🔵 P6 | 高/中 | ✅ 已完成並測試（範圍擴大，見下方） |
 | 17 | P6#18 Stub 頁面 sources: 污染清理（6 頁） | 🔵 P6 | 中/低 | ✅ 已完成並測試（範圍調整，見下方） |
-| 18 | P6#19 Propagation 回溯補跑 | 🔵 P6 | 高/低 | 🔲 待開始（前置：#16） |
+| 18 | P6#19 Propagation 回溯補跑 | 🔵 P6 | 高/低 | ✅ 已完成（診斷：瓶頸在偵測覆蓋率，#20 是真解方） |
 | 19 | P6#20 entities.yaml 動態白名單取代硬編碼 | 🔵 P6 | 高/中 | 🔲 待開始 |
 | 20 | P6#21 Entity 合併路由改用 LLM 偵測結果 | 🔵 P6 | 高/中 | 🔲 待開始 |
 | 21 | P6#22 Phase B 遷移到 personalkm.llm.router | 🔵 P6 | 中/中 | 🔲 待開始 |
@@ -448,18 +448,15 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 **優先：第 18 順位（前置：#17 完成）**
 
-狀態：🔲 待開始。
+狀態：✅ 已完成並測試，2026-07-22。**診斷結論：密度回升有限，瓶頸確認在偵測覆蓋率，#20 才是真正解方。**
 
-目標：驗證「1 source → N pages」（P5#14 `_propagate_to_entity_pages()`）對既有 157 頁是否也有效，而不是只對 2026-07-19 之後的新 capture 生效。
+目標：驗證「1 source → N pages」（P5#14 `_propagate_to_entity_pages()`）對既有頁面是否也有效，而不是只對 2026-07-19 之後的新 capture 生效。
 
-背景：P5#14 已完成並測試，但**只在 propagation 上線後新進的 capture 上跑過**；現有 157 頁裡大多數是上線前建立的，從未被回溯掃描過。目前 knowledge-graph.md 只有 1.8 backlinks/page（282 edges / 157 pages），這個數字有可能是「機制沒問題、只是舊頁面沒補跑」造成，也可能真的還有覆蓋率問題——兩者需要先用一次回溯跑分開來看，才知道下一步該做 #20/#21 還是別的。
-
-計畫：
-- 確認 #17 已修復，避免這次回溯把垃圾實體摘錄擴散到更多頁面。
-- 寫一支一次性腳本，對 `wiki/entities/` 與 `wiki/concepts/` 既有頁面的 body 重跑 `detect_entity_mentions()` + `_propagate_to_entity_pages()`，只做「新增」不做「覆寫」既有內容。
-- 跑完後重新產生 `knowledge-graph.md`，比較回溯前後的 edges/page 數字。
-- 若密度回升明顯 → 這條缺口視為解決，不需要再動 propagation 邏輯本身。
-- 若密度回升有限 → 才進一步查是 `detect_entity_mentions()` 覆蓋率不足，還是摘錄式 append（非 LLM 蒸餾）本身限制了連結密度。
+執行結果（2026-07-22）：
+- 新增 `scripts/backfill_propagation.py`（3 測試；dry-run 預設、`--apply` 寫入、沿用 `_propagate_to_entity_pages()` 的冪等檢查，只加不改）。excerpt 先剝掉 markdown 標題行，避免把「## Summary」字面文字嵌進摘錄。
+- 對真實 vault 執行：142 頁中只有 **25 頁**有可解析的跨頁 mention，計畫 32 條 edges，冪等過濾後實際寫入 **19 筆**摘錄——幾乎全部集中在 `claude-code`（←20）與 `anthropic`（←10）兩個 hub。knowledge-graph 重建後 edges 388 → 407。
+- **診斷分岔走到第二條路**：密度沒有明顯回升。原因不是舊頁面沒補跑，而是 `detect_entity_mentions()` 的覆蓋率——它只認 CamelCase/縮寫/29 個硬編碼常見工具名，而 vault 大多數頁面是日期前綴的中文標題頁，slug 永遠不會被別頁內文字面「點名」。**連結密度的真正解方是 #20（entities.yaml 動態白名單）**：canonical entity 名單擴大後，偵測與合併的命中率才會實質提升。
+- 副作用（已知並接受）：`claude-code.md`/`anthropic.md` 的 `## Captures` 又增厚，兩頁都遠超 distillation 觸發門檻（5 筆），等 #24 接 cron 後會被濃縮。
 
 ### 20. entities.yaml 動態白名單取代硬編碼 CANONICAL_ENTITIES 🥈
 
