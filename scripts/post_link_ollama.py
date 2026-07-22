@@ -152,7 +152,12 @@ def set_frontmatter_value(content: str, key: str, value: str) -> str:
         # Append to frontmatter
         fm_text = fm_text.rstrip() + f"\n{key}: {value}"
 
-    return f"---\n{fm_text}\n---\n{body}"
+    # strip('\n') both sides before rewrapping: fm_text (parts[1]) begins
+    # and ends with newlines from the original delimiters, and body
+    # (parts[2]) begins with them too — rewrapping either as-is grew the
+    # page by one blank line per boundary on EVERY hourly run. github.md
+    # had accumulated ~63 of them inside its frontmatter alone.
+    return f"---\n{fm_text.strip(chr(10))}\n---\n\n{body.lstrip(chr(10))}"
 
 
 def strip_frontmatter(content: str) -> str:

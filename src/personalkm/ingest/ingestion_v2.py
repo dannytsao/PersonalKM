@@ -30,6 +30,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import yaml
 
+from personalkm.frontmatter import join_frontmatter, split_frontmatter
 from personalkm.propagate.entity_dedup import EntityRegistry, normalize_entity_name, canonical_slug_from_name, set_updated_timestamp
 from personalkm.ingest.llm_summarizer import distill_to_markdown, detect_entity_mentions, _strip_frontmatter
 from personalkm.propagate.wikilinks import WikilinkManager
@@ -484,17 +485,23 @@ def ingest_file_v2(
         action = "merged"
         page_path = match
         existing_content = page_path.read_text(encoding="utf-8")
-        existing_body = _strip_frontmatter(existing_content)
+        # split_frontmatter (not startswith-gated splitting): the old
+        # asymmetry — body taken via strip-anywhere, frontmatter re-added
+        # only when the file started with "---" — silently deleted the
+        # whole frontmatter whenever any junk (a blank line, a conflict
+        # marker) preceded it. That is how claude-code.md lost its
+        # title/canonical/sources on 2026-07-12.
+        fm_text, existing_body = split_frontmatter(existing_content)
 
+        # No "---" body divider (it is indistinguishable from a frontmatter
+        # delimiter to every splitter in this codebase).
         merged_body = existing_body.rstrip() + (
-            f"\n\n---\n\n## {title} ({timestamp})\n\n{distilled}\n\nSource: {raw_path_str}\n"
+            f"\n\n## {title} ({timestamp})\n\n{distilled}\n\nSource: {raw_path_str}\n"
         )
 
-        if existing_content.startswith("---"):
-            parts = existing_content.split("---", 2)
-            new_content = f"---\n{parts[1]}\n---\n\n{merged_body}"
+        if fm_text is not None:
             try:
-                existing_fm = yaml.safe_load(parts[1])
+                existing_fm = yaml.safe_load(fm_text)
                 existing_tags = existing_fm.get("tags", [])
                 if not isinstance(existing_tags, list):
                     existing_tags = [existing_tags] if existing_tags else []
@@ -506,43 +513,47 @@ def ingest_file_v2(
                         flat_existing.append(t)
                 merged_tags = list(dict.fromkeys(flat_existing + tags))
                 tags_yaml = yaml.dump(merged_tags, default_flow_style=True).strip()
-                new_content = re.sub(
+                fm_text = re.sub(
                     r'^tags:.*(\n\s+.*)*',
                     f'tags: {tags_yaml}',
-                    new_content,
+                    fm_text,
                     count=1,
                     flags=re.MULTILINE,
                 )
             except Exception as e:
                 logger.warning(f"Could not merge tags for {page_path.name}: {e}")
+
+            if raw_path_str not in existing_content:
+                try:
+                    existing_fm = yaml.safe_load(fm_text)
+                    existing_sources = existing_fm.get("sources", [])
+                    if not isinstance(existing_sources, list):
+                        existing_sources = [existing_sources] if existing_sources else []
+                    if raw_path_str not in existing_sources:
+                        existing_sources.append(raw_path_str)
+                    sources_str = "\n".join(f'  - "{s}"' for s in existing_sources)
+                    fm_text = re.sub(
+                        r'^sources:.*(\n\s+.*)*',
+                        f"sources:\n{sources_str}",
+                        fm_text,
+                        count=1,
+                        flags=re.MULTILINE,
+                    )
+                except Exception:
+                    fm_text = re.sub(
+                        r'(^sources:.*)$',
+                        r'\1\n  - ' + raw_path_str,
+                        fm_text,
+                        flags=re.MULTILINE,
+                    )
+
+            fm_text = set_updated_timestamp(fm_text, timestamp)
+            new_content = join_frontmatter(fm_text, merged_body)
         else:
+            # Page genuinely has no frontmatter: don't run the timestamp
+            # regexes against body text (their fallback could insert an
+            # `updated:` line after a legacy "---" body divider).
             new_content = merged_body
-
-        new_content = set_updated_timestamp(new_content, timestamp)
-
-        if raw_path_str not in new_content:
-            try:
-                existing_fm = yaml.safe_load(parts[1])
-                existing_sources = existing_fm.get("sources", [])
-                if not isinstance(existing_sources, list):
-                    existing_sources = [existing_sources] if existing_sources else []
-                if raw_path_str not in existing_sources:
-                    existing_sources.append(raw_path_str)
-                sources_str = "\n".join(f'  - "{s}"' for s in existing_sources)
-                new_content = re.sub(
-                    r'^sources:.*(\n\s+.*)*',
-                    f"sources:\n{sources_str}",
-                    new_content,
-                    count=1,
-                    flags=re.MULTILINE,
-                )
-            except Exception:
-                new_content = re.sub(
-                    r'(^sources:.*)$',
-                    r'\1\n  - ' + raw_path_str,
-                    new_content,
-                    flags=re.MULTILINE,
-                )
 
         page_path.write_text(new_content, encoding="utf-8")
         logger.info(f"✅ MERGED {raw_path.name} → {match.relative_to(wiki_path)}")
@@ -571,66 +582,66 @@ confidence: {confidence}
             page_path.write_text(text, encoding="utf-8")
             logger.info(f"✅ CANONICAL CREATED {raw_path.name} → {subfolder}/{canonical_slug}.md")
         else:
-            # Merge into existing canonical page
+            # Merge into existing canonical page. Same fix as branch 8a:
+            # robust split (leading junk must not delete the frontmatter)
+            # and no "---" body divider.
             action = "merged"
             existing = page_path.read_text(encoding="utf-8")
-            body = _strip_frontmatter(existing)
+            fm_text, body = split_frontmatter(existing)
             merged = body.rstrip() + (
-                f"\n\n---\n\n### {title} ({timestamp})\n\n{distilled}\n\nSource: {raw_path_str}\n"
+                f"\n\n### {title} ({timestamp})\n\n{distilled}\n\nSource: {raw_path_str}\n"
             )
-            if existing.startswith("---"):
-                parts = existing.split("---", 2)
-                new_content = f"---\n{parts[1]}\n---\n\n{merged}"
-            else:
-                new_content = merged
-            new_content = set_updated_timestamp(new_content, timestamp)
-            if raw_path_str not in new_content:
+            if fm_text is not None:
+                if raw_path_str not in existing:
+                    try:
+                        existing_fm = yaml.safe_load(fm_text)
+                        existing_sources = existing_fm.get("sources", [])
+                        if not isinstance(existing_sources, list):
+                            existing_sources = [existing_sources] if existing_sources else []
+                        if raw_path_str not in existing_sources:
+                            existing_sources.append(raw_path_str)
+                        sources_str = "\n".join(f'  - "{s}"' for s in existing_sources)
+                        fm_text = re.sub(
+                            r'^sources:.*(\n\s+.*)*',
+                            f"sources:\n{sources_str}",
+                            fm_text,
+                            count=1,
+                            flags=re.MULTILINE,
+                        )
+                    except Exception as e:
+                        logger.warning(f"Could not merge sources for {page_path.name}: {e}")
+                        fm_text = re.sub(
+                            r'^sources:\s*.*$',
+                            lambda m: m.group(0).rstrip(']') + f', "{raw_path_str}"]' if m.group(0).strip().endswith(']') else m.group(0) + f'\n  - {raw_path_str}',
+                            fm_text,
+                            flags=re.MULTILINE,
+                        )
                 try:
-                    existing_fm = yaml.safe_load(parts[1])
-                    existing_sources = existing_fm.get("sources", [])
-                    if not isinstance(existing_sources, list):
-                        existing_sources = [existing_sources] if existing_sources else []
-                    if raw_path_str not in existing_sources:
-                        existing_sources.append(raw_path_str)
-                    sources_str = "\n".join(f'  - "{s}"' for s in existing_sources)
-                    new_content = re.sub(
-                        r'^sources:.*(\n\s+.*)*',
-                        f"sources:\n{sources_str}",
-                        new_content,
+                    existing_fm = yaml.safe_load(fm_text)
+                    existing_tags = existing_fm.get("tags", [])
+                    if not isinstance(existing_tags, list):
+                        existing_tags = [existing_tags] if existing_tags else []
+                    flat_existing = []
+                    for t in existing_tags:
+                        if isinstance(t, list):
+                            flat_existing.extend(str(x) for x in t)
+                        elif isinstance(t, str):
+                            flat_existing.append(t)
+                    merged_tags = list(dict.fromkeys(flat_existing + tags))
+                    tags_yaml = yaml.dump(merged_tags, default_flow_style=True).strip()
+                    fm_text = re.sub(
+                        r'^tags:.*(\n\s+.*)*',
+                        f'tags: {tags_yaml}',
+                        fm_text,
                         count=1,
                         flags=re.MULTILINE,
                     )
                 except Exception as e:
-                    logger.warning(f"Could not merge sources for {page_path.name}: {e}")
-                    if raw_path_str not in new_content:
-                        new_content = re.sub(
-                            r'^sources:\s*.*$',
-                            lambda m: m.group(0).rstrip(']') + f', "{raw_path_str}"]' if m.group(0).strip().endswith(']') else m.group(0) + f'\n  - {raw_path_str}',
-                            new_content,
-                            flags=re.MULTILINE,
-                        )
-            try:
-                existing_fm = yaml.safe_load(parts[1])
-                existing_tags = existing_fm.get("tags", [])
-                if not isinstance(existing_tags, list):
-                    existing_tags = [existing_tags] if existing_tags else []
-                flat_existing = []
-                for t in existing_tags:
-                    if isinstance(t, list):
-                        flat_existing.extend(str(x) for x in t)
-                    elif isinstance(t, str):
-                        flat_existing.append(t)
-                merged_tags = list(dict.fromkeys(flat_existing + tags))
-                tags_yaml = yaml.dump(merged_tags, default_flow_style=True).strip()
-                new_content = re.sub(
-                    r'^tags:.*(\n\s+.*)*',
-                    f'tags: {tags_yaml}',
-                    new_content,
-                    count=1,
-                    flags=re.MULTILINE,
-                )
-            except Exception as e:
-                logger.warning(f"Could not merge tags for {page_path.name}: {e}")
+                    logger.warning(f"Could not merge tags for {page_path.name}: {e}")
+                fm_text = set_updated_timestamp(fm_text, timestamp)
+                new_content = join_frontmatter(fm_text, merged)
+            else:
+                new_content = merged
             page_path.write_text(new_content, encoding="utf-8")
             logger.info(f"✅ CANONICAL MERGED {raw_path.name} → {subfolder}/{canonical_slug}.md")
 

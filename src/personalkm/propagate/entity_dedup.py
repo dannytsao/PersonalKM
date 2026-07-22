@@ -701,34 +701,32 @@ class EntityRegistry:
 
     def _append_capture(self, path: Path, title: str, content: str, source: str, date_str: str) -> None:
         """Append a capture entry to an existing wiki page body."""
-        existing = path.read_text(encoding='utf-8')
-        if '---' in existing:
-            parts = existing.split('---', 2)
-            if len(parts) >= 3:
-                fm = parts[1]
-                body = parts[2]
+        from personalkm.frontmatter import join_frontmatter, split_frontmatter
 
-                # Update updated date
-                fm = set_updated_timestamp(fm, date_str)
-                
-                # Add source if provided and not already present
-                if source and source not in existing:
-                    fm = _append_source_to_frontmatter(fm, source)
-                
-                # No "---" divider here (unlike the old behavior): a literal
-                # "---" inside the body is indistinguishable from a
-                # frontmatter delimiter to every reader in this codebase
-                # that splits content on the first two "---" occurrences —
-                # one stray body divider is enough to permanently orphan
-                # this page's real frontmatter as unparsed text the next
-                # time anything re-parses it.
-                body = body.rstrip() + f'\n\n### {title} ({date_str})\n\n{content}\n'
-                path.write_text(f'---\n{fm}\n---\n\n{body}', encoding='utf-8')
-                return
-        
-        # No frontmatter — append directly
+        existing = path.read_text(encoding='utf-8')
+        fm, body = split_frontmatter(existing)
+        if fm is not None:
+            # Update updated date
+            fm = set_updated_timestamp(fm, date_str)
+
+            # Add source if provided and not already present
+            if source and source not in existing:
+                fm = _append_source_to_frontmatter(fm, source)
+
+            # No "---" divider here (unlike the old behavior): a literal
+            # "---" inside the body is indistinguishable from a
+            # frontmatter delimiter to every reader in this codebase
+            # that splits content on the first two "---" occurrences —
+            # one stray body divider is enough to permanently orphan
+            # this page's real frontmatter as unparsed text the next
+            # time anything re-parses it.
+            body = body.rstrip() + f'\n\n### {title} ({date_str})\n\n{content}\n'
+            path.write_text(join_frontmatter(fm, body), encoding='utf-8')
+            return
+
+        # No frontmatter — append directly (no "---" divider, same reason)
         with path.open('a', encoding='utf-8') as f:
-            f.write(f'\n\n---\n\n### {title} ({date_str})\n\n{content}\n')
+            f.write(f'\n\n### {title} ({date_str})\n\n{content}\n')
 
     def _write_canonical_page(self, path: Path, title: str, content: str, source: str, date_str: str, page_type: str) -> None:
         """Write initial content to a new canonical entity page."""
