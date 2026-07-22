@@ -4,6 +4,7 @@ from personalkm.propagate.entity_dedup import (
     EntityRegistry,
     _append_source_to_frontmatter,
     canonical_slug_from_name,
+    resolve_canonical_from_entities,
     set_updated_timestamp,
 )
 
@@ -52,6 +53,29 @@ def test_canonical_slug_prefers_entity_leading_the_title_over_later_mention():
     # should still resolve to Anthropic, since it leads the title.
     title = "Anthropic's downfall... kimi-k3.1, grok-4.6, deepseek-v4-ga"
     assert canonical_slug_from_name(title) == "anthropic"
+
+
+def test_resolve_canonical_single_unambiguous_hit():
+    # P6#21: a capture whose title never names the entity but whose
+    # LLM-detected entities resolve to exactly one canonical slug.
+    assert resolve_canonical_from_entities(["Claude Code", "some random tool"]) == "claude-code"
+
+
+def test_resolve_canonical_ambiguous_returns_none():
+    # Two distinct canonical entities -> ambiguity gate refuses to route.
+    assert resolve_canonical_from_entities(["Claude Code", "Kimi K3"]) is None
+
+
+def test_resolve_canonical_no_hit_returns_none():
+    assert resolve_canonical_from_entities(["random", "unknown things"]) is None
+    assert resolve_canonical_from_entities([]) is None
+    assert resolve_canonical_from_entities(None) is None
+
+
+def test_resolve_canonical_duplicate_mentions_of_same_entity_still_route():
+    # The same canonical entity named twice (different spellings) is still
+    # ONE distinct target — not ambiguity.
+    assert resolve_canonical_from_entities(["Claude Code", "claude-code guide"]) == "claude-code"
 
 
 def test_append_source_to_frontmatter_appends_after_existing_entries():

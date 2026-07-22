@@ -444,8 +444,25 @@ def ingest_file_v2(
     match = registry.find_entity_match(title)
     entity_slug = normalize_entity_name(title)
 
-    # Phase 6: Check if this should be a canonical entity page
+    # Phase 6: Check if this should be a canonical entity page.
+    # Title matching takes precedence (unchanged behavior). P6#21: when
+    # the title names no canonical entity but the LLM's entities_mentioned
+    # resolves to EXACTLY ONE canonical entity, route the merge there —
+    # a capture whose title never says "claude-code" but whose content is
+    # clearly about it used to become an orphan date-prefixed page.
     canonical_slug = canonical_slug_from_name(title)
+    if canonical_slug is None:
+        from personalkm.propagate.entity_dedup import resolve_canonical_from_entities
+
+        llm_slug = resolve_canonical_from_entities(
+            summary_result.get("entities_mentioned", [])
+        )
+        if llm_slug is not None:
+            canonical_slug = llm_slug
+            logger.info(
+                "Merge routing via LLM entities (title had no canonical match): "
+                f"{raw_path.name} → {llm_slug}"
+            )
     use_canonical = canonical_slug is not None
 
     # 8. Route to entities/ or concepts/ based on page_type

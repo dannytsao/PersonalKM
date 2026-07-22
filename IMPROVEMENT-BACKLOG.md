@@ -29,7 +29,7 @@
 | 17 | P6#18 Stub 頁面 sources: 污染清理（6 頁） | 🔵 P6 | 中/低 | ✅ 已完成並測試（範圍調整，見下方） |
 | 18 | P6#19 Propagation 回溯補跑 | 🔵 P6 | 高/低 | ✅ 已完成（診斷：瓶頸在偵測覆蓋率，#20 是真解方） |
 | 19 | P6#20 entities.yaml 動態白名單取代硬編碼 | 🔵 P6 | 高/中 | ✅ 檔案化完成；proposed 40 條待你審核，migration 待審核後執行 |
-| 20 | P6#21 Entity 合併路由改用 LLM 偵測結果 | 🔵 P6 | 高/中 | 🔲 待開始 |
+| 20 | P6#21 Entity 合併路由改用 LLM 偵測結果 | 🔵 P6 | 高/中 | ✅ 已完成並測試（唯一性門檻，零新 LLM 呼叫） |
 | 21 | P6#22 Phase B 遷移到 personalkm.llm.router | 🔵 P6 | 中/中 | 🔲 待開始 |
 | 22 | P6#23 Distillation Loop decay_score_threshold 決定 | 🔵 P6 | 低/低 | 🔲 待開始 |
 | 23 | P6#24 Entity Distillation Loop 接進 cron | 🔵 P6 | 中/低 | 🔲 待開始（前置：#16、#21、#22） |
@@ -480,16 +480,17 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 **優先：第 20 順位**
 
-狀態：🔲 待開始（需你先拍板容錯門檻，見下方風險）。
+狀態：✅ 已完成並測試，2026-07-22。
 
 目標：新 capture 合併到既有 entity/concept page 時，用 LLM 實際判斷出的 entity 名稱去比對，而不是只看 capture **標題文字**。
 
-背景：P5#12 已經點名這個問題「比時間戳更根本」，但當時刻意不動，因為改動合併目標的判斷邏輯屬於行為變更，可能造成內容誤併。2026-07-19 真實測試就踩到對應案例（Kimi K3 影片因為標題比對規則被誤合併進 `claude-code.md`/`anthropic.md`），雖然那次的 bug（字典比對順序）已修，但**用標題文字而非 LLM entity 判斷**這個更根本的問題本身還在。排在 #20 之後，因為合併目標的候選池（canonical slug 清單）要等 #20 的動態白名單定案後才穩定。
-
-風險與需要你決定的事：
-- 需要設定信心門檻——LLM 判斷的 entity 要多確定才觸發合併，避免把不相關內容誤併進一個熱門 entity 頁面（例如什麼都往 `claude-code.md` 塞）。
-- 建議先在既有的 `entity_distillation`/`entity_extraction` LLM stage 之外新增一個「合併目標判定」的獨立 LLM 呼叫，回傳候選 slug + 信心分數，只有信心分數超過門檻才自動合併，否則 fallback 回現有的標題文字比對規則（不改變現況、不會更差）。
-- 測試涵蓋：高信心正確合併、低信心 fallback 到標題比對、以及 2026-07-19 踩到的 Kimi K3 案例作為回歸測試。
+實作決策（取代原計畫的「獨立 LLM 呼叫 + 信心分數」設計）：
+- **不需要新的 LLM stage**——`_synthesize_wiki_note()` 的輸出本來就含 `entities_mentioned`（LLM 讀過全文後判斷的實體清單），在路由決策點（`ingestion_v2.py` step 7）直接可用，零額外成本、零新失敗模式。
+- **信心門檻用「唯一性」取代分數**：新增 `entity_dedup.resolve_canonical_from_entities()`，把 LLM 實體清單逐一透過 `canonical_slug_from_name()` 解析——**恰好解析出一個** distinct canonical slug 才回傳；出現兩個以上（歧義）或零個都回 None、走原本行為。這個門檻天生防「什麼都往 claude-code.md 塞」：內容同時涉及多個 hub 的 capture 永遠不會被自動合併。
+- **標題比對維持絕對優先**（零回歸）：LLM 路由只在「標題比不到任何 canonical」時啟用；且 `find_entity_match(title)` 的既有頁面比對分支順序在 canonical 之前，實際生效範圍比設計還保守——只救「標題完全比不到、內文明顯只講一個 canonical entity」的 capture，這正是 P5#12 點名的遺漏案例。
+- 命中時記 log（`Merge routing via LLM entities`），可從 Phase A log 觀察實際觸發頻率。
+- 測試：4 個新案例（唯一命中路由成功／兩個 distinct canonical 歧義拒絕／零命中回 None／同一 entity 不同寫法算一個不算歧義），加上既有的 Kimi K3 標題優先回歸測試，246 個全過。
+- 門檻可調：若之後觀察到唯一性門檻太嚴（該合的沒合），再考慮升級成獨立 LLM stage + 信心分數，架構上 `resolve_canonical_from_entities()` 是單一替換點。
 
 ### 22. Phase B 遷移到 personalkm.llm.router 🔵
 

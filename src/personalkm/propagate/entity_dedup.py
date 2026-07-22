@@ -141,6 +141,27 @@ def is_canonical_slug(slug: str) -> bool:
     return slug in CANONICAL_ENTITIES
 
 
+def resolve_canonical_from_entities(entity_names: list[str]) -> Optional[str]:
+    """
+    Resolve the LLM's detected-entity list to a canonical merge target
+    (P6#21). Returns a slug only when EXACTLY ONE distinct canonical
+    entity appears among the names — ambiguity (2+ distinct canonical
+    entities) or no canonical hit returns None, and the caller falls back
+    to existing behavior. That unambiguity gate is the confidence
+    threshold: it can never mis-route a capture that plausibly belongs to
+    several hub pages, which was the documented risk of trusting the LLM
+    list ("什麼都往 claude-code.md 塞").
+    """
+    found: set[str] = set()
+    for name in entity_names or []:
+        slug = canonical_slug_from_name(str(name))
+        if slug:
+            found.add(slug)
+    if len(found) == 1:
+        return found.pop()
+    return None
+
+
 def set_updated_timestamp(text: str, date_str: str) -> str:
     """
     Set the `updated:` frontmatter field to date_str, inserting it after
