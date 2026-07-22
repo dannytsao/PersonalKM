@@ -2,6 +2,26 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
+## 2026-07-22
+
+### Fixed
+
+- **P7#29: Cron stuck-rebase incident + self-recovery guard**: The vault was found stranded on a detached HEAD for ~12h — a cron `git pull --rebase` had stopped on a conflict and was never aborted, so 5 hourly cron commits landed unpushable while origin/main moved ahead. Manually rescued (rescue branch → abort → FF → merge, zero data loss). New `personalkm.gitstate.ensure_clean_git_state()` now runs before any cron git work in Phase A and Phase B: parks unreachable commits on a rescue branch BEFORE aborting a stale rebase, re-attaches a detached HEAD, and skips the cycle when unrepairable. This also explained the morning's un-ingested `raw/Food` notes — the first post-repair Phase A run caught them all up.
+- **P7#27 root cause: two frontmatter round-trip corruption mechanisms**: (A) every merge/Phase-B rewrite grew the frontmatter by one blank line top and bottom (github.md had ~63); (B) merges stripped frontmatter found anywhere in the file but re-attached it only when the file started with `---` — any leading junk (blank line, Obsidian Git conflict marker) silently deleted the entire frontmatter (how claude-code.md lost its title on 2026-07-12, bisected in vault git history). New `personalkm.frontmatter.split_frontmatter()/join_frontmatter()` (junk-tolerant, idempotent) wired into `_append_capture()` and both ingestion merge branches.
+- **P7#27/P7#28 vault repair**: `scripts/fix_wiki_frontmatter_damage.py` recovered the deleted frontmatter of 3 pages from git history (zero unrecoverable), stripped foreign frontmatter pasted bare into 2 pages (kimi-k3, ttoi-21), and normalized padding across 131 pages (−2216 lines). Post-repair scan: all corruption classes at zero.
+
+### Added
+
+- **P6#19: Propagation backfill**: `scripts/backfill_propagation.py` replayed 1-source→N-pages propagation over existing pages (19 excerpts appended, knowledge-graph edges 388→407). Diagnostic conclusion: density gain is limited by entity-detection coverage, not missed backfill — the real density lever is the entities.yaml whitelist (#20).
+- **P6#20: entities.yaml canonical registry**: `wiki/_registry/entities.yaml` is now the canonical-entity whitelist source of truth (`load_canonical_registry()`, reloaded on every EntityRegistry construction; built-in defaults as fallback). `scripts/build_entities_registry.py` bootstrapped 35 canonical entries + 40 proposed promotion candidates awaiting human review. Promoting/demoting an entity is now a file edit, not a code change.
+- **P6#21: LLM-based merge routing**: when a capture's title names no canonical entity, `resolve_canonical_from_entities()` routes the merge via the synthesis output's `entities_mentioned` — but only when exactly ONE distinct canonical entity emerges (the unambiguity gate is the confidence threshold; ambiguous content is never auto-merged). Title matching keeps absolute precedence; no new LLM call.
+
+### Earlier same-day (previous session)
+
+- **P6#17**: wikilink slug normalization fix (`_wikilink()` helper; `distill_to_markdown` linked raw LLM names like `[[KIMI K3]]` that could never resolve) + removal of the free-form Chinese entity matcher that fabricated `topic-*` junk. Legacy vault cleanup: 24 junk links removed, 4 relinked.
+- **P6#18**: stub `sources:` pollution reset on 6 pages (cursor.md added to the list, kimi-k3.md excluded as a different corruption).
+- **P7#26**: `_append_capture()` sources-regex corruption fix + `fix_duplicate_frontmatter.py` repairing 6 orphaned-frontmatter pages.
+
 ## 2026-07-16
 
 ### Added

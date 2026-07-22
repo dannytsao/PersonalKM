@@ -1,6 +1,6 @@
 # PersonalKM — 知識管理系統設計文檔
 
-> 最後更新：2026-07-15 — 所有 Phase 穩定：Ollama-only ingest、TCC 修復、優先順序 roadmap 更新。詳見 IMPROVEMENT-BACKLOG.md。
+> 最後更新：2026-07-22 — frontmatter round-trip 損毀根因修復（新共用模組 `personalkm/frontmatter.py`）、cron 卡住 rebase 自我恢復 guard（`personalkm/gitstate.py`，Phase A/B git 操作前置檢查）、canonical entity 白名單檔案化（`wiki/_registry/entities.yaml`，每次 EntityRegistry 建構時重載）、合併路由新增 LLM 唯一性 fallback。術語對照表無變動。詳見 IMPROVEMENT-BACKLOG.md P6/P7 與 CHANGELOG.md。
 
 ---
 

@@ -1,7 +1,7 @@
 # PersonalKM — AI-Powered Second Brain
 
-**Status:** ✅ ALL PHASES STABLE — Render webhook + Mac Mini cron (Ollama-only) + Phase A/B auto
-**Last Updated:** 2026-07-16 — Priority backlog 1-10 completed/tested: social recovery, query search, YouTube deep notes, housekeeping reports, token rotation, and LLM alerts.
+**Status:** ✅ ALL PHASES STABLE — Render webhook + Mac Mini cron (Ollama-only) + Phase A/B auto + git self-recovery guard
+**Last Updated:** 2026-07-22 — P6#17-21 + P7#26-29 completed: frontmatter round-trip corruption root-caused and repaired vault-wide, cron stuck-rebase self-recovery guard, entities.yaml canonical registry (promote/demote via file edit), LLM-based merge routing, propagation backfill.
 
 LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每月報告追踪過時的技術知識。
 
