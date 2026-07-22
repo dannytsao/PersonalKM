@@ -106,6 +106,25 @@ def is_low_quality(content: str) -> Tuple[bool, str]:
     return False, ""
 
 
+def _get_substantial_resolved_content(raw_path: Path) -> Optional[str]:
+    """Return resolved content for a raw note if it exists and has substance.
+
+    A successful resolve supersedes the raw capture's own fetch status:
+    the LOW_QUALITY_PATTERNS describe capture-time failures (e.g. the LINE
+    bot recording "網站回傳 HTTP 403" in the note body), so a note with real
+    resolved content must not be trashed based on that stale error text.
+    """
+    try:
+        from personalkm.resolve import get_resolved_content
+
+        resolved = get_resolved_content(raw_path)
+    except Exception:
+        return None
+    if resolved and len(resolved.strip()) > 50:
+        return resolved
+    return None
+
+
 # ─────────────────────────────────────────────────────────────
 # Topic Options
 # ─────────────────────────────────────────────────────────────
@@ -390,32 +409,29 @@ def ingest_file_v2(
     except Exception as e:
         return False, {"error": f"Cannot read file: {e}"}
 
-    # 1. Quality filter
-    low_quality, reason = is_low_quality(content)
-    if low_quality:
-        return False, {"error": f"Low-quality content: {reason}"}
-
-    # 2. Strip frontmatter for clean body
+    # 1. Strip frontmatter for clean body
     body = _strip_frontmatter(content)
 
-    # 2a. Prefer resolved content if available (from resolver/ runner).
+    # 1a. Prefer resolved content if available (from resolver/ runner).
     #     Resolved content is the full article/transcript/README, not just
     #     the LINE snippet. This gives the LLM real substance to summarize.
-    try:
-        from personalkm.resolve import get_resolved_content
-
-        resolved = get_resolved_content(raw_path)
-        if resolved and len(resolved.strip()) > 50:
-            logger.info(
-                "Using resolved content for %s (%d chars)",
-                raw_path.name,
-                len(resolved),
-            )
-            body = resolved
-        else:
-            logger.debug("No resolved content for %s, using raw body", raw_path.name)
-    except Exception:
-        logger.debug("Resolver not available, using raw body for %s", raw_path.name)
+    resolved = _get_substantial_resolved_content(raw_path)
+    if resolved:
+        logger.info(
+            "Using resolved content for %s (%d chars)",
+            raw_path.name,
+            len(resolved),
+        )
+        body = resolved
+    else:
+        logger.debug("No resolved content for %s, using raw body", raw_path.name)
+        # 2. Quality filter — only when no resolved content backs the note.
+        #    The patterns detect capture-time fetch failures; a note whose
+        #    URL was later resolved successfully is not a failed fetch even
+        #    if the raw capture body still says "HTTP 403".
+        low_quality, reason = is_low_quality(content)
+        if low_quality:
+            return False, {"error": f"Low-quality content: {reason}"}
 
     # 3. Detect entity mentions in body (before summarization distorts it)
     detected_entities = detect_entity_mentions(body)
@@ -774,6 +790,15 @@ def ingest_raw_to_wiki(vault_path: Path, max_files: Optional[int] = None) -> dic
             content_preview = ""
 
         low_quality, reason = is_low_quality(content_preview)
+        if low_quality and _get_substantial_resolved_content(raw_file) is not None:
+            # The raw capture recorded a fetch failure, but the resolver has
+            # since fetched real content — ingest it instead of trashing.
+            logger.info(
+                "Raw preview matched %r but resolved content exists — ingesting %s",
+                reason,
+                raw_file.name,
+            )
+            low_quality = False
         if low_quality:
             # Archive instead of delete
             rel_path = raw_file.relative_to(raw_path)
