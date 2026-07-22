@@ -37,6 +37,7 @@
 | 25 | P7#26 `_append_capture()` frontmatter 損毀根因修復 | 🔴 P7 | 高/中 | ✅ 已完成並測試 |
 | 26 | P7#27 3 個檔案 title/canonical 等欄位疑似永久遺失 | 🔴 P7 | 高/待評估 | 🔲 待調查 |
 | 27 | P7#28 `kimi-k3.md` body 混入另一頁完整 frontmatter | 🔴 P7 | 中/待評估 | 🔲 待調查 |
+| 28 | P7#29 Cron `pull --rebase` 卡住不自我恢復 | 🔴 P7 | 高/中 | 🔲 待開始（事故已人工修復，防再發未做） |
 
 ## 剩下待做（照順序）
 
@@ -608,3 +609,26 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 - 跑 `git log --oneline -- wiki/entities/kimi-k3.md`，二分搜尋找出這段裸 frontmatter 文字第一次出現的 commit。
 - 確認是否為 `_add_capture_to_entity()` 的 300 字摘錄邏輯（`body.strip()[:300]`）截到了來源本身就已經格式不正確的內容，或是另一個獨立的合併路徑問題。
 - 找到根因後決定：手動移除這段裸文字（其資訊已經在下面的 `## Mentions` 正確記錄過），或視根因決定是否需要類似 P6#18/P7#26 的通用修復腳本。
+
+### 29. Cron `pull --rebase` 卡住不自我恢復，後續 commit 落入虛空 🔴
+
+**優先：第 28 順位**
+
+狀態：🔲 待開始（2026-07-22 事故已人工修復並 push，防再發機制未做）。
+
+**2026-07-22 實際事故**：vault repo 被發現處於 detached HEAD——2026-07-21 晚間某次 cron 的 `git pull --rebase origin main` 重放 `5b48228`（Phase A ingest commit）時遇到衝突停住，**從未被 abort**（`.git/rebase-merge` 目錄留在原地）。之後每小時的 cron 照常執行，把 5 個 commit（4 次 Phase B wikilink + 1 次 log prune）疊在這個卡住的 detached HEAD 上；同時 origin/main 被 Render webhook 推進了 11 個 commit（今天的 LINE captures）。三方分岔，cron 的工作成果全部推不出去。當天早上還觀察到 Phase A 的 raw→Archive 搬移因為「unmerged files 無法 commit」而卡在 staging area，Obsidian Git 插件也在同一時間對這個 repo 做 staging 操作，讓現場更混亂。
+
+人工修復過程（全程可逆、無資料遺失）：
+1. 建 `rescue/detached-phase-b` branch 保住 5 個孤立 commit
+2. stash 未 commit 的自動產生檔（knowledge-graph.md/log.md）
+3. `git rebase --abort` 回到 main → `git pull --ff-only` 快轉到 origin/main
+4. merge rescue branch：10 個衝突檔案——自動產生檔取 origin 側（下次 cron 重建）、兩邊都新建但內容全同的頁面取較新時間戳、5 個 wiki 頁面以 origin 為基準聯集 rescue 側的實際新增（See also wikilinks）、3 個今日 capture 的 raw→Archive 搬移經逐位元組比對確認內容相同後接受
+5. push（`20b3419`）；merge 後重新掃描確認 wrapper 損毀檔案數維持 3 個（即 P7#27 既有的三個），沒有新增損毀
+
+根因：`run_mac_mini_phase_a.sh`/`ingest_wiki.py` 的設計是「`git pull --rebase` 失敗只記警告不中斷」（2026-07-19 斷電韌性補強時的既有決策）——但「失敗」有兩種：pull 整個失敗（無害，下次重試）與 **rebase 中途停住**（有害，repo 從此卡在 detached HEAD，後續所有 cron commit 都落入虛空，且不會自我恢復，直到人工介入）。現有邏輯沒有區分這兩種。
+
+計畫：
+- 三支 runner script（Phase A/B/worker）在 `git pull --rebase` 之後檢查 `.git/rebase-merge`/`.git/rebase-apply` 是否存在，存在就 `git rebase --abort` 並跳過本輪（記 log + 告警），確保下一輪從乾淨狀態重試。
+- 或改用 `git pull --rebase --autostash` + 失敗即 abort 的組合；甚至考慮 cron 端改 `git fetch` + `git merge --ff-only`，rebase 留給人工。
+- 加一條 health check：偵測 vault repo 處於 detached HEAD 或 rebase-in-progress 超過 1 小時就告警（這次事故持續了約 12 小時才被發現）。
+- 與 Obsidian Git 插件的互動（兩個自動化同時操作同一個 repo 的 staging area）是另一個獨立風險，這次先不動，觀察 abort 機制上線後是否還有問題。
