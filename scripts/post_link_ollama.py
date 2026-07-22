@@ -431,6 +431,22 @@ def run_phase_b(
 
     # Step 1: Sync from GitHub
     if not dry_run:
+        # P7#29 guard: if a previous run (usually Phase A's pull --rebase)
+        # left the repo mid-rebase or on a detached HEAD, every commit this
+        # run makes would be stranded and unpushable. Repair first; if
+        # repair fails, skip the cycle entirely.
+        sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+        from personalkm.gitstate import ensure_clean_git_state
+
+        try:
+            repaired = ensure_clean_git_state(vault_root, "main")
+            if repaired:
+                logger.warning(f"Repaired stranded git state before sync: {repaired}")
+        except RuntimeError as e:
+            logger.error(f"Vault git state is stranded and could not be repaired: {e}")
+            return {"status": "error", "pages_processed": 0,
+                    "message": f"stranded git state: {e}"}
+
         try:
             logger.info("Syncing from GitHub...")
             run_git(["fetch", "origin", "main"], vault_root)

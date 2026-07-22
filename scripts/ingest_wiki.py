@@ -182,12 +182,36 @@ def run_phase_a(vault_path: Path, max_files: Optional[int] = None, dry_run: bool
         return {"status": "dry_run", "would_process": len(raw_files),
                 "files": [str(f.relative_to(vault_path)) for f in raw_files]}
 
+    # P7#29 guard: a previous run's `pull --rebase` may have stopped on a
+    # conflict and left the repo mid-rebase / on a detached HEAD — in that
+    # state every later commit is stranded and unpushable. Repair first;
+    # if repair fails, skip this cycle rather than commit into the void.
+    from personalkm.gitstate import ensure_clean_git_state
+
+    try:
+        repaired = ensure_clean_git_state(vault_path, "main")
+        if repaired:
+            logger.warning(f"Repaired stranded git state before pull: {repaired}")
+    except RuntimeError as e:
+        logger.error(f"Vault git state is stranded and could not be repaired: {e}")
+        return {"status": "error", "message": f"stranded git state: {e}"}
+
     # Pull latest so we have all raw files that Render/Render cron pushed
     try:
         run_git(["pull", "--rebase", "origin", "main"], vault_path)
         logger.info("Pulled latest from GitHub")
     except Exception as e:
         logger.warning(f"git pull failed (may be up-to-date): {e}")
+        # If the pull itself died mid-rebase, abort NOW — otherwise the
+        # rest of this run (and every hourly run after it) commits onto a
+        # detached HEAD (the exact 2026-07-22 incident).
+        try:
+            repaired = ensure_clean_git_state(vault_path, "main")
+            if repaired:
+                logger.warning(f"Repaired stranded git state after failed pull: {repaired}")
+        except RuntimeError as e2:
+            logger.error(f"Could not repair git state after failed pull: {e2}")
+            return {"status": "error", "message": f"stranded git state: {e2}"}
 
     # Step 0: Resolver — fetch external content for raw notes with URLs
     # Runs before ingest so LLM gets full article content, not just snippets.
