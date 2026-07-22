@@ -35,8 +35,8 @@
 | 23 | P6#24 Entity Distillation Loop 接進 cron | 🔵 P6 | 中/低 | 🔲 待開始（前置：#16、#21、#22） |
 | 24 | P6#25 wiki/stubs/ frontmatter 合約補齊 | 🔵 P6 | 低/低 | 🔲 待開始 |
 | 25 | P7#26 `_append_capture()` frontmatter 損毀根因修復 | 🔴 P7 | 高/中 | ✅ 已完成並測試 |
-| 26 | P7#27 3 個檔案 title/canonical 等欄位疑似永久遺失 | 🔴 P7 | 高/待評估 | 🔲 待調查 |
-| 27 | P7#28 `kimi-k3.md` body 混入另一頁完整 frontmatter | 🔴 P7 | 中/待評估 | 🔲 待調查 |
+| 26 | P7#27 3 個檔案 title/canonical 等欄位疑似永久遺失 | 🔴 P7 | 高/待評估 | ✅ 根因已修 + 3 檔全部從 git 歷史救回（2026-07-22，見下方） |
+| 27 | P7#28 `kimi-k3.md` body 混入另一頁完整 frontmatter | 🔴 P7 | 中/待評估 | ✅ 已修復（2026-07-22，與 #27 同輪，見下方） |
 | 28 | P7#29 Cron `pull --rebase` 卡住不自我恢復 | 🔴 P7 | 高/中 | ✅ 自我恢復 guard 已完成並測試（health check 告警未做，見下方） |
 
 ## 剩下待做（照順序）
@@ -581,7 +581,26 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 **優先：第 26 順位**
 
-狀態：🔲 待調查（本輪刻意不動）。
+狀態：✅ 根因已修 + 3 檔全部從 git 歷史救回，2026-07-22。Branch: `fix/frontmatter-roundtrip-corruption`。
+
+**2026-07-22 根因調查結論（使用者要求檢查 claude-code.md/github.md 格式問題後追出）**：
+
+用 vault git history 對 `claude-code.md` 逐 commit 二分，鎖定 title 消失在 **2026-07-12 13:26 的 Phase A commit（`7c257c47`）**，並用真實檔案內容重現了兩個一直活在程式碼裡的機制：
+
+- **根因 A（填充增生）**：每次 merge/Phase B 重寫都用 `f"---\n{parts[1]}\n---"` 重組，而 `parts[1]` 頭尾本來就帶著分隔線的換行——**每重寫一次，frontmatter 頭尾各多一個空行**。`github.md` 累積了約 63 行（≈63 次每小時重寫的化石層），全 vault 有 131 頁中招。
+- **根因 B（剝離/回寫不對稱）**：merge 用 `_strip_frontmatter()` 取 body（會把 frontmatter 從檔案**任何位置**拔掉），但回寫條件是 `startswith("---")`（只認位元組 0）。只要 `---` 前有任何雜質——一個空行、Obsidian Git 衝突標記——回寫就被跳過，整份 frontmatter 當場蒸發。已實驗證明一個前導空行就足以觸發。
+- **連鎖**：frontmatter 蒸發後，Phase B 的 `set_frontmatter_value` 看到「沒有 frontmatter」就在檔案頂端新建只含 `wikilink_processed` 的迷你 wrapper——這就是 P7#26 觀察到的孤兒區塊的真正誕生機制，再被根因 A 逐時灌胖。
+
+程式碼修復（228→234 測試全過）：
+- 新增 `src/personalkm/frontmatter.py`：`split_frontmatter()`（容忍前導雜質、拒絕深處 body 分隔線對與非 YAML 區塊、剝除累積填充）+ `join_frontmatter()`（round-trip 冪等，不再增生）。
+- 接進 `entity_dedup._append_capture()` 與 `ingestion_v2` 兩條 merge 分支（順帶移除殘留的 body `---` 分隔線插入，並修掉一個 `parts[1]` 在 else 分支未定義的潛在 NameError）；`set_frontmatter_value` 重組時正規化兩側邊界。
+
+Vault 修復（`scripts/fix_wiki_frontmatter_damage.py`，6 測試含 fixture git repo）：
+- **3 檔 frontmatter 全部從 git 歷史救回**（找到最近一個 first block 還有 `title:` 的 commit，取回完整 frontmatter，保留 wrapper 裡最新的 `wikilink_processed`，body 維持現狀並清除 wrapper 殘留）——`claude-code.md`、pixelrag、`obsidian-with-ollama.md`，0 個無法復原。
+- 131 頁填充正規化（純空白變更，-2216 行）。
+- 修復後全 vault 重掃：missing-title 與 bare-frontmatter-in-body 皆為 0。已 commit + push（vault `5af5f20`）。
+
+未修（明知而留）：重複的 `## Summary`/`## Key Facts` 區段是 merge 追加設計的既定結果，屬於 Distillation Loop（P6#24）的處理範圍，不算損毀。
 
 目標：以下 3 個檔案在修復 #26 時被順帶掃到，但情況比另外 6 個更嚴重——`title:` 完全不存在於檔案的任何區塊（不是被孤立區塊擋住，是真的整段遺失），`scripts/fix_duplicate_frontmatter.py` 正確判斷「找不到含 title: 的區塊」而選擇不動它們，沒有造成進一步損害：
 
@@ -599,7 +618,7 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 **優先：第 27 順位**
 
-狀態：🔲 待調查（本輪刻意不動，處理 P6#18 時發現）。
+狀態：✅ 已修復，2026-07-22（與 P7#27 同輪處理）。`fix_wiki_frontmatter_damage.py` 的 strip-pasted pass 偵測「body 裡連續 4 行以上的裸 frontmatter key 行（含縮排的清單延續行）」並整塊移除——`kimi-k3.md` 與另一個同型受害檔（`2026-07-12-工作流編號ttoi-21-...`，處理時才發現）都已清乾淨，該資訊本來就在各頁的 `## Mentions` 正確記錄過，無資料損失。混入的確切上游機制（推測是 `_add_capture_to_entity` 的 300 字摘錄截到來源檔的 frontmatter 文字）沒有另外深挖——上游的 excerpt 產生路徑如果之後再犯，重掃工具（`--vault` dry-run）可以立即偵測。
 
 目標：`wiki/entities/kimi-k3.md` 的損毀模式跟 P6#18（6 頁）、P7#26/27 都不一樣——它有兩層看起來都「正常」的 frontmatter：第一層（line 1-20）是真正的 `kimi-k3.md` 自己的 frontmatter（`title: Kimi K3`），關閉後 body 從 `# Kimi K3`（line 25）開始，但緊接著（line 27-34）出現了另一篇頁面（`OpenAI 官方釋出 GPT-5.6 提示詞指南...`）完整的 frontmatter 內容——`title:`/`created:`/`updated:`/`tags:`/`sources:` 一應俱全，但**沒有 `---` 包起來**，直接是裸文字混在 body 裡；其中 `sources:` 底下那個 `[[Archive/raw/Tech/...]]` wikilink 甚至沒有關閉方括號就被截斷。
 
