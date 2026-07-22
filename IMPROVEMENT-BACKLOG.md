@@ -37,7 +37,7 @@
 | 25 | P7#26 `_append_capture()` frontmatter 損毀根因修復 | 🔴 P7 | 高/中 | ✅ 已完成並測試 |
 | 26 | P7#27 3 個檔案 title/canonical 等欄位疑似永久遺失 | 🔴 P7 | 高/待評估 | 🔲 待調查 |
 | 27 | P7#28 `kimi-k3.md` body 混入另一頁完整 frontmatter | 🔴 P7 | 中/待評估 | 🔲 待調查 |
-| 28 | P7#29 Cron `pull --rebase` 卡住不自我恢復 | 🔴 P7 | 高/中 | 🔲 待開始（事故已人工修復，防再發未做） |
+| 28 | P7#29 Cron `pull --rebase` 卡住不自我恢復 | 🔴 P7 | 高/中 | ✅ 自我恢復 guard 已完成並測試（health check 告警未做，見下方） |
 
 ## 剩下待做（照順序）
 
@@ -627,8 +627,12 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 根因：`run_mac_mini_phase_a.sh`/`ingest_wiki.py` 的設計是「`git pull --rebase` 失敗只記警告不中斷」（2026-07-19 斷電韌性補強時的既有決策）——但「失敗」有兩種：pull 整個失敗（無害，下次重試）與 **rebase 中途停住**（有害，repo 從此卡在 detached HEAD，後續所有 cron commit 都落入虛空，且不會自我恢復，直到人工介入）。現有邏輯沒有區分這兩種。
 
-計畫：
-- 三支 runner script（Phase A/B/worker）在 `git pull --rebase` 之後檢查 `.git/rebase-merge`/`.git/rebase-apply` 是否存在，存在就 `git rebase --abort` 並跳過本輪（記 log + 告警），確保下一輪從乾淨狀態重試。
-- 或改用 `git pull --rebase --autostash` + 失敗即 abort 的組合；甚至考慮 cron 端改 `git fetch` + `git merge --ff-only`，rebase 留給人工。
-- 加一條 health check：偵測 vault repo 處於 detached HEAD 或 rebase-in-progress 超過 1 小時就告警（這次事故持續了約 12 小時才被發現）。
-- 與 Obsidian Git 插件的互動（兩個自動化同時操作同一個 repo 的 staging area）是另一個獨立風險，這次先不動，觀察 abort 機制上線後是否還有問題。
+**2026-07-22 自我恢復 guard 已完成並測試**：
+
+- 新增 `src/personalkm/gitstate.py::ensure_clean_git_state()`：cron 任何 git 操作前偵測「rebase 進行中殘留」與「detached HEAD」兩種擱淺狀態。關鍵設計：abort 之前**先**把 HEAD 上不可達的 commit 停泊到帶時間戳的 `rescue/detached-*` branch（直接 abort 會讓那些 commit 變成孤兒——真實事故裡有 5 個 commit 疊在卡住的 rebase HEAD 上），再 abort、再重新 attach 回 main。修不好的狀態會 raise，該輪直接跳過，絕不在擱淺狀態下 commit。
+- 接進兩個進入點：Phase A（`ingest_wiki.py` pull 之前 + pull 失敗的 except 裡再檢查一次，涵蓋「pull 自己把 rebase 卡住」的當場情境）與 Phase B（`post_link_ollama.py` sync 之前）。實際執行的 Python 就在 repo 工作副本裡跑，merge 進 main 後 cron 下一輪即生效，無需另外部署。
+- 測試 `tests/test_gitstate.py`（5 案例，全部用真實 git repo 操作）：乾淨 repo 不動作／卡住的 rebase 正確 abort／detached HEAD 上的 commit 先救援再恢復／**完整事故形狀**（rebase 卡住 + HEAD 疊 commit）先建 rescue branch 再 abort、commit 可從 rescue branch 讀回／detached 但指向 main 既有 commit 時不建多餘 branch。217 個測試全過。
+
+尚未做（列為後續）：
+- Health check 告警：偵測 vault repo 擱淺超過 1 小時就主動通知（這次事故 12 小時才被發現）——guard 只能在 cron 醒來時修復，若 guard 本身也失敗仍需要人知道。
+- 與 Obsidian Git 插件的互動（兩個自動化同時操作同一個 repo 的 staging area）是另一個獨立風險，先觀察 guard 上線後是否還有問題。
