@@ -14,11 +14,18 @@
   <key>WorkingDirectory</key>
   <string>/Users/dannytsao/Documents/PersonalKM/Personalkm-vault</string>
 
-  <key>RunAtLoad</key>
-  <true/>
-
-  <key>StartInterval</key>
-  <integer>3600</integer>
+  <!-- Daily at 03:00. If the Mac is off at that time, launchd does NOT
+       catch up the missed run on next boot — it simply waits for the
+       next 03:00 (unlike StartInterval, which would fire immediately to
+       make up elapsed time). RunAtLoad is intentionally omitted so
+       loading/reloading this job never triggers an extra run. -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>3</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
 
   <key>StandardOutPath</key>
   <string>/Users/dannytsao/Library/Logs/PersonalKM/copilot-ingest.out.log</string>
