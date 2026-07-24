@@ -62,18 +62,15 @@ def _get_wikilinks(wiki_path: Path) -> WikilinkManager:
 # Content Quality Filtering
 # ─────────────────────────────────────────────────────────────
 
-LOW_QUALITY_PATTERNS = [
+# These phrases mean the whole page IS a failure/interstitial — never a
+# passing mention inside legitimate content — so they're trusted at any
+# content length.
+_HARD_LOW_QUALITY_PATTERNS = [
     "wait loading",
     "page not found",
     "just a moment",
     "checking your browser",
     "enable javascript",
-    "sign in to",
-    "login to",
-    "subscribe to",
-    "subscription required",
-    "paywall",
-    "advertisement",
     # Fetch failure patterns — notes that tried but failed to retrieve content
     "http 40",
     "http 41",
@@ -94,15 +91,39 @@ LOW_QUALITY_PATTERNS = [
     "error fetching",
 ]
 
+# These phrases are common in a genuine short paywall/login block, but can
+# also appear once in passing inside substantial, legitimate content (an
+# article, or an AI conversation, ABOUT subscriptions/logins/ads). Trusted
+# only when they dominate a short page — a real block IS the whole page.
+# A false positive here previously trashed a Copilot conversation that
+# merely mentioned "subscribe to Claude Pro" as one bullet among many.
+_SOFT_LOW_QUALITY_PATTERNS = [
+    "sign in to",
+    "login to",
+    "subscribe to",
+    "subscription required",
+    "paywall",
+    "advertisement",
+]
+
+_SOFT_PATTERN_MAX_CONTENT_CHARS = 400
+
+# Combined, for callers that want the full list (e.g. diagnostics).
+LOW_QUALITY_PATTERNS = _HARD_LOW_QUALITY_PATTERNS + _SOFT_LOW_QUALITY_PATTERNS
+
 
 def is_low_quality(content: str) -> Tuple[bool, str]:
     """Return (True, reason) if content is low-quality."""
     lower = content.lower()
-    for pattern in LOW_QUALITY_PATTERNS:
+    for pattern in _HARD_LOW_QUALITY_PATTERNS:
         if pattern in lower:
             return True, f"Matched low-quality pattern: {pattern!r}"
     if len(content.strip()) < 50:
         return True, "Content too short (< 50 chars)"
+    if len(content.strip()) <= _SOFT_PATTERN_MAX_CONTENT_CHARS:
+        for pattern in _SOFT_LOW_QUALITY_PATTERNS:
+            if pattern in lower:
+                return True, f"Matched low-quality pattern: {pattern!r}"
     return False, ""
 
 
