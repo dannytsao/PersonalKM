@@ -33,6 +33,23 @@ def test_parse_conversation_filename_rejects_non_copilot_names():
     assert parse_conversation_filename("2026-07-16-some-food-post") is None
 
 
+def test_parse_conversation_filename_accepts_time_first_ordering():
+    # Copilot started putting the timestamp first (observed 2026-07-23),
+    # with no version signal to key off — both orderings must work.
+    parsed = parse_conversation_filename("20260723_100342@Obsidian_Copilot_Topic_Attribute_Source")
+    assert parsed == ("Obsidian_Copilot_Topic_Attribute_Source", datetime(2026, 7, 23, 10, 3, 42))
+
+
+def test_parse_conversation_filename_time_first_with_json_stub_topic():
+    parsed = parse_conversation_filename(
+        "20260723_111751@```json___title_Connecting_NotebookLM_to_Claude,"
+    )
+    assert parsed is not None
+    topic, dt = parsed
+    assert topic == "```json___title_Connecting_NotebookLM_to_Claude,"
+    assert dt == datetime(2026, 7, 23, 11, 17, 51)
+
+
 def test_parse_conversation_filename_handles_topic_containing_at_sign():
     # topic itself may contain "@" (e.g. an Instagram handle) — the LAST
     # "@date_time" suffix is what matters, so greedy topic match must win.

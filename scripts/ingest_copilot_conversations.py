@@ -11,6 +11,10 @@ resolve. `ingest_file_v2` doesn't require a URL (it falls back to the raw
 body when there's no resolved/ counterpart), so dropping a renamed copy
 into raw/<Category>/ is enough to get it synthesized on the next run.
 
+Observed 2026-07-23: Copilot switched to putting the timestamp FIRST —
+`<YYYYMMDD>_<HHMMSS>@<topic>.md` — mid-session, with no version bump to
+key off. Both orderings are accepted; whichever matches wins.
+
 Renaming to `<date>-<log_id>-<slug>.md` matches the convention every other
 raw capture uses (see personalkm.capture.notes). The file is MOVED, not
 copied — a re-run is naturally idempotent, since once a conversation lands
@@ -36,8 +40,11 @@ import yaml
 from personalkm.capture.notes import slugify
 from personalkm.frontmatter import split_frontmatter
 
-# Copilot's own export naming: "<topic>@<YYYYMMDD>_<HHMMSS>.md"
-_FILENAME_RE = re.compile(r"^(?P<topic>.+)@(?P<date>\d{8})_(?P<time>\d{6})$")
+# Copilot's export naming has been observed in both orderings:
+#   "<topic>@<YYYYMMDD>_<HHMMSS>"  (original)
+#   "<YYYYMMDD>_<HHMMSS>@<topic>"  (seen starting 2026-07-23)
+_FILENAME_RE_TOPIC_FIRST = re.compile(r"^(?P<topic>.+)@(?P<date>\d{8})_(?P<time>\d{6})$")
+_FILENAME_RE_TIME_FIRST = re.compile(r"^(?P<date>\d{8})_(?P<time>\d{6})@(?P<topic>.+)$")
 
 # Copilot's AI title-generation sometimes fails and dumps the raw,
 # unparsed JSON response as the title instead — both the filename and the
@@ -71,20 +78,22 @@ def resolve_topic(fm_topic: str, filename_topic: str, captured_at: datetime) -> 
 def parse_conversation_filename(stem: str) -> Optional[Tuple[str, datetime]]:
     """Extract (topic, captured_at) from a Copilot conversation filename stem.
 
-    Returns None if the stem doesn't match Copilot's `<topic>@<date>_<time>`
-    convention (e.g. an unrelated file dropped into the same folder).
+    Tries both orderings Copilot has been observed to use. Returns None if
+    neither matches (e.g. an unrelated file dropped into the same folder).
     """
-    m = _FILENAME_RE.match(stem)
-    if not m:
-        return None
-    try:
-        captured_at = datetime.strptime(
-            f"{m.group('date')}_{m.group('time')}", "%Y%m%d_%H%M%S"
-        )
-    except ValueError:
-        return None
-    topic = m.group("topic").strip() or "untitled-conversation"
-    return topic, captured_at
+    for pattern in (_FILENAME_RE_TOPIC_FIRST, _FILENAME_RE_TIME_FIRST):
+        m = pattern.match(stem)
+        if not m:
+            continue
+        try:
+            captured_at = datetime.strptime(
+                f"{m.group('date')}_{m.group('time')}", "%Y%m%d_%H%M%S"
+            )
+        except ValueError:
+            continue
+        topic = m.group("topic").strip() or "untitled-conversation"
+        return topic, captured_at
+    return None
 
 
 def build_raw_note(
