@@ -655,3 +655,109 @@ Vault 修復（`scripts/fix_wiki_frontmatter_damage.py`，6 測試含 fixture gi
 尚未做（列為後續）：
 - Health check 告警：偵測 vault repo 擱淺超過 1 小時就主動通知（這次事故 12 小時才被發現）——guard 只能在 cron 醒來時修復，若 guard 本身也失敗仍需要人知道。
 - 與 Obsidian Git 插件的互動（兩個自動化同時操作同一個 repo 的 staging area）是另一個獨立風險，先觀察 guard 上線後是否還有問題。
+
+## P8 — Lifestyle Vault 拆庫（2026-07-27 提出）
+
+背景：tech vault 的 `wiki/entities/` 混了約 26 頁美食/旅遊日期前綴頁面、`Archive/raw/` 有 90 檔（Food 47 + General 43），但 entities.yaml 34 條 canonical entity **全是 tech**——美食/旅遊從未被當成正式 entity 管理。知識圖譜分析顯示兩域 wikilink 幾乎不互引用，拆庫不會犧牲連結關係。同一個 LINE Bot 不拆，capture 層已經有 `fallback_category()` 在做 food/tech/general 分類，拆庫後多路由一步即可。
+
+### Dry-run 結果（2026-07-27）
+
+對 `Archive/raw/` 全部 276 檔案跑 `fallback_category()` 分類測試：
+
+| actual \ predicted | food | general | photography | tech |
+|---|---|---|---|---|
+| **food** (47) | **35 (74%)** | 4 | 2 | 6 |
+| **general** (43) | 3 | **27 (63%)** | 9 | 4 |
+| **photography** (3) | 0 | 0 | **3 (100%)** | 0 |
+| **tech** (183) | 1 | 38 | 6 | **138 (75%)** |
+
+**整體準確率 73.6%（203/276）**。
+
+主要誤判模式：
+- **tech → general（38 件）**：最大宗。標題/內文缺 tech 關鍵字（如 NotebookLM、Obsidian 教學文標題是日文/中文，沒有 `python`/`api` 等詞），或截圖型貼文內文極短。Claude Code、ChatGPT 等 hot word 未列入。
+- **food → tech（6 件）**：Threads/IG 帳號名含 `nash`（被 `nash` → 不影響，但某些貼文內文出現 `api` 等字）。餐廳名誤撞。
+- **general → photography（9 件）**：旅遊/景點文缺 `景點` 關鍵字，但內文有 `拍照`/`相機`/`花季`。旅遊文被歸到 photography，但兩者拆庫後同屬 lifestyle vault，**無害**。
+
+**結論**：全自動分類不夠可靠（73.6%），尤其 tech→general 誤判會讓技術文錯進 lifestyle vault。決定採用**混合模式**（自動分類為主 + LINE 指令強制覆蓋），並在 #31 改善關鍵字清單後再正式上線。
+
+### 優先順序總覽
+
+| 順位 | 項目 | 層級 | 效益/工時 | 狀態 |
+|------|------|------|-----------|------|
+| 29 | P8#30 Obsidian workspace 暫行方案 | 🟢 P8 | 高/低 | 🔲 待開始（零風險，立即可做） |
+| 30 | P8#31 `fallback_category()` 分類品質改善 | 🟢 P8 | 高/低 | 🔲 待開始（dry-run 已發現缺口） |
+| 31 | P8#32 Capture 層多 repo 路由 | 🟢 P8 | 高/中 | 🔲 待開始（前置：#31） |
+| 32 | P8#33 Lifestyle vault 建立 + 一次性 migration | 🟢 P8 | 高/高 | 🔲 待開始（前置：#32） |
+| 33 | P8#34 雙 vault cron + health check | 🟢 P8 | 中/中 | 🔲 待開始（前置：#33） |
+
+### 30. Obsidian workspace 暫行方案 🥇
+
+**優先：第 29 順位**
+
+狀態：🔲 待開始。
+
+目標：在拆庫之前（P6 #22-25 收完前），先用 Obsidian 原生功能達到視覺分離，零程式碼、零風險。
+
+計畫：
+- 在 Obsidian 用 Bookmarks 或 Workspace 外掛建立兩個視圖：「Tech」和「Lifestyle」。
+- Lifestyle 視圖用搜尋 filter（`path:wiki/entities/` + 美食/旅遊關鍵字、或 `tag:#food`/`tag:#travel`）隔離。
+- 這不是真正拆庫，只是看的方式分開。pipeline 照舊。
+
+### 31. `fallback_category()` 分類品質改善 🥇
+
+**優先：第 30 順位**
+
+狀態：🔲 待開始。
+
+目標：2026-07-27 dry-run 發現整體準確率只有 73.6%，最大問題是 tech→general 誤判（38 件，主要原因是缺 hot word：`claude-code`、`chatgpt`、`gemini`、`codex`、`notebooklm`、`obsidian` 等都未列入關鍵字清單）。改善後目標 ≥ 90%。
+
+計畫：
+- 擴充 `link_processor.py::fallback_category()` 的 tech 關鍵字清單：加入 entities.yaml 已登記的 34 個 canonical entity slug（claude-code、chatgpt、cursor、deepseek、kimi 等），以及 hot AI 工具詞（notebooklm、obsidian、copilot、mcp、prompt 等）。
+- 擴充 food 關鍵字：加入 `吃到飽`、`牛排`、`海鮮`、`私房菜`、`合菜`、`燒鵝`、`吊橋`（旅遊）等 dry-run 誤判的實例詞。
+- 對同一份 276 檔重跑 dry-run 驗證改善幅度。
+- 不改 architecture，純關鍵字清單擴充。
+
+### 32. Capture 層多 repo 路由 🥈
+
+**優先：第 31 順位（前置：#31）**
+
+狀態：🔲 待開始。
+
+目標：LINE Bot 收到訊息後，依 `fallback_category()` 結果決定 push 到 tech vault 還是 lifestyle vault。webhook 保持 dumb——分類邏輯已存在，只是多一個路由分支。
+
+計畫：
+- `config/settings.yaml` 新增多 vault 設定：`vault.tech.path` / `vault.lifestyle.path`，各含獨立 `repo_url` 與 `VAULT_REPO_URL`（PAT embedded）。
+- `git_store.py` 新增 category → repo URL 映射：`if category in ("food", "travel", "photography"): target = lifestyle_vault; else: target = tech_vault`。
+- 加入混合模式的 LINE 指令覆蓋：使用者可發 `/food`、`/tech`、`/travel` 強制切換 session 狀態，之後的訊息進指定 vault 直到下次切換。Session 狀態存記憶體 dict 即可（Render 無持久化需求，重啟就回全自動）。
+- Capture 層仍只做 receive → classify（既有）→ write raw → push，不引入 LLM，不違反 AGENTS.md hard rule。
+
+### 33. Lifestyle vault 建立 + 一次性 migration 🥈
+
+**優先：第 32 順位（前置：#32）**
+
+狀態：🔲 待開始。
+
+目標：建立 `Personalkm-lifestyle-vault` repo，把美食/旅遊頁面從 tech vault 搬過去。
+
+計畫：
+- 建立 `Personalkm-lifestyle-vault` private GitHub repo。
+- 寫 `scripts/split_vault.py`（遷移腳本，tests/fixtures 測試，AGENTS.md hard rule 1：真實套用需使用者確認）：
+  - 掃描 `wiki/entities/` 中日期前綴頁面，用改善後的 `fallback_category()` + 手動審核清單判斷哪些是 lifestyle。
+  - 搬移符合的 entity 頁面 + 對應的 `Archive/raw/Food/`、`Archive/raw/General/`（旅遊類）檔案到新 vault。
+  - 兩邊都保留 git history（用 `git filter-repo` 或手動搬移 + 新 commit）。
+- tech vault 移除搬走的頁面後，重建 knowledge-graph.md / log.md。
+- lifestyle vault 用自己的 canonical 結構（店名/景點/地區），不沿用 entities.yaml。
+
+### 34. 雙 vault cron + health check 🥉
+
+**優先：第 33 順位（前置：#33）**
+
+狀態：🔲 待開始。
+
+目標：Mac Mini hourly cron 同時跑兩個 vault 的 Phase A/B，health check 同時監控兩個 repo。
+
+計畫：
+- 新增 `com.dannytsao.personalkm.phase-a-lifestyle.plist` + `run_mac_mini_phase_a_lifestyle.sh`，比照現有 Phase A 的 lock 機制 + 斷電韌性。
+- Phase B 同理（`...phase-b-lifestyle`）。
+- 現有 health check cron（Hermes `personalkm-health-check`）增加 lifestyle vault 的檢查項目：Render webhook / vault last capture / pipeline status / stale raw。
+- `pipeline_status.sh` 改為報告兩個 vault 的狀態。
