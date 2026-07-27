@@ -119,11 +119,19 @@ Entity extraction（便宜任務）：
 ```yaml
 distill_trigger:
   captures_threshold: 5
-  decay_score_threshold: 0.4
+  # decay_score_threshold: 0.4   # ← P6#23 (2026-07-27): 刻意省略，見下方說明
   max_age_days: 30
 ```
 
-三個條件任一成立即觸發，優先序：captures 數量 > decay > age。
+兩個條件任一成立即觸發。
+
+**P6#23 決策（2026-07-27）：`decay_score_threshold` 刻意省略。**
+
+原因：
+1. Distillation 的目的是「內容壓縮」（把累積的 captures 折疊成摘要），不是「判斷過時」。`captures_threshold`（量）+ `max_age_days`（時間）已完整覆蓋壓縮需求。
+2. `knowledge_decay.py` 的 freshness score 本質上只是年齡的 0-100 重縮放，與 `max_age_days` 重複。
+3. 真正的內容過時偵測（如「這頁提到 Docker v23 但現在已經 v27」）需要獨立的 staleness_check LLM stage，不應混進 distillation trigger。
+4. `knowledge_decay.py` 存在於 `bot/` 且直接 import OpenAI（違反 hard rule 2），移植會增加架構債。
 
 ### LLM 任務
 JSON parse 失敗 → `LLMError`，該 entity 跳過本輪，下次 hourly retry。

@@ -8,12 +8,37 @@ confirmation; nothing here writes on its own. Retention is fold-preserve
 body is preserved untouched inside a collapsed <details> block — nothing is
 ever deleted, so a bad summary can't destroy the original captures.
 
-Trigger conditions are a simplified subset of SPEC.md's distill_trigger:
-captures_threshold and max_age_days are implemented; decay_score_threshold
-is intentionally omitted. The existing knowledge_decay.py freshness model
-is keyed on DevOps/AI keyword categories for tech-note staleness and doesn't
-map cleanly onto arbitrary entity/concept pages, so it's left as an open
-follow-up rather than force-fit here.
+Trigger conditions — P6#23 decision (2026-07-27):
+======================================
+SPEC.md defines three trigger conditions (any one triggers distillation):
+  1. captures_threshold: 5    — ✅ implemented
+  2. max_age_days: 30         — ✅ implemented
+  3. decay_score_threshold: 0.4 — ❌ intentionally omitted (formal decision)
+
+**Why decay_score_threshold is omitted:**
+
+The purpose of distillation is **content compaction** — folding growing
+captures into a summary so the page stays scannable. The two implemented
+triggers already cover this:
+  - captures_threshold catches high-activity pages (lots of new content piling up)
+  - max_age_days catches stale pages (not touched in a while, worth refreshing)
+
+A decay_score would need to measure content staleness (is the info outdated?).
+The existing ``knowledge_decay.py`` attempts this but:
+  1. It's domain-specific (DevOps/AI keyword matching) — doesn't generalize to
+     food, travel, or arbitrary entity/concept pages.
+  2. It requires a per-page LLM call to assess staleness — adds cost, latency,
+     and another failure mode (LLMError) for no practical benefit over the
+     age trigger, which already catches "hasn't been updated in X days."
+  3. Its freshness score is functionally just age re-scaled to 0-100 —
+     ``max_age_days`` already covers this dimension more directly.
+  4. It lives in ``bot/`` and violates AGENTS.md hard rule 2 (direct OpenAI
+     import); porting it would add architecture debt, not reduce it.
+
+If true content-staleness detection is ever needed (e.g. "this Docker page
+references version 23, current is 27"), it should be a separate concern — a
+``staleness_check`` stage with its own LLM prompt — not overloading the
+distillation trigger. That's a future feature, not a gap in the current loop.
 
 Known simplification: if a page is distilled more than once, the new fold
 wraps around a body that already contains a previous fold, so nesting depth

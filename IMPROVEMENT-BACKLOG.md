@@ -518,15 +518,18 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 **優先：第 22 順位**
 
-狀態：🔲 待開始。
+狀態：✅ 已完成，2026-07-27。決策：**正式省略，不實作。**
 
 目標：決定 SPEC.md `distill_trigger` 定義的第三個觸發條件 `decay_score_threshold` 要不要實作、如何實作，而不是無限期擱置。
 
-排序理由：這是 #24（接進 cron）正式上線前必須拍板的最後一個懸而未決的觸發條件，因此緊接排在 #24 之前，避免 #24 上線後才發現觸發邏輯還缺一塊。
+決策：**刻意省略。** 理由已寫入 `SPEC.md` 及 `distill.py` module docstring：
 
-計畫：
-- 評估 `bot/knowledge_decay.py` 現有的新鮮度模型（針對 DevOps/AI 關鍵字設計）是否能泛化到任意 entity/concept page，或需要另一套更通用的版本。
-- 拍板後：要嘛實作一個通用版 decay score 並接上 `distill_trigger`，要嘛正式在 SPEC.md 註記「刻意省略」並說明理由，不留模糊地帶。
+1. Distillation 的目的是內容壓縮（fold-preserve），不是判斷內容過時。`captures_threshold`（量）+ `max_age_days`（時間）已完整覆蓋壓縮需求。
+2. `knowledge_decay.py` 的 freshness score 本質上只是年齡的 0-100 重縮放，與 `max_age_days` 功能重複。
+3. 真正的內容過時偵測需要獨立的 staleness_check LLM stage，不應混進 distillation trigger——那是未來 feature，不是現有 loop 的缺口。
+4. `knowledge_decay.py` 存在於 `bot/` 且直接 import OpenAI（違反 hard rule 2），移植會增加架構債。
+
+SPEC.md 已更新：`decay_score_threshold` 註解為「刻意省略」並附上理由。trigger 從三條件改為兩條件。
 
 ### 24. Entity Distillation Loop 接進 hourly cron 🔵
 
