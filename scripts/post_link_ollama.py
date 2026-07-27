@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""
-Phase B: Post-Link — Ollama Wikilink Analyzer
-================================================
+r"""
+Phase B: Post-Link — Wikilink Analyzer
+=======================================
 Runs on Mac Mini via launchd. Processes all wiki pages that need semantic
-wikilinks added or refreshed, using Ollama (qwen3:8b) for bidirectional reasoning.
+wikilinks added or refreshed, using the LLM router (wikilink_analysis stage).
+
+P6#22 (2026-07-27): migrated from direct Ollama HTTP calls to
+``personalkm.llm.router.route()``. The router handles model fallback
+automatically (Ollama → cloud → ...) and raises LLMError if all fail.
 
 Design goals:
 - Idempotent: safely re-run without duplicating work
@@ -21,7 +25,6 @@ Exit Conditions:
     grep 'new-page' wiki/entities/older-page.md   # Contains [[new-page]]
 """
 
-import json
 import logging
 import os
 import re
@@ -372,11 +375,23 @@ def process_page(
 
     logger.info(f"  Analyzing: {page_path.stem} ({len(body)} chars)")
 
-    result = analyzer.analyze_page(
-        page_title=page_title,
-        page_body=body,
-        existing_entity_names=all_entity_names,
-    )
+    try:
+        result = analyzer.analyze_page(
+            page_title=page_title,
+            page_body=body,
+            existing_entity_names=all_entity_names,
+        )
+    except Exception as e:
+        # P6#22: router raises LLMError when all models in the stage chain
+        # are exhausted. Log it per-page but don't crash the whole run —
+        # other pages may still succeed. The page stays unprocessed and
+        # will be retried next cycle.
+        logger.error(f"  LLM analysis failed for {page_path.stem}: {e}")
+        return {
+            "page": page_path.stem,
+            "error": str(e),
+            "parse_success": False,
+        }
 
     forward_links = result.get("forward_links", [])
     backward_links = result.get("backward_links", [])
@@ -493,27 +508,24 @@ def run_phase_b(
     all_entity_names = collect_entity_names(wiki_dir)
     logger.info(f"Existing entities in knowledge base: {len(all_entity_names)}")
 
-    # Step 4: Import and init Ollama analyzer
+    # Step 4: Import and init wikilink analyzer (P6#22: now via llm.router)
     try:
         sys.path.insert(0, str(Path(__file__).parent.parent))
-        from bot.ollama_wikilink import OllamaWikilinkAnalyzer
+        from personalkm.propagate.ollama_wikilink import WikilinkAnalyzer
 
-        analyzer = OllamaWikilinkAnalyzer()
+        analyzer = WikilinkAnalyzer()
         if not analyzer.is_available():
-            logger.error("Ollama is not reachable at %s", analyzer.ollama_url)
-            logger.error("Start Ollama: ollama serve")
-            return {
-                "status": "error",
-                "pages_processed": 0,
-                "message": "Ollama not available",
-            }
-        logger.info("Ollama connected: %s", analyzer.ollama_url)
+            logger.warning(
+                "Primary LLM provider for wikilink_analysis is not reachable. "
+                "Router will attempt fallback models if configured."
+            )
+        logger.info("Wikilink analyzer initialized (stage: %s)", analyzer.stage)
     except Exception as e:
-        logger.exception(f"Failed to initialize Ollama analyzer: {e}")
+        logger.exception(f"Failed to initialize wikilink analyzer: {e}")
         return {
             "status": "error",
             "pages_processed": 0,
-            "message": f"Ollama init failed: {e}",
+            "message": f"Analyzer init failed: {e}",
         }
 
     # Step 5: Process each page

@@ -496,15 +496,23 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 
 **優先：第 21 順位**
 
-狀態：🔲 待開始。
+狀態：✅ 已完成並測試，2026-07-27。Branch: `feature/p6-phase-b-router-migration`。
 
 目標：把 Phase B（`post_link_ollama.py` → `ollama_wikilink.py`）目前直接寫死呼叫 Ollama HTTP API 的部分，改成走 `personalkm.llm.router`，修正對 AGENTS.md hard rule 2 的長期違反。
 
-排序理由：這是架構債，不阻塞 #17-21，但必須排在 #24（Distillation Loop 接進 cron）之前——如果 Distillation Loop 真的併入 Phase B 尾端執行，應該接在已經修正、走 router 的版本上，而不是把同樣繞過 router、缺乏 fallback/告警覆蓋的架構債複製進新的自動化。
-
-計畫：
-- 改寫 `post_link_ollama.py`/`ollama_wikilink.py`，呼叫改走 `router.route("wikilink_analysis")`（或等效新 stage），保留 Ollama 為 fallback 鏈末端。
-- 確認 router 的 `LLMError` 告警機制（P0#3）也涵蓋到 Phase B 呼叫路徑。
+完成內容：
+- 新增 `config/models.yaml` 的 `wikilink_analysis` stage（primary: `ollama/qwen2.5:latest`，fallback: `[minimax/MiniMax-M2.7-highspeed, ollama/qwen3:8b]`）。
+- 重寫 `src/personalkm/propagate/ollama_wikilink.py`：
+  - `OllamaWikilinkAnalyzer` → `WikilinkAnalyzer`（保留舊名為 alias）。
+  - 移除 `call_ollama()` 直接 HTTP 呼叫，改用 `router.route("wikilink_analysis", prompt, system=...)`。
+  - LLMError 不再被吞掉（舊版返回 `parse_success: False` 靜默失敗；新版讓 router 的 alert 機制觸發，per-page 在 `process_page` 裡 catch 並記錄錯誤，不讓整個 run 崩潰）。
+  - XML 解析邏輯（`parse_wikilink_output`）完全不動——它解析的是模型 raw text 輸出，與呼叫方式無關。
+  - `is_available()` 改為讀 config 判斷 primary provider，不再寫死 Ollama URL。Cloud provider 視為 available（router 本身處理 transport failure）。
+- 更新 `scripts/post_link_ollama.py`：
+  - import 改為 `from personalkm.propagate.ollama_wikilink import WikilinkAnalyzer`（不再走 `bot.` shim）。
+  - `is_available()` 失敗不再是 hard stop（舊版直接 return error 不處理任何頁面），改成 warning + 繼續（讓 router 嘗試 fallback chain）。
+  - `process_page()` 加 try/except 捕捉 `analyze_page` 的 `LLMError`，per-page 記錄錯誤但不中斷整個 run。
+- 測試：`tests/test_wikilink_router_migration.py`（12 案例：parser 邊界、router 呼叫驗證、空 entity 短路、LLMError 傳播、custom stage、backward compat alias）。全套 278 個測試通過，ruff 乾淨。
 
 ### 23. Distillation Loop decay_score_threshold 決定 🔵
 

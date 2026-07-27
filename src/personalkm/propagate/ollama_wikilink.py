@@ -1,40 +1,43 @@
 """
-Ollama Wikilink Analyzer — Phase B (Post-Link)
-================================================
-Uses Ollama (qwen3:8b) to analyze wiki page body text and produce
-bidirectional wikilink suggestions using XML tag parsing.
+Wikilink Analyzer — Phase B (Post-Link)
+=======================================
+Analyzes wiki page body text and produces bidirectional wikilink suggestions
+using XML tag parsing.
+
+P6#22 (2026-07-27): migrated from direct Ollama HTTP calls to
+``personalkm.llm.router.route()``. This fixes the AGENTS.md hard rule 2
+violation (no provider names outside ``src/personalkm/llm/``). The router
+provides automatic fallback (Ollama → MiniMax → ...) and LLMError alerts.
 
 Why XML tags instead of JSON:
-  qwen3:8b does NOT reliably output structured JSON with format:json.
+  qwen2.5/qwen3:8b do NOT reliably output structured JSON with format:json.
   XML tags are plain text and parse robustly with regex at 8B scale.
 
 Usage:
-    from personalkm.propagate.ollama_wikilink import OllamaWikilinkAnalyzer
+    from personalkm.propagate.ollama_wikilink import WikilinkAnalyzer
 
-    analyzer = OllamaWikilinkAnalyzer(ollama_url="http://127.0.0.1:11434")
-    result = analyzer.analyze_page(page_body, existing_entity_names)
+    analyzer = WikilinkAnalyzer()
+    result = analyzer.analyze_page(page_title, page_body, existing_entity_names)
     # result = {forward_links: [...], backward_links: [...]}
 
 Exit Condition:
     # A page that previously had no wikilinks:
-    grep -c '\[\[' wiki/entities/example.md   # Was 0, now > 0
+    grep -c '\\[\\[' wiki/entities/example.md   # Was 0, now > 0
     # An older entity that now links back:
     grep 'example' wiki/entities/older-entity.md   # Has [[example]] now
 """
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import re
-from pathlib import Path
-from typing import Optional
-from urllib import request
-from urllib.error import URLError
 
 logger = logging.getLogger(__name__)
 
+# Legacy env vars kept for backward compatibility — the router now resolves
+# the model/URL from config/models.yaml, but these are still read by the
+# old is_available() health check and by tests that don't load the full config.
 DEFAULT_OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
 DEFAULT_OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
 
@@ -87,7 +90,7 @@ _WIKILINK_USER_PROMPT_TEMPLATE = """現有知識庫實體清單：
 
 def parse_wikilink_output(raw_output: str) -> tuple[list[str], list[str]]:
     """
-    Parse Ollama's XML-tagged output and extract forward/backward link lists.
+    Parse XML-tagged output and extract forward/backward link lists.
 
     Returns (forward_links, backward_links) where each is a list of
     bare wikilink slugs (without brackets).
@@ -125,7 +128,7 @@ def _extract_wikilinks(section: str) -> list[str]:
     """
     Extract wikilink slugs from a parsed section.
 
-    Input: "- [[claude-code]]\n- [[docker]]  # comment"
+    Input: "- [[claude-code]]\\n- [[docker]]  # comment"
     Output: ["claude-code", "docker"]
     """
     if not section:
@@ -148,70 +151,24 @@ def _extract_wikilinks(section: str) -> list[str]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Ollama Client (direct HTTP, no SDK dependency)
+# Main Analyzer (uses personalkm.llm.router)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def call_ollama(
-    prompt: str,
-    system: str = "",
-    model: str = DEFAULT_OLLAMA_MODEL,
-    url: str = DEFAULT_OLLAMA_URL,
-    timeout: int = 120,
-) -> Optional[str]:
+class WikilinkAnalyzer:
     """
-    Call Ollama /api/generate endpoint directly via urllib.
+    Phase B: Semantic wikilink analyzer.
 
-    Returns the raw response text, or None on failure.
-    """
-    messages = []
-    if system:
-        messages.append({"role": "system", "content": system})
-    messages.append({"role": "user", "content": prompt})
+    Reads a wiki page's body, queries the LLM router (``wikilink_analysis``
+    stage) with semantic context, and returns bidirectional link suggestions
+    parsed from XML-tagged output.
 
-    payload = json.dumps(
-        {
-            "model": model,
-            "prompt": prompt,
-            "stream": False,
-            "options": {"temperature": 0.2},
-        }
-    ).encode("utf-8")
-
-    req = request.Request(
-        f"{url.rstrip('/')}/api/generate",
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-
-    try:
-        with request.urlopen(req, timeout=timeout) as response:
-            data = json.loads(response.read().decode("utf-8"))
-            return str(data.get("response", "")).strip()
-    except (OSError, URLError, TimeoutError, json.JSONDecodeError) as e:
-        logger.warning(f"Ollama call failed: {e}")
-        return None
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Main Analyzer
-# ─────────────────────────────────────────────────────────────────────────────
-
-class OllamaWikilinkAnalyzer:
-    """
-    Phase B: Semantic wikilink analyzer using Ollama.
-
-    Reads a wiki page's body, queries Ollama (qwen3:8b) with semantic context,
-    and returns bidirectional link suggestions parsed from XML-tagged output.
+    The router handles model fallback (Ollama → cloud) and raises ``LLMError``
+    if all candidates fail. Callers should catch ``LLMError`` and treat the
+    page as unprocessable for this cycle (do NOT silently skip — log it).
     """
 
-    def __init__(
-        self,
-        ollama_url: str = DEFAULT_OLLAMA_URL,
-        ollama_model: str = DEFAULT_OLLAMA_MODEL,
-    ):
-        self.ollama_url = ollama_url
-        self.ollama_model = ollama_model
+    def __init__(self, stage: str = "wikilink_analysis"):
+        self.stage = stage
 
     def analyze_page(
         self,
@@ -230,6 +187,10 @@ class OllamaWikilinkAnalyzer:
         Returns:
             dict with keys: forward_links (list), backward_links (list),
                            raw_output (str), parse_success (bool)
+
+        Raises:
+            LLMError: if all models in the ``wikilink_analysis`` stage chain
+                      are exhausted. Callers must NOT catch this silently.
         """
         if not existing_entity_names:
             logger.debug("No existing entities — skipping analysis")
@@ -241,8 +202,7 @@ class OllamaWikilinkAnalyzer:
             f"- {name}" for name in sorted(existing_entity_names, key=len, reverse=True)[:200]
         )
 
-        # Truncate body if too long (Ollama context window limit ~8k tokens)
-        # Keep ~3000 chars — enough for semantic understanding at 8B scale
+        # Truncate body if too long (context window limit)
         body_truncated = page_body[:3000] if page_body else ""
 
         prompt = _WIKILINK_USER_PROMPT_TEMPLATE.format(
@@ -251,21 +211,10 @@ class OllamaWikilinkAnalyzer:
             page_body=body_truncated,
         )
 
-        raw_output = call_ollama(
-            prompt=prompt,
-            system=_WIKILINK_SYSTEM_PROMPT,
-            model=self.ollama_model,
-            url=self.ollama_url,
-        )
+        from personalkm.llm.router import route
 
-        if raw_output is None:
-            logger.warning(f"Ollama call returned None for page: {page_title}")
-            return {
-                "forward_links": [],
-                "backward_links": [],
-                "raw_output": "",
-                "parse_success": False,
-            }
+        comp = route(self.stage, prompt, system=_WIKILINK_SYSTEM_PROMPT)
+        raw_output = comp.text
 
         forward_links, backward_links = parse_wikilink_output(raw_output)
 
@@ -282,13 +231,33 @@ class OllamaWikilinkAnalyzer:
         }
 
     def is_available(self) -> bool:
-        """Check if Ollama is reachable at the configured URL."""
+        """Check if the primary provider (Ollama) is reachable.
+
+        This is a legacy health check kept for the shell script's pre-flight
+        check. The router itself handles fallback when Ollama is down — this
+        method only determines whether to log a warning about the primary
+        being unavailable.
+        """
+        from personalkm.llm.router import _provider, _candidates
+
         try:
-            req = request.Request(
-                f"{self.ollama_url.rstrip('/')}/api/tags",
-                method="GET",
-            )
-            with request.urlopen(req, timeout=5) as response:
-                return response.status == 200
+            candidates = _candidates(self.stage)
+            if not candidates:
+                return False
+            # Check the first candidate (primary)
+            provider_name = candidates[0].split("/")[0]
+            provider = _provider(provider_name)
+            # Only Ollama has a direct health check endpoint
+            if hasattr(provider, "base_url") and "ollama" in provider_name:
+                from urllib.request import urlopen, Request
+                req = Request(f"{provider.base_url}/api/tags", method="GET")
+                with urlopen(req, timeout=5) as response:
+                    return response.status == 200
+            # Cloud providers are assumed available (router handles failures)
+            return True
         except Exception:
             return False
+
+
+# Backward-compatibility alias — old imports use ``OllamaWikilinkAnalyzer``
+OllamaWikilinkAnalyzer = WikilinkAnalyzer

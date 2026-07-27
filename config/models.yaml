@@ -60,6 +60,15 @@ stages:
     max_output_tokens: 800
     json_only: true
 
+  # Phase B: semantic wikilink analysis — given a wiki page body and the list
+  # of existing entity names, output <FORWARD_LINKS> / <BACKWARD_LINKS> XML
+  # blocks. NOT json_only — small local models (qwen2.5/qwen3) handle XML-tag
+  # plain text more reliably than structured JSON at 8B scale.
+  wikilink_analysis:
+    primary:  ollama/qwen2.5:latest
+    fallback: [minimax/MiniMax-M2.7-highspeed, ollama/qwen3:8b]
+    max_output_tokens: 1200
+
   # Phase B / Phase 6: wikilink + entity page updates
   propagation_distill:
     primary:  ollama/qwen2.5:latest
