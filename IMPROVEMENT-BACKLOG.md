@@ -1,6 +1,6 @@
 # PersonalKM Improvement Backlog
 
-更新日期：2026-07-21
+更新日期：2026-07-28
 
 這份文件整理目前 LINE Bot + Obsidian 個人知識系統的後續改善事項，按執行優先順序排列。2026-07-16 優先序 1-10 已完成並測試；2026-07-19 新增優先序 11-15（Karpathy LLM-Wiki 差距收斂第一輪 + Entity Distillation Loop dry-run）已完成並測試；2026-07-20 新增優先序 17-25（Karpathy LLM-Wiki 差距收斂第二輪，對照實際 vault 數據驗證後排定，並將先前散落在「剩下待做」的 5 個缺口依邏輯依賴關係一併排入）；2026-07-21 完成 #16、#17（範圍皆有調整，見下方），並在執行過程中發現 3 項新缺口，排入 P7（#26 已完成，#27、#28 待調查）。
 
@@ -30,9 +30,9 @@
 | 18 | P6#19 Propagation 回溯補跑 | 🔵 P6 | 高/低 | ✅ 已完成（診斷：瓶頸在偵測覆蓋率，#20 是真解方） |
 | 19 | P6#20 entities.yaml 動態白名單取代硬編碼 | 🔵 P6 | 高/中 | ✅ 檔案化完成；proposed 40 條待你審核，migration 待審核後執行 |
 | 20 | P6#21 Entity 合併路由改用 LLM 偵測結果 | 🔵 P6 | 高/中 | ✅ 已完成並測試（唯一性門檻，零新 LLM 呼叫） |
-| 21 | P6#22 Phase B 遷移到 personalkm.llm.router | 🔵 P6 | 中/中 | 🔲 待開始 |
-| 22 | P6#23 Distillation Loop decay_score_threshold 決定 | 🔵 P6 | 低/低 | 🔲 待開始 |
-| 23 | P6#24 Entity Distillation Loop 接進 cron | 🔵 P6 | 中/低 | 🔲 待開始（前置：#16、#21、#22） |
+| 21 | P6#22 Phase B 遷移到 personalkm.llm.router | 🔵 P6 | 中/中 | ✅ 已完成並測試，merged → main |
+| 22 | P6#23 Distillation Loop decay_score_threshold 決定 | 🔵 P6 | 低/低 | ✅ 已完成（決策：正式省略，不實作） |
+| 23 | P6#24 Entity Distillation Loop 接進 cron | 🔵 P6 | 中/低 | ✅ 已完成（launchd plist 已安裝，每日執行，limit 5 頁） |
 | 24 | P6#25 wiki/stubs/ frontmatter 合約補齊 | 🔵 P6 | 低/低 | 🔲 待開始 |
 | 25 | P7#26 `_append_capture()` frontmatter 損毀根因修復 | 🔴 P7 | 高/中 | ✅ 已完成並測試 |
 | 26 | P7#27 3 個檔案 title/canonical 等欄位疑似永久遺失 | 🔴 P7 | 高/待評估 | ✅ 根因已修 + 3 檔全部從 git 歷史救回（2026-07-22，見下方） |
@@ -696,7 +696,7 @@ Vault 修復（`scripts/fix_wiki_frontmatter_damage.py`，6 測試含 fixture gi
 | 順位 | 項目 | 層級 | 效益/工時 | 狀態 |
 |------|------|------|-----------|------|
 | 29 | P8#30 Obsidian workspace 暫行方案 | 🟢 P8 | 高/低 | 🔲 待開始（零風險，立即可做） |
-| 30 | P8#31 `fallback_category()` 分類品質改善 | 🟢 P8 | 高/低 | 🔲 待開始（dry-run 已發現缺口） |
+| 30 | P8#31 `fallback_category()` 分類品質改善 | 🟢 P8 | 高/低 | ✅ 已完成（關鍵字 18→100+，merged → main） |
 | 31 | P8#32 Capture 層多 repo 路由 | 🟢 P8 | 高/中 | 🔲 待開始（前置：#31） |
 | 32 | P8#33 Lifestyle vault 建立 + 一次性 migration | 🟢 P8 | 高/高 | 🔲 待開始（前置：#32） |
 | 33 | P8#34 雙 vault cron + health check | 🟢 P8 | 中/中 | 🔲 待開始（前置：#33） |
