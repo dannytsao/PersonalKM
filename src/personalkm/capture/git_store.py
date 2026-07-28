@@ -1,8 +1,37 @@
 import os
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 from personalkm.capture.config import Settings
+
+
+@dataclass(frozen=True)
+class VaultConfig:
+    """Configuration for a single vault repo."""
+    repo_url: str = ""
+    branch: str = "main"
+    path: Path = Path("/tmp/personal-km-vault")
+
+
+def _get_vault_config(settings: Settings, category: str = "tech") -> VaultConfig:
+    """Return the vault config for a given category.
+
+    Falls back to tech vault if lifestyle vault is not configured.
+    """
+    is_lifestyle = category in ("food", "photography") and settings.lifestyle_vault_repo_url
+    if is_lifestyle:
+        return VaultConfig(
+            repo_url=settings.lifestyle_vault_repo_url,
+            branch=settings.lifestyle_vault_branch,
+            path=settings.lifestyle_vault_path,
+        )
+    return VaultConfig(
+        repo_url=settings.vault_repo_url,
+        branch=settings.vault_branch,
+        path=settings.vault_path,
+    )
 
 
 def run_git(args: list[str], cwd: Path, settings: Settings) -> str:
@@ -26,7 +55,6 @@ def run_git(args: list[str], cwd: Path, settings: Settings) -> str:
         )
         return completed.stdout.strip()
     except subprocess.CalledProcessError as e:
-        # Log stderr so we can see the actual git error in Render logs
         import logging
         stderr = (e.stderr or "").strip()
         stdout = (e.stdout or "").strip()
@@ -53,48 +81,42 @@ def _is_non_fast_forward(error: GitError) -> bool:
     return "non-fast-forward" in stderr or "fetch first" in stderr
 
 
-def _push_with_rebase(vault_path: Path, settings: Settings) -> None:
+def _push_with_rebase(vault_path: Path, settings: Settings, vault_config: VaultConfig) -> None:
     try:
-        run_git(["push", "origin", settings.vault_branch], vault_path, settings)
+        run_git(["push", "origin", vault_config.branch], vault_path, settings)
     except GitError as e:
         if not _is_non_fast_forward(e):
             raise
         import logging
         logging.getLogger(__name__).warning(
             "Vault push rejected as non-fast-forward; rebasing onto origin/%s",
-            settings.vault_branch,
+            vault_config.branch,
         )
-        run_git(["fetch", "origin", settings.vault_branch], vault_path, settings)
-        run_git(["rebase", f"origin/{settings.vault_branch}"], vault_path, settings)
-        run_git(["push", "origin", settings.vault_branch], vault_path, settings)
+        run_git(["fetch", "origin", vault_config.branch], vault_path, settings)
+        run_git(["rebase", f"origin/{vault_config.branch}"], vault_path, settings)
+        run_git(["push", "origin", vault_config.branch], vault_path, settings)
 
 
-def _try_repair_and_checkout(vault_path: Path, settings: Settings) -> bool:
+def _try_repair_and_checkout(vault_path: Path, settings: Settings, vault_config: VaultConfig) -> bool:
     """Try to repair a broken git repo and checkout the target branch.
 
     Returns True if checkout succeeded, False if fresh clone is needed.
     """
     try:
-        run_git(["fetch", "origin", settings.vault_branch], vault_path, settings)
-        # Move HEAD to the fetched remote tip. A pathspec reset below repairs
-        # the index but does not advance HEAD, which makes the next push
-        # non-fast-forward when Render reuses an older /tmp clone.
-        run_git(["reset", "--soft", f"origin/{settings.vault_branch}"], vault_path, settings)
-        # Reset index to match fetched origin so non-raw files aren't staged as deleted
-        run_git(["reset", f"origin/{settings.vault_branch}", "--", "."], vault_path, settings)
-        # Only checkout raw/ directory into working tree
-        run_git(["checkout", f"origin/{settings.vault_branch}", "--", "raw/"], vault_path, settings)
+        run_git(["fetch", "origin", vault_config.branch], vault_path, settings)
+        run_git(["reset", "--soft", f"origin/{vault_config.branch}"], vault_path, settings)
+        run_git(["reset", f"origin/{vault_config.branch}", "--", "."], vault_path, settings)
+        run_git(["checkout", f"origin/{vault_config.branch}", "--", "raw/"], vault_path, settings)
         return True
     except Exception:
         import logging
         logging.getLogger(__name__).debug("Repair attempt 1 failed", exc_info=True)
 
-    # Try harder: clean up working tree and orphaned state
     try:
         run_git(["read-tree", "--empty"], vault_path, settings)
-        run_git(["reset", "--soft", f"origin/{settings.vault_branch}"], vault_path, settings)
-        run_git(["reset", f"origin/{settings.vault_branch}", "--", "."], vault_path, settings)
-        run_git(["checkout", f"origin/{settings.vault_branch}", "--", "raw/"], vault_path, settings)
+        run_git(["reset", "--soft", f"origin/{vault_config.branch}"], vault_path, settings)
+        run_git(["reset", f"origin/{vault_config.branch}", "--", "."], vault_path, settings)
+        run_git(["checkout", f"origin/{vault_config.branch}", "--", "raw/"], vault_path, settings)
         return True
     except Exception:
         import logging
@@ -103,12 +125,22 @@ def _try_repair_and_checkout(vault_path: Path, settings: Settings) -> bool:
     return False
 
 
-def ensure_vault(settings: Settings) -> Path:
-    vault_path = settings.vault_path
+def ensure_vault(settings: Settings, vault_config: Optional[VaultConfig] = None) -> Path:
+    """Ensure the vault repo is cloned and ready.
+
+    Uses the provided vault_config, or falls back to settings.vault_*.
+    Returns the vault path.
+    """
+    vc = vault_config or VaultConfig(
+        repo_url=settings.vault_repo_url,
+        branch=settings.vault_branch,
+        path=settings.vault_path,
+    )
+    vault_path = vc.path
+
     if (vault_path / ".git").exists():
-        if _try_repair_and_checkout(vault_path, settings):
+        if _try_repair_and_checkout(vault_path, settings, vc):
             return vault_path
-        # Repair failed — remove and re-clone
         import logging
         logger = logging.getLogger(__name__)
         logger.warning("Vault git repair failed — removing %s for fresh clone", vault_path)
@@ -126,48 +158,41 @@ def ensure_vault(settings: Settings) -> Path:
                     import shutil
                     shutil.rmtree(vault_path, ignore_errors=True)
 
-    if not settings.vault_repo_url:
+    if not vc.repo_url:
         raise RuntimeError("VAULT_REPO_URL is required when VAULT_PATH is not an existing git repo.")
 
     vault_path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        # Clone without checkout to avoid "File name too long" errors on wiki/entities
-        # (Render's /tmp filesystem has a 255-byte filename limit)
         run_git(
-            ["clone", "--branch", settings.vault_branch, "--no-checkout", "--depth", "1",
-             settings.vault_repo_url, str(vault_path)],
+            ["clone", "--branch", vc.branch, "--no-checkout", "--depth", "1",
+             vc.repo_url, str(vault_path)],
             Path.cwd(), settings,
         )
-        # Only checkout the raw/ directory — that's all capture_line_messages needs
-        run_git(["checkout", settings.vault_branch, "--", "raw/"], vault_path, settings)
-        # Reset the index to match HEAD so non-raw files aren't staged as "deleted"
+        run_git(["checkout", vc.branch, "--", "raw/"], vault_path, settings)
         run_git(["reset", "HEAD", "--", "."], vault_path, settings)
-        # Re-checkout raw/ files into working tree (index already matches HEAD)
-        run_git(["checkout", settings.vault_branch, "--", "raw/"], vault_path, settings)
+        run_git(["checkout", vc.branch, "--", "raw/"], vault_path, settings)
     except subprocess.CalledProcessError:
-        raise  # re-raise so the caller sees the error with stderr
+        raise
     return vault_path
 
 
-def commit_and_push(settings: Settings, note_path: Path) -> None:
+def commit_and_push(settings: Settings, note_path: Path, vault_config: Optional[VaultConfig] = None) -> None:
     """Commit and push a single note file to the vault.
 
     Uses --only to commit ONLY the specified file, ignoring any other staged
     changes (e.g. phantom deletions from sparse checkout index state).
     """
-    vault_path = settings.vault_path
+    vc = vault_config or VaultConfig(
+        repo_url=settings.vault_repo_url,
+        branch=settings.vault_branch,
+        path=settings.vault_path,
+    )
+    vault_path = vc.path
     relative_path = note_path.relative_to(vault_path)
 
-    # Render reuses /tmp between webhook events, so a previous sparse-checkout
-    # repair can leave unrelated vault files staged. Clear the index before
-    # staging the new raw note; this does not rewrite the working tree.
     run_git(["reset", "HEAD", "--", "."], vault_path, settings)
-
-    # Stage only the file we intend to commit — never --all
     run_git(["add", str(relative_path)], vault_path, settings)
 
-    # Verify our file was actually staged using git diff with explicit path
-    # (avoids Unicode normalization mismatches in the path comparison)
     staged_check = run_git(
         ["diff", "--cached", "--name-only", "--", str(relative_path)],
         vault_path, settings,
@@ -178,11 +203,9 @@ def commit_and_push(settings: Settings, note_path: Path) -> None:
         logger.warning("File %s not staged — skipping commit", relative_path)
         return
 
-    # Safety guard: check if other files are staged (deletions, modifications)
     staged_all = run_git(["diff", "--cached", "--name-only"], vault_path, settings)
     staged_lines = len(staged_all.splitlines()) if staged_all else 0
     if staged_lines > 2:
-        # More than 2 files staged (our file + possibly a .DS_Store) — abort!
         import logging
         logger = logging.getLogger(__name__)
         logger.error(
@@ -196,12 +219,11 @@ def commit_and_push(settings: Settings, note_path: Path) -> None:
             f"Staged: {staged_all[:200]}"
         )
 
-    # Commit with --only to ignore any other accidental staged changes
     run_git(["commit", "--only", str(relative_path),
              "-m", f"Add LINE link note: {note_path.stem}"], vault_path, settings)
-    _push_with_rebase(vault_path, settings)
+    _push_with_rebase(vault_path, settings, vc)
 
     import logging
     logging.getLogger(__name__).info(
-        "✅ Pushed %s to vault %s", relative_path, settings.vault_branch,
+        "✅ Pushed %s to vault %s", relative_path, vc.branch,
     )

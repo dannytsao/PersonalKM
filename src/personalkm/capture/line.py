@@ -55,6 +55,7 @@ NOISE_PATH_PARTS = (
 @dataclass(frozen=True)
 class LineTextEvent:
     text: str
+    user_id: str = ""
     mark_as_read_token: str = ""
 
 
@@ -128,6 +129,7 @@ def text_message_events_from_webhook(payload: dict) -> list[LineTextEvent]:
             messages.append(
                 LineTextEvent(
                     text=message.get("text", ""),
+                    user_id=event.get("source", {}).get("userId", ""),
                     mark_as_read_token=message.get("markAsReadToken", ""),
                 )
             )

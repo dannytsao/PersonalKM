@@ -791,6 +791,8 @@ def fallback_category(title: str, page_text: str) -> str:
         "loop engineering", "harness engineering",
         "ai agent", "ai 代理", "ai 工具",
         "vibecoding", "vibe coding",
+        "google ai", "gemini api", "share.google",
+        "openai", "openai.com",
         # Tech infrastructure
         "docker", "kubernetes", "linux", "macos", "windows",
         "terminal", "cli", "command line", "git",

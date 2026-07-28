@@ -17,9 +17,16 @@ class Settings(BaseSettings):
     minimax_api_key: str = Field(default="", alias="MINIMAX_API_KEY")
     minimax_model: str = Field(default="MiniMax-M2.7", alias="MINIMAX_MODEL")
 
+    # Tech vault (primary)
     vault_repo_url: str = Field(default="https://github.com/dannytsao/PersonalKM.git", alias="VAULT_REPO_URL")
     vault_branch: str = Field(default="main", alias="VAULT_BRANCH")
     vault_path: Path = Field(default=Path("/tmp/personal-km-vault"), alias="VAULT_PATH")
+
+    # Lifestyle vault (P8#32 — food, travel, photography)
+    lifestyle_vault_repo_url: str = Field(default="", alias="LIFESTYLE_VAULT_REPO_URL")
+    lifestyle_vault_branch: str = Field(default="main", alias="LIFESTYLE_VAULT_BRANCH")
+    lifestyle_vault_path: Path = Field(default=Path("/tmp/personal-km-lifestyle-vault"), alias="LIFESTYLE_VAULT_PATH")
+
     inbox_dir: str = Field(default="Inbox", alias="INBOX_DIR")
 
     git_author_name: str = Field(default="LINE Link Bot", alias="GIT_AUTHOR_NAME")

@@ -11,15 +11,26 @@ from zoneinfo import ZoneInfo
 from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
 
 from personalkm.capture.config import get_settings
-from personalkm.capture.git_store import commit_and_push, ensure_vault
+from personalkm.capture.git_store import VaultConfig, _get_vault_config, commit_and_push, ensure_vault
 from personalkm.capture.line import LineTextEvent, extract_urls, mark_message_as_read, text_message_events_from_webhook, verify_line_signature
-from personalkm.capture.link_processor import parse_line_message_part, process_line_message_context, process_url, should_capture_line_message_context
+from personalkm.capture.link_processor import fallback_category, parse_line_message_part, process_line_message_context, process_url, should_capture_line_message_context
 from personalkm.capture.notes import write_note
 from personalkm.capture.notification import notify as send_notification
 
 
 app = FastAPI(title="Personal KM LINE Link Bot")
 logger = logging.getLogger(__name__)
+
+# Session-based category override (P8#32 — LINE command override)
+# Key: user_id, Value: category ("food", "tech", "photography", None=auto)
+_session_category: dict[str, Optional[str]] = {}
+
+LINE_CATEGORY_COMMANDS = {
+    "/food": "food",
+    "/tech": "tech",
+    "/travel": "photography",
+    "/auto": None,  # reset to auto-classify
+}
 
 # Ensure application logs are visible (uvicorn only shows access logs by default)
 logging.basicConfig(
@@ -159,12 +170,13 @@ async def run_immediate_ingestion(vault_path: Path) -> None:
         )
 
 
-async def save_note(settings, vault_path, note, log_id: str = "") -> None:
+async def save_note(settings, vault_path, note, log_id: str = "", vault_config: Optional[VaultConfig] = None) -> None:
     if log_id:
         note = replace(note, log_id=log_id)
     note_path = write_note(vault_path, "raw", note)
-    await asyncio.to_thread(commit_and_push, settings, note_path)
-    logger.info("✅ Captured LINE note into raw/ → %s", note_path.relative_to(vault_path))
+    await asyncio.to_thread(commit_and_push, settings, note_path, vault_config)
+    vault_name = "lifestyle" if vault_config and vault_config.repo_url != settings.vault_repo_url else "tech"
+    logger.info("✅ Captured LINE note into %s vault raw/ → %s", vault_name, note_path.relative_to(vault_path))
 
 
 def line_parts_path(vault_path: Path) -> Path:
@@ -262,14 +274,30 @@ async def capture_line_messages(events: list[LineTextEvent], background_tasks: B
     settings = get_settings()
     logger.info("Processing %s LINE message(s)", len(events))
 
-    try:
-        vault_path = await asyncio.to_thread(ensure_vault, settings)
-    except Exception:
-        logger.exception("Failed to prepare vault repo")
-        return
-
     for event in events:
         text = event.text
+        user_id = event.user_id
+
+        # Check for category override command
+        for cmd, cat in LINE_CATEGORY_COMMANDS.items():
+            if text.strip().lower().startswith(cmd):
+                if cat is None:
+                    _session_category.pop(user_id, None)
+                    logger.info("User %s: reset category to auto-detect", user_id)
+                else:
+                    _session_category[user_id] = cat
+                    logger.info("User %s: set category override to %s", user_id, cat)
+                continue
+
+        # Determine target vault
+        category = _session_category.get(user_id) or fallback_category(text, "")
+        vault_config = _get_vault_config(settings, category)
+        try:
+            vault_path = await asyncio.to_thread(ensure_vault, settings, vault_config)
+        except Exception:
+            logger.exception("Failed to prepare vault repo for %s", vault_config.repo_url or "tech")
+            continue
+
         collected = collect_line_message_part(vault_path, text)
         if collected is None:
             continue
@@ -280,7 +308,7 @@ async def capture_line_messages(events: list[LineTextEvent], background_tasks: B
         if should_capture_line_message_context(text, settings.max_page_chars):
             try:
                 note = await process_line_message_context(settings, text, urls)
-                await save_note(settings, vault_path, note, log_id)
+                await save_note(settings, vault_path, note, log_id, vault_config)
                 saved_any_note = True
             except Exception:
                 logger.exception("Failed to capture LINE pasted message")
@@ -288,7 +316,7 @@ async def capture_line_messages(events: list[LineTextEvent], background_tasks: B
         for url in urls:
             try:
                 note = await process_url(settings, url, text)
-                await save_note(settings, vault_path, note, log_id)
+                await save_note(settings, vault_path, note, log_id, vault_config)
                 saved_any_note = True
                 logger.info("✅ Captured LINE URL %s", url)
             except Exception:
