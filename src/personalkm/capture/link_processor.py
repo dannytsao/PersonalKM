@@ -772,12 +772,64 @@ async def fetch_youtube_content(settings: Settings, url: str, video_id: str) -> 
 
 def fallback_category(title: str, page_text: str) -> str:
     corpus = f"{title} {page_text}".lower()
-    if any(keyword in corpus for keyword in ["camera", "photo", "photography", "景點", "拍照", "攝影", "相機"]):
-        return "photography"
-    if any(keyword in corpus for keyword in ["restaurant", "food", "cafe", "美食", "餐廳", "咖啡", "料理"]):
-        return "food"
-    if any(keyword in corpus for keyword in ["python", "javascript", "ai", "github", "api", "技術", "程式", "開發"]):
+
+    # ── Tech keywords ──────────────────────────────────────────────────
+    # Canonical entities (from entities.yaml) + hot AI/tech terms
+    if any(keyword in corpus for keyword in [
+        # Canonical entity slugs (34 total)
+        "anges-ai", "anthropic", "antigravity", "apple-silicon",
+        "chatgpt", "claude-code", "cloudflare", "codex", "cometapi",
+        "cursor", "deepseek", "gemini", "github", "glm-5-2", "harness",
+        "hermes-agent", "hermes-os", "inside", "kimi-k3", "kimi",
+        "lushbinary", "minimax-m3", "mistral-ai", "motioner",
+        "newmobilelife", "nous-research", "openclaw", "openrouter",
+        "paul-kuo", "poyin-chen", "qwen", "rc-astro", "sakana-ai",
+        "sakana-fugu", "siliconflow", "z-ai",
+        # Hot AI tools & platforms (P8#31 dry-run gap)
+        "notebooklm", "obsidian", "copilot", "mcp", "prompt",
+        "llm", "rag", "agent", "agentic", "workflow",
+        "loop engineering", "harness engineering",
+        "ai agent", "ai 代理", "ai 工具",
+        "vibecoding", "vibe coding",
+        # Tech infrastructure
+        "docker", "kubernetes", "linux", "macos", "windows",
+        "terminal", "cli", "command line", "git",
+        "python", "javascript", "typescript", "node.js", "react",
+        "api", "sdk", "framework", "open source", "開源",
+        # Technical content markers
+        "程式", "開發", "技術", "教學", "教程", "指南",
+        "部署", "安裝", "配置", "設定", "優化",
+        "tutorial", "guide", "deploy", "install", "configure",
+    ]):
         return "tech"
+
+    # ── Photography keywords ───────────────────────────────────────────
+    if any(keyword in corpus for keyword in [
+        "camera", "photo", "photography", "photograph",
+        "景點", "拍照", "攝影", "相機", "鏡頭", "光圈",
+        "快門", "曝光", "構圖", "旅拍", "空拍", "銀河",
+        "日落", "日出", "夜景", "美景", "風景",
+        "landscape", "sunset", "sunrise", "night photography",
+    ]):
+        return "photography"
+
+    # ── Food keywords ──────────────────────────────────────────────────
+    if any(keyword in corpus for keyword in [
+        "restaurant", "food", "cafe", "cuisine", "dining", "eatery",
+        "美食", "餐廳", "咖啡", "料理", "小吃", "甜點", "蛋糕",
+        "吃到飽", "buffet", "燒肉", "火鍋", "牛排", "海鮮",
+        "拉麵", "丼飯", "壽司", "生魚片", "烤物", "串燒",
+        "早午餐", "brunch", "下午茶", "宵夜", "消夜",
+        "私房菜", "合菜", "熱炒", "路邊攤", "夜市",
+        "米其林", "必比登", "michelin", "bib gourmand",
+        "排隊", "名店", "老店", "人氣", "推薦",
+        "菜單", "menu", "點餐", "order",
+        "食記", "食評", "foodie", "food diary",
+        # Drink
+        "手搖飲", "珍珠奶茶", "コーヒー", "coffee",
+    ]):
+        return "food"
+
     return "general"
 
 

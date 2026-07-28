@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.dannytsao.personalkm.phase-c-distill</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/dannytsao/Library/Application Support/PersonalKM/run_mac_mini_phase_c.sh</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Daily: distillation is low-frequency (trigger = 5+ captures or 30+ days).
+       Running hourly would repeatedly distill pages that already met the
+       threshold on the same day. Daily at ~1 hour after boot/load gives
+       Phase A/B time to run first on the same cycle. -->
+  <key>StartInterval</key>
+  <integer>86400</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/dannytsao/Library/Logs/PersonalKM/phase-c.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/dannytsao/Library/Logs/PersonalKM/phase-c.err.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>PERSONALKM_REPO_ROOT</key>
+    <string>/Users/dannytsao/Documents/GitHub/DannyTsao/PersonalKM</string>
+    <key>PERSONALKM_VAULT_ROOT</key>
+    <string>/Users/dannytsao/Documents/PersonalKM/Personalkm-vault</string>
+  </dict>
+</dict>
+</plist>
