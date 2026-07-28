@@ -279,6 +279,7 @@ async def capture_line_messages(events: list[LineTextEvent], background_tasks: B
         user_id = event.user_id
 
         # Check for category override command
+        command_detected = False
         for cmd, cat in LINE_CATEGORY_COMMANDS.items():
             if text.strip().lower().startswith(cmd):
                 if cat is None:
@@ -287,7 +288,10 @@ async def capture_line_messages(events: list[LineTextEvent], background_tasks: B
                 else:
                     _session_category[user_id] = cat
                     logger.info("User %s: set category override to %s", user_id, cat)
-                continue
+                command_detected = True
+                break
+        if command_detected:
+            continue  # Skip processing — this was a command, not a capture
 
         # Determine target vault
         category = _session_category.get(user_id) or fallback_category(text, "")
