@@ -38,6 +38,16 @@ WIKI_REQUIRED = {"title", "created", "updated", "type", "sources", "confidence"}
 # them yet — reserved, not yet in active use.
 WIKI_OPTIONAL = {"topic", "tags", "canonical", "contested", "contradictions"}
 
+# Stub pages (personalkm.resolve.runner._create_stub).
+# Every stub must have these fields regardless of platform.
+STUB_REQUIRED = {"title", "created", "updated", "stub", "source", "status"}
+# Platform-specific fields added by resolver adapters (e.g. instagram, threads).
+STUB_OPTIONAL = {
+    "platform", "content_type",
+    "needs_review", "needs_local_worker",
+    "worker_status", "worker_type", "worker_retry_count",
+}
+
 
 def _frontmatter(path: Path) -> tuple[dict, str]:
     """Return (frontmatter dict, body). Empty dict if there is no frontmatter block."""
@@ -70,3 +80,16 @@ def test_wiki_fixtures_conform():
         unknown = fm.keys() - WIKI_REQUIRED - WIKI_OPTIONAL
         assert not unknown, f"{p.name}: unknown fields {unknown} (update contract?)"
         assert isinstance(fm["sources"], list), f"{p.name}: sources must be a list"
+
+
+def test_stub_fixtures_conform():
+    """Every stub page fixture must have STUB_REQUIRED fields."""
+    stub_dir = FIXTURES / "wiki" / "stubs"
+    if not stub_dir.exists():
+        return  # no stubs in fixtures yet
+    for p in sorted(stub_dir.rglob("*.md")):
+        fm, _ = _frontmatter(p)
+        missing = STUB_REQUIRED - fm.keys()
+        assert not missing, f"{p.name}: missing required stub fields {missing}"
+        unknown = fm.keys() - STUB_REQUIRED - STUB_OPTIONAL
+        assert not unknown, f"{p.name}: unknown fields {unknown} (update contract?)"
