@@ -38,6 +38,21 @@ logger = logging.getLogger(__name__)
 # Legacy env vars kept for backward compatibility — the router now resolves
 # the model/URL from config/models.yaml, but these are still read by the
 # old is_available() health check and by tests that don't load the full config.
+
+
+def _entity_mentioned_in_body(entity_slug: str, body_lower: str) -> bool:
+    """Check if an entity slug is mentioned in the body text.
+
+    Handles both exact matches and normalized forms (hyphens → spaces).
+    """
+    # Exact match (e.g. "claude-code" in "claude-code is great")
+    if entity_slug in body_lower:
+        return True
+    # Normalized match (e.g. "claude code" matches "Claude Code")
+    normalized = entity_slug.replace("-", " ")
+    if len(normalized) >= 4 and normalized in body_lower:
+        return True
+    return False
 DEFAULT_OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
 DEFAULT_OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
 
@@ -206,6 +221,18 @@ class WikilinkAnalyzer:
         entity_list = "\n".join(
             f"- {name}" for name in sorted(existing_entity_names, key=len, reverse=True)[:200]
         )
+
+        # P9#36: Pre-filter candidates using keyword matching before sending to LLM.
+        # The local 8B model struggles with 200 raw entity names. We narrow the
+        # list to the ~30 most mention-relevant candidates first, making the LLM's
+        # job dramatically easier.
+        body_lower = page_body.lower()
+        filtered_candidates = [
+            name for name in sorted(existing_entity_names, key=len, reverse=True)[:200]
+            if _entity_mentioned_in_body(name, body_lower)
+        ]
+        if filtered_candidates:
+            entity_list = "\n".join(f"- {name}" for name in filtered_candidates[:50])
 
         # Truncate body if too long (context window limit)
         body_truncated = page_body[:3000] if page_body else ""
