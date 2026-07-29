@@ -1340,6 +1340,9 @@ async def process_url(settings: Settings, url: str, context_text: str = "") -> L
         caption_content = social_caption_content(url, context_text, settings.max_page_chars)
         if caption_content:
             summary, category = await summarize_with_llm(settings, caption_content.title, url, caption_content.text)
+            # Instagram/Threads are almost always lifestyle content — force photography
+            if caption_content.platform in ("instagram", "threads"):
+                category = "photography"
             return to_note(caption_content, url, summary, category)
 
     instagram_type = instagram_content_type(url)
