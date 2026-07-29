@@ -1,8 +1,8 @@
 # PersonalKM Improvement Backlog
 
-更新日期：2026-07-28
+更新日期：2026-07-29
 
-這份文件整理目前 LINE Bot + Obsidian 個人知識系統的後續改善事項，按執行優先順序排列。2026-07-16 優先序 1-10 已完成並測試；2026-07-19 新增優先序 11-15（Karpathy LLM-Wiki 差距收斂第一輪 + Entity Distillation Loop dry-run）已完成並測試；2026-07-20 新增優先序 17-25（Karpathy LLM-Wiki 差距收斂第二輪，對照實際 vault 數據驗證後排定，並將先前散落在「剩下待做」的 5 個缺口依邏輯依賴關係一併排入）；2026-07-21 完成 #16、#17（範圍皆有調整，見下方），並在執行過程中發現 3 項新缺口，排入 P7（#26 已完成，#27、#28 待調查）。
+這份文件整理目前 LINE Bot + Obsidian 個人知識系統的後續改善事項，按執行優先順序排列。2026-07-28 P8 Lifestyle Vault 拆庫全部完成（#29-33），2026-07-29 雙 vault 路由 + capture 測試完成，系統穩定運行中。
 
 已完成的 LLM-Wiki v2 已移至 `docs/llm-wiki-v2-plan.md`。
 
@@ -33,7 +33,7 @@
 | 21 | P6#22 Phase B 遷移到 personalkm.llm.router | 🔵 P6 | 中/中 | ✅ 已完成並測試，merged → main |
 | 22 | P6#23 Distillation Loop decay_score_threshold 決定 | 🔵 P6 | 低/低 | ✅ 已完成（決策：正式省略，不實作） |
 | 23 | P6#24 Entity Distillation Loop 接進 cron | 🔵 P6 | 中/低 | ✅ 已完成（launchd plist 已安裝，每日執行，limit 5 頁） |
-| 24 | P6#25 wiki/stubs/ frontmatter 合約補齊 | 🔵 P6 | 低/低 | 🔲 待開始 |
+| 24 | P6#25 wiki/stubs/ frontmatter 合約補齊 | 🔵 P6 | 低/低 | ✅ 已完成（52 stubs 符合合約，contract tests pass） |
 | 25 | P7#26 `_append_capture()` frontmatter 損毀根因修復 | 🔴 P7 | 高/中 | ✅ 已完成並測試 |
 | 26 | P7#27 3 個檔案 title/canonical 等欄位疑似永久遺失 | 🔴 P7 | 高/待評估 | ✅ 根因已修 + 3 檔全部從 git 歷史救回（2026-07-22，見下方） |
 | 27 | P7#28 `kimi-k3.md` body 混入另一頁完整 frontmatter | 🔴 P7 | 中/待評估 | ✅ 已修復（2026-07-22，與 #27 同輪，見下方） |
@@ -42,6 +42,14 @@
 ## 剩下待做（照順序）
 
 目前沒有此序列中的待做項；下一輪 backlog 需重新排定。過程中發現幾個未列入本輪、需要另外排優先序的缺口：
+
+### 第二輪（2026-07-29）：Karpathy Gap 收斂第三輪
+
+| 順位 | 項目 | 層級 | 效益/工時 | 狀態 |
+|------|------|------|-----------|------|
+| 34 | P9#34 Canonical merge debug — 93% entities 仍是日期前綴 | 🔴 P9 | 高/中 | ⏳ 進行中 |
+| 35 | P9#35 Lifestyle 基礎建設 — canonical entities + Phase C | 🔴 P9 | 高/低 | 🔲 待開始 |
+| 36 | P9#36 Backlink density 提升 — LLM 跨頁面實體引用 | 🟡 P9 | 中/中 | 🔲 待開始 |
 
 - **2026-07-20 定案：LINE 不做對話式問答，維持純 capture 角色，不再是待排入的工作項**。`src/personalkm/capture/app.py` 的 `/webhook/line` 只做 capture，沒有任何 `reply_message`/`push_message` 呼叫，這是刻意的，不是缺工。理由：(1) AGENTS.md hard rule 規定 LINE webhook「Must stay dumb... NO fetching, NO LLM here」，LINE 問句觸發查詢會直接違反這條規則；(2) 查詢回答的核心呈現方式是 `[[wikilink]]` 引用，這是 Obsidian 原生語法，離開 Obsidian 就是死掉的文字，點不了、跳不了。Query 功能正式定位為 CLI（`scripts/query_wiki.py`）與 Obsidian 端，`/query` HTTP endpoint 與 `query_wiki()` 函式層（含 P5#15 write-back）已經是正確且最終的交付範圍，不需要再往 LINE 擴充。同步更新 SPEC.md 第五層、CHECKLIST.md 第 24-26 項。
 ~~`wiki/stubs/` 頁面的 frontmatter 沒有被 `test_frontmatter_schema.py` 合約涵蓋~~ 📋 2026-07-20 已排入 P6#25（見下方，低優先，可獨立處理）。
@@ -695,11 +703,11 @@ Vault 修復（`scripts/fix_wiki_frontmatter_damage.py`，6 測試含 fixture gi
 
 | 順位 | 項目 | 層級 | 效益/工時 | 狀態 |
 |------|------|------|-----------|------|
-| 29 | P8#30 Obsidian workspace 暫行方案 | 🟢 P8 | 高/低 | 🔲 待開始（零風險，立即可做） |
+| 29 | P8#30 Obsidian workspace 暫行方案 | 🟢 P8 | 高/低 | ✅ 已完成（雙 vault 已拆分，無需暫行方案） |
 | 30 | P8#31 `fallback_category()` 分類品質改善 | 🟢 P8 | 高/低 | ✅ 已完成（關鍵字 18→100+，merged → main） |
-| 31 | P8#32 Capture 層多 repo 路由 | 🟢 P8 | 高/中 | 🔲 待開始（前置：#31） |
-| 32 | P8#33 Lifestyle vault 建立 + 一次性 migration | 🟢 P8 | 高/高 | 🔲 待開始（前置：#32） |
-| 33 | P8#34 雙 vault cron + health check | 🟢 P8 | 中/中 | 🔲 待開始（前置：#33） |
+| 31 | P8#32 Capture 層多 repo 路由 | 🟢 P8 | 高/中 | ✅ 已完成（含 LINE 指令覆蓋 /food /tech /travel） |
+| 32 | P8#33 Lifestyle vault 建立 + 一次性 migration | 🟢 P8 | 高/高 | ✅ 已完成（119 files → lifestyle vault） |
+| 33 | P8#34 雙 vault cron + health check | 🟢 P8 | 中/中 | ✅ 已完成（6 launchd jobs + health check 更新） |
 
 ### 30. Obsidian workspace 暫行方案 🥇
 
