@@ -832,6 +832,15 @@ def fallback_category(title: str, page_text: str) -> str:
     ]):
         return "food"
 
+    # ── Instagram / Threads / Social default ───────────────────────────
+    # These platforms are mostly food/travel/photography content.
+    # When content can't be fetched (403), default to photography → lifestyle.
+    if any(domain in corpus for domain in ["instagram.com", "threads.net", "threads.com"]):
+        return "photography"
+    # Also check explicit platform markers from content extraction
+    if "pasted caption" in corpus and ("instagram" in corpus or "threads" in corpus):
+        return "photography"
+
     return "general"
 
 
