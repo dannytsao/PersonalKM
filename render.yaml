@@ -74,7 +74,7 @@ services:
     schedule: "0 1 * * *"
     buildCommand: pip install -r requirements.txt && pip install -e .
     startCommand: python scripts/cloud_housekeeping.py
-    autoDeploy: false
+    autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
