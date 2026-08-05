@@ -30,6 +30,15 @@ log() {
     printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')" "$*"
 }
 
+vault_log() {
+    # Append a Phase B entry to vault/wiki/log.md
+    local entry="\n## [$(date '+%Y-%m-%d %H:%M:%S')] phase-b | $1\n- $2\n"
+    local log_path="$VAULT_ROOT/wiki/log.md"
+    if [ -f "$log_path" ]; then
+        printf "%b" "$entry" >> "$log_path" 2>/dev/null || true
+    fi
+}
+
 # Stale lock recovery: `trap ... EXIT` below does not fire on a hard power
 # loss or kill -9, so a crash mid-run can leave the lock directory behind
 # forever, silently skipping every future hourly launch with no recovery.
@@ -46,6 +55,7 @@ fi
 
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then
     log "Phase B already running; skipping this launch."
+    vault_log "Skipped" "Already running (lock file exists)"
     write_phase_status "B" 0 "skipped" "Already running (lock file exists)"
     exit 0
 fi
@@ -78,10 +88,12 @@ log "Phase B: skipping git dirty check (TCC-safe mode)."
 log "Starting PersonalKM Phase B (Ollama wikilink post-link)."
 if "$PYTHON_BIN" "$REPO_ROOT/scripts/post_link_ollama.py"; then
     log "Finished PersonalKM Phase B (success)."
+    vault_log "Success" "Wikilink post-link completed"
     write_phase_status "B" 0 "success"
 else
     ec=$?
     log "Phase B Python script failed with exit code $ec."
+    vault_log "Failed" "Python runner exited with code $ec"
     write_phase_status "B" "$ec" "failed" "Python runner failed with exit $ec"
     exit "$ec"
 fi
