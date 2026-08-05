@@ -2,7 +2,23 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
-## 2026-07-22
+## 2026-08-05
+
+### Fixed
+
+- **Render VAULT_REPO_URL @url: wrapper**: Render wraps URL-type secrets in `@url:\`url\`` format. `config.py` now strips this wrapper + trailing newlines via `model_validator`. Also fixed `render.yaml` housekeeping cron `autoDeploy: false` → `true`.
+- **Sparse checkout phantom deletions**: `git_store.py` replaced `--no-checkout` + `checkout raw/` with `git sparse-checkout init --cone` + `set raw/`, eliminating phantom `D` (deleted) entries in `git status` for non-raw files.
+- **cloud_housekeeping.py commit when empty**: Changed from `git status --porcelain` (which saw untracked `outputs/`) to `git diff --cached --name-only` for checking real staged changes before committing.
+- **Minimal Python binary**: Dispatch scripts hardcode venv Python path instead of env-var fallback to `/usr/bin/python3` (macOS 3.9 broke `list | None` syntax).
+- **worker.secrets missing `export`**: Added `export` keywords so env vars are visible to Python. MINIMAX_API_KEY restored, OPENAI_BASE_URL removed (conflicted with OpenAI SDK).
+- **Phase B missing secrets sourcing**: `run_mac_mini_phase_b.sh` added `worker.secrets` sourcing + vault_log entries.
+
+### Changed
+
+- **Phase A schedule**: `StartInterval` 3600s → `StartCalendarInterval` 06:00, 18:00 GMT+8 (twice daily).
+- **Phase B schedule**: `StartInterval` 3600s → `StartCalendarInterval` 08:00, 20:00 GMT+8 (twice daily).
+- **Phase A log detail**: `wiki/log.md` entries now include datetime + per-file icons (✅ ingested, ⏭️ skipped, 🗑️ trashed) with target page path or skip reason.
+- **Skip logging**: Shell scripts write skip entries to `wiki/log.md` when cron skips (dirty repo, lock, etc.).
 
 ### Fixed
 
