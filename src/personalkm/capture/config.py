@@ -1,3 +1,5 @@
+import re
+
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -38,7 +40,11 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _strip_url_fields(self) -> "Settings":
-        """Strip whitespace/newlines from URL fields (Render env vars may have trailing \\n)."""
+        """Strip whitespace/newlines and sanitize URLs from env vars.
+
+        Render wraps URL-type secrets in ``@url:`...``` — strip that prefix
+        and backticks so the URL is a clean git-usable string.
+        """
         url_fields = [
             "vault_repo_url", "lifestyle_vault_repo_url",
             "line_channel_secret", "line_channel_access_token",
@@ -47,7 +53,11 @@ class Settings(BaseSettings):
         for field in url_fields:
             value = getattr(self, field, None)
             if isinstance(value, str):
-                setattr(self, field, value.strip())
+                # 1. Strip Render's @url:`` wrapper first
+                cleaned = re.sub(r"^@url:`|`$", "", value)
+                # 2. Then strip whitespace/newlines (newline may be inside backticks)
+                cleaned = cleaned.strip()
+                setattr(self, field, cleaned)
         return self
 
 
