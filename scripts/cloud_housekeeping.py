@@ -16,7 +16,7 @@ def main() -> None:
     settings = get_settings()
     vault_root = ensure_vault(settings)
 
-    status = run_git(["status", "--porcelain"], vault_root, settings)
+    status = run_git(["status", "--porcelain", "--untracked-files=no"], vault_root, settings)
     if status:
         raise RuntimeError(f"Vault has pre-existing uncommitted changes:\n{status}")
 
@@ -28,14 +28,15 @@ def main() -> None:
     report_path = report_dir / f"housekeeping-{datetime.now().strftime('%Y%m%d-%H%M%S')}.md"
     report_path.write_text(housekeeping_report_markdown(vault_root, report), encoding="utf-8")
 
-    status = run_git(["status", "--porcelain"], vault_root, settings)
-    if not status:
+    # Use diff --cached to check for real staged changes (git mv from archive),
+    # not just untracked files like outputs/.
+    staged = run_git(["diff", "--cached", "--name-only"], vault_root, settings)
+    if not staged.strip():
         print("Housekeeping produced no git changes.")
         return
 
-    run_git(["commit", "-m", "Process completed inbox notes"], vault_root, settings)
-    run_git(["push", "origin", settings.vault_branch], vault_root, settings)
-    print(f"Processed {len(moves)} Inbox note(s). Report: {report_path.relative_to(vault_root)}")
+    run_git(["add", str(report_path.relative_to(vault_root))], vault_root, settings)
+    run_git(["commit", "-m", f"Housekeeping: {len(moves)} moves, report: {report_path.name}"], vault_root, settings)
 
 
 if __name__ == "__main__":
