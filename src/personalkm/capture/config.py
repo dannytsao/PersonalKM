@@ -1,7 +1,8 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -34,6 +35,20 @@ class Settings(BaseSettings):
 
     request_timeout_seconds: float = Field(default=12.0, alias="REQUEST_TIMEOUT_SECONDS")
     max_page_chars: int = Field(default=8000, alias="MAX_PAGE_CHARS")
+
+    @model_validator(mode="after")
+    def _strip_url_fields(self) -> "Settings":
+        """Strip whitespace/newlines from URL fields (Render env vars may have trailing \\n)."""
+        url_fields = [
+            "vault_repo_url", "lifestyle_vault_repo_url",
+            "line_channel_secret", "line_channel_access_token",
+            "openai_api_key", "minimax_api_key",
+        ]
+        for field in url_fields:
+            value = getattr(self, field, None)
+            if isinstance(value, str):
+                setattr(self, field, value.strip())
+        return self
 
 
 @lru_cache
