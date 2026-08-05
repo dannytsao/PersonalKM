@@ -104,9 +104,9 @@ def _try_repair_and_checkout(vault_path: Path, settings: Settings, vault_config:
     """
     try:
         run_git(["fetch", "origin", vault_config.branch], vault_path, settings)
-        run_git(["reset", "--soft", f"origin/{vault_config.branch}"], vault_path, settings)
-        run_git(["reset", f"origin/{vault_config.branch}", "--", "."], vault_path, settings)
-        run_git(["checkout", f"origin/{vault_config.branch}", "--", "raw/"], vault_path, settings)
+        run_git(["sparse-checkout", "init", "--cone"], vault_path, settings)
+        run_git(["sparse-checkout", "set", "raw/"], vault_path, settings)
+        run_git(["reset", "--hard", f"origin/{vault_config.branch}"], vault_path, settings)
         return True
     except Exception:
         import logging
@@ -115,8 +115,9 @@ def _try_repair_and_checkout(vault_path: Path, settings: Settings, vault_config:
     try:
         run_git(["read-tree", "--empty"], vault_path, settings)
         run_git(["reset", "--soft", f"origin/{vault_config.branch}"], vault_path, settings)
-        run_git(["reset", f"origin/{vault_config.branch}", "--", "."], vault_path, settings)
-        run_git(["checkout", f"origin/{vault_config.branch}", "--", "raw/"], vault_path, settings)
+        run_git(["sparse-checkout", "init", "--cone"], vault_path, settings)
+        run_git(["sparse-checkout", "set", "raw/"], vault_path, settings)
+        run_git(["checkout", f"origin/{vault_config.branch}"], vault_path, settings)
         return True
     except Exception:
         import logging
@@ -163,14 +164,18 @@ def ensure_vault(settings: Settings, vault_config: Optional[VaultConfig] = None)
 
     vault_path.parent.mkdir(parents=True, exist_ok=True)
     try:
+        # Sparse clone: only raw/ is materialized in the working tree.
+        # Using git sparse-checkout avoids the phantom-deletion problem
+        # where non-raw files (wiki/, etc.) show up as deleted in
+        # `git status` because they exist in HEAD but not on disk.
         run_git(
             ["clone", "--branch", vc.branch, "--no-checkout", "--depth", "1",
-             vc.repo_url, str(vault_path)],
+             "--filter=blob:none", "--sparse", vc.repo_url, str(vault_path)],
             Path.cwd(), settings,
         )
-        run_git(["checkout", vc.branch, "--", "raw/"], vault_path, settings)
-        run_git(["reset", "HEAD", "--", "."], vault_path, settings)
-        run_git(["checkout", vc.branch, "--", "raw/"], vault_path, settings)
+        run_git(["sparse-checkout", "init", "--cone"], vault_path, settings)
+        run_git(["sparse-checkout", "set", "raw/"], vault_path, settings)
+        run_git(["checkout", vc.branch], vault_path, settings)
     except subprocess.CalledProcessError:
         raise
     return vault_path
