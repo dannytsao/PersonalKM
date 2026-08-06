@@ -812,6 +812,13 @@ def fallback_category(title: str, page_text: str) -> str:
         "快門", "曝光", "構圖", "旅拍", "空拍", "銀河",
         "日落", "日出", "夜景", "美景", "風景",
         "landscape", "sunset", "sunrise", "night photography",
+        # 2026-08-05: broader travel/landscape keywords
+        "步道", "登山", "健行", "hiking", "trail",
+        "秘境", "私房景點", "打卡", "網美",
+        "露營", "camping", "野餐", "picnic",
+        "花季", "櫻花", "楓葉", "落羽松", "油桐花",
+        "古道", "瀑布", "溪流", "海洋", "沙灘",
+        "自行車", "單車", "騎行", "bike",
     ]):
         return "photography"
 
@@ -829,6 +836,15 @@ def fallback_category(title: str, page_text: str) -> str:
         "食記", "食評", "foodie", "food diary",
         # Drink
         "手搖飲", "珍珠奶茶", "コーヒー", "coffee",
+        # 2026-08-05: broader food keywords
+        "必吃", "麵食", "餃子", "包子", "饅頭", "肉圓",
+        "滷味", "鹹酥雞", "雞排", "便當", "飯糰",
+        "蔥油餅", "牛肉捲餅", "蛋餅", "水煎包",
+        "早餐", "午餐", "晚餐", "宵夜",
+        "食譜", "recipe", "cooking", "chef",
+        "中式", "西式", "日式", "韓式", "泰式",
+        "義大利麵", "pasta", "pizza", "漢堡", "burger",
+        "冰品", "刨冰", "冰淇淋", "豆花",
     ]):
         return "food"
 
