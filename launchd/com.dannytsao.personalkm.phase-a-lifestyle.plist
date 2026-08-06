@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.dannytsao.personalkm.phase-a-lifestyle</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/dannytsao/Library/Application Support/PersonalKM/run_mac_mini_phase_a_lifestyle.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/dannytsao/Documents/GitHub/DannyTsao/PersonalKM</string>
+
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Hour</key>
+      <integer>6</integer>
+      <key>Minute</key>
+      <integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key>
+      <integer>18</integer>
+      <key>Minute</key>
+      <integer>0</integer>
+    </dict>
+  </array>
+
+  <key>StandardOutPath</key>
+  <string>/Users/dannytsao/Library/Logs/PersonalKM/phase-a-lifestyle.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/dannytsao/Library/Logs/PersonalKM/phase-a-lifestyle.err.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>PERSONALKM_REPO_ROOT</key>
+    <string>/Users/dannytsao/Documents/GitHub/DannyTsao/PersonalKM</string>
+    <key>PERSONALKM_VAULT_ROOT</key>
+    <string>/Users/dannytsao/Documents/PersonalKM/Personalkm-lifestyle-vault</string>
+    <key>PERSONALKM_PYTHON</key>
+    <string>/Users/dannytsao/.hermes/hermes-agent/venv/bin/python3</string>
+  </dict>
+</dict>
+</plist>
