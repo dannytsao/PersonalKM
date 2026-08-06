@@ -4,31 +4,24 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.dannytsao.personalkm.copilot-ingest</string>
+  <string>com.dannytsao.personalkm.phase-c-lifestyle</string>
 
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/dannytsao/Library/Application Support/PersonalKM/run_mac_mini_copilot_ingest.sh</string>
+    <string>/Users/dannytsao/Library/Application Support/PersonalKM/run_mac_mini_phase_c_lifestyle.sh</string>
   </array>
 
   <key>WorkingDirectory</key>
   <string>/Users/dannytsao/Documents/GitHub/DannyTsao/PersonalKM</string>
 
-  <key>StartCalendarInterval</key>
-  <array>
-    <dict>
-      <key>Hour</key>
-      <integer>3</integer>
-      <key>Minute</key>
-      <integer>0</integer>
-    </dict>
-  </array>
+  <key>StartInterval</key>
+  <integer>86400</integer>
 
   <key>StandardOutPath</key>
-  <string>/Users/dannytsao/Library/Logs/PersonalKM/copilot.out.log</string>
+  <string>/Users/dannytsao/Library/Logs/PersonalKM/phase-c-lifestyle.out.log</string>
 
   <key>StandardErrorPath</key>
-  <string>/Users/dannytsao/Library/Logs/PersonalKM/copilot.err.log</string>
+  <string>/Users/dannytsao/Library/Logs/PersonalKM/phase-c-lifestyle.err.log</string>
 
   <key>EnvironmentVariables</key>
   <dict>
@@ -37,7 +30,7 @@
     <key>PERSONALKM_REPO_ROOT</key>
     <string>/Users/dannytsao/Documents/GitHub/DannyTsao/PersonalKM</string>
     <key>PERSONALKM_VAULT_ROOT</key>
-    <string>/Users/dannytsao/Documents/PersonalKM/Personalkm-vault</string>
+    <string>/Users/dannytsao/Documents/PersonalKM/Personalkm-lifestyle-vault</string>
     <key>PERSONALKM_PYTHON</key>
     <string>/Users/dannytsao/.hermes/hermes-agent/venv/bin/python3</string>
   </dict>

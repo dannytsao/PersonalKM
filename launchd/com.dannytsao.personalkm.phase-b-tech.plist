@@ -4,11 +4,11 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.dannytsao.personalkm.copilot-ingest</string>
+  <string>com.dannytsao.personalkm.phase-b-tech</string>
 
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/dannytsao/Library/Application Support/PersonalKM/run_mac_mini_copilot_ingest.sh</string>
+    <string>/Users/dannytsao/Library/Application Support/PersonalKM/run_mac_mini_phase_b.sh</string>
   </array>
 
   <key>WorkingDirectory</key>
@@ -18,17 +18,23 @@
   <array>
     <dict>
       <key>Hour</key>
-      <integer>3</integer>
+      <integer>8</integer>
+      <key>Minute</key>
+      <integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key>
+      <integer>20</integer>
       <key>Minute</key>
       <integer>0</integer>
     </dict>
   </array>
 
   <key>StandardOutPath</key>
-  <string>/Users/dannytsao/Library/Logs/PersonalKM/copilot.out.log</string>
+  <string>/Users/dannytsao/Library/Logs/PersonalKM/phase-b.out.log</string>
 
   <key>StandardErrorPath</key>
-  <string>/Users/dannytsao/Library/Logs/PersonalKM/copilot.err.log</string>
+  <string>/Users/dannytsao/Library/Logs/PersonalKM/phase-b.err.log</string>
 
   <key>EnvironmentVariables</key>
   <dict>

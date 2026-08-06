@@ -1,0 +1,70 @@
+# PersonalKM cron jobs — managed by scripts/manage_cron.py
+#
+# To change a schedule, edit the `schedule` field, then run:
+#   python scripts/manage_cron.py deploy --job <name>
+#   python scripts/manage_cron.py deploy          # deploy all
+#
+# Schedule formats:
+#   times: ["06:00", "18:00"]   → StartCalendarInterval (clock-based, GMT+8)
+#   interval: 86400              → StartInterval (seconds, every N secs)
+
+defaults:
+  repo_root: ~/Documents/GitHub/DannyTsao/PersonalKM
+  python: /Users/dannytsao/.hermes/hermes-agent/venv/bin/python3
+  secrets: ~/.personalkm/worker.secrets
+
+vaults:
+  tech:
+    path: ~/Documents/PersonalKM/Personalkm-vault
+  lifestyle:
+    path: ~/Documents/PersonalKM/Personalkm-lifestyle-vault
+
+jobs:
+  phase-a-tech:
+    script: run_mac_mini_phase_a.sh
+    vault: tech
+    schedule:
+      times: ["06:00", "18:00"]
+    log_name: phase-a
+
+  phase-b-tech:
+    script: run_mac_mini_phase_b.sh
+    vault: tech
+    schedule:
+      times: ["08:00", "20:00"]
+    log_name: phase-b
+
+  phase-a-lifestyle:
+    script: run_mac_mini_phase_a_lifestyle.sh
+    vault: lifestyle
+    schedule:
+      times: ["06:00", "18:00"]
+    log_name: phase-a-lifestyle
+
+  phase-b-lifestyle:
+    script: run_mac_mini_phase_b_lifestyle.sh
+    vault: lifestyle
+    schedule:
+      times: ["08:00", "20:00"]
+    log_name: phase-b-lifestyle
+
+  phase-c-tech:
+    script: run_mac_mini_phase_c.sh
+    vault: tech
+    schedule:
+      interval: 86400
+    log_name: phase-c
+
+  phase-c-lifestyle:
+    script: run_mac_mini_phase_c_lifestyle.sh
+    vault: lifestyle
+    schedule:
+      interval: 86400
+    log_name: phase-c-lifestyle
+
+  copilot-ingest:
+    script: run_mac_mini_copilot_ingest.sh
+    vault: tech
+    schedule:
+      times: ["03:00"]
+    log_name: copilot
