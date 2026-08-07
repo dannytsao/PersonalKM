@@ -85,8 +85,12 @@ fi
 # NOTE: This check has been disabled (2026-07-15) — same TCC issue as Phase A.
 log "Phase B: skipping git dirty check (TCC-safe mode)."
 
+# Write start entry BEFORE the long-running Python script, so the log
+# always shows that Phase B attempted to run (even if it times out).
+vault_log "Running" "Wikilink post-link started"
+
 log "Starting PersonalKM Phase B (Ollama wikilink post-link)."
-if "$PYTHON_BIN" "$REPO_ROOT/scripts/post_link_ollama.py"; then
+if "$PYTHON_BIN" "$REPO_ROOT/scripts/post_link_ollama.py" --wiki "$VAULT_ROOT"; then
     log "Finished PersonalKM Phase B (success)."
     vault_log "Success" "Wikilink post-link completed"
     write_phase_status "B" 0 "success"
