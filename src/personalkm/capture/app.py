@@ -320,6 +320,24 @@ async def capture_line_messages(events: list[LineTextEvent], background_tasks: B
         for url in urls:
             try:
                 note = await process_url(settings, url, text)
+                # Re-route if the note's own category (decided AFTER fetching
+                # page content) is lifestyle but the pre-fetch vault guess
+                # was tech. The pre-fetch guess only saw the LINE text/URL.
+                if note.category in ("food", "photography") and vault_config.repo_url == settings.vault_repo_url:
+                    lifestyle_cfg = _get_vault_config(settings, note.category)
+                    if lifestyle_cfg.repo_url != settings.vault_repo_url:
+                        logger.info(
+                            "Re-routing %s to lifestyle vault (category=%s from page content)",
+                            url, note.category,
+                        )
+                        try:
+                            lifestyle_path = await asyncio.to_thread(ensure_vault, settings, lifestyle_cfg)
+                            await save_note(settings, lifestyle_path, note, log_id, lifestyle_cfg)
+                            saved_any_note = True
+                            logger.info("✅ Captured LINE URL %s", url)
+                            continue
+                        except Exception:
+                            logger.exception("Lifestyle re-route failed; saving to tech vault")
                 await save_note(settings, vault_path, note, log_id, vault_config)
                 saved_any_note = True
                 logger.info("✅ Captured LINE URL %s", url)

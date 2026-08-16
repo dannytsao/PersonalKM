@@ -791,7 +791,7 @@ def fallback_category(title: str, page_text: str) -> str:
         "loop engineering", "harness engineering",
         "ai agent", "ai 代理", "ai 工具",
         "vibecoding", "vibe coding",
-        "google ai", "gemini api", "share.google",
+        "google ai", "gemini api",
         "openai", "openai.com",
         # Tech infrastructure
         "docker", "kubernetes", "linux", "macos", "windows",
@@ -845,6 +845,13 @@ def fallback_category(title: str, page_text: str) -> str:
         "中式", "西式", "日式", "韓式", "泰式",
         "義大利麵", "pasta", "pizza", "漢堡", "burger",
         "冰品", "刨冰", "冰淇淋", "豆花",
+        # 2026-08-14: soup/meat dishes (misclassified as general→tech)
+        "牛肉湯", "湯頭", "牛肋條", "湯包", "牛肉麵", "牛肉",
+        "羊肉爐", "薑母鴨", "藥燉排骨", "佛跳牆",
+        "小籠包", "鍋貼", "炒飯", "炒麵", "湯麵", "乾麵",
+        "貢丸", "魚丸", "甜不辣", "關東煮", "臭豆腐",
+        "鵝肉", "鴨肉", "雞肉", "豬肉", "排骨", "控肉", "滷肉",
+        "白飯", "粥", "湯品", "煲湯", "火鍋料",
     ]):
         return "food"
 
