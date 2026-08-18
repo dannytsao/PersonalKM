@@ -200,15 +200,15 @@ class GenericAdapter(Adapter):
         fails, re-raise AuthWallError so the resolver creates a stub.
         """
         jina_url = f"https://r.jina.ai/{url}"
+        # IMPORTANT: do NOT send a browser User-Agent here. r.jina.ai is
+        # fronted by Cloudflare; a "browser UA + non-browser TLS fingerprint"
+        # combination is exactly what Cloudflare flags as a spoofed bot
+        # (HTTP 403). The plain, Jina-official request (just
+        # X-Return-Format: markdown) passes cleanly.
         req = urllib.request.Request(
             jina_url,
             headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/125.0.0.0 Safari/537.36"
-                ),
-                "Accept": "text/plain, text/markdown, */*",
+                "X-Return-Format": "markdown",
             },
         )
         try:
