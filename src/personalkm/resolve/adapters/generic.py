@@ -73,7 +73,27 @@ class GenericAdapter(Adapter):
         return classify_url(url) == "generic"
 
     def fetch(self, url: str) -> FetchedContent:
-        raw_html, encoding, final_url = self._fetch_html(url)
+        try:
+            raw_html, encoding, final_url = self._fetch_html(url)
+        except AuthWallError:
+            # 401/403/429 — retry once via Jina Reader, which renders JS
+            # from its own infrastructure and passes most Cloudflare-style
+            # bot blocks that reject direct fetches.
+            logger.info("Direct fetch blocked for %s — retrying via Jina Reader", url)
+            return self._fetch_via_jina_fallback(url)
+        except urllib.error.URLError as e:
+            # Some sites (e.g. ettoday) drop the TCP connection instead of
+            # returning 403 — also a bot block, just a different flavor.
+            reason = getattr(e, "reason", None)
+            if isinstance(reason, ConnectionError) or "connection" in str(reason if reason else "").lower():
+                logger.info("Direct fetch connection-reset for %s — retrying via Jina Reader", url)
+                return self._fetch_via_jina_fallback(url)
+            raise
+        except ConnectionError as e:
+            # http.client.RemoteDisconnected subclasses ConnectionError and
+            # escapes urlopen unwrapped (not a URLError).
+            logger.info("Direct fetch connection-reset for %s (%s) — retrying via Jina Reader", url, e.__class__.__name__)
+            return self._fetch_via_jina_fallback(url)
         html_text = raw_html.decode(encoding, errors="replace")
 
         try:
@@ -171,6 +191,68 @@ class GenericAdapter(Adapter):
         final_url = resp.url  # may differ after redirects
 
         return raw, encoding, final_url
+
+    def _fetch_via_jina_fallback(self, url: str) -> FetchedContent:
+        """Retry a bot-blocked URL via Jina Reader (https://r.jina.ai/<url>).
+
+        Jina renders the page from its own infrastructure and passes most
+        Cloudflare-style bot blocks. Returns markdown directly. If Jina also
+        fails, re-raise AuthWallError so the resolver creates a stub.
+        """
+        jina_url = f"https://r.jina.ai/{url}"
+        req = urllib.request.Request(
+            jina_url,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/125.0.0.0 Safari/537.36"
+                ),
+                "Accept": "text/plain, text/markdown, */*",
+            },
+        )
+        try:
+            try:
+                resp = urllib.request.urlopen(req, timeout=45)
+            except urllib.error.URLError as ssl_err:
+                ctx = ssl._create_unverified_context()
+                resp = urllib.request.urlopen(req, timeout=45, context=ctx)
+        except urllib.error.HTTPError as e:
+            raise AuthWallError(
+                f"Jina fallback also blocked (HTTP {e.code}): {url}"
+            ) from e
+        except urllib.error.URLError as e:
+            raise AuthWallError(
+                f"Jina fallback network error: {url} — {e.reason}"
+            ) from e
+
+        markdown = resp.read(300 * 1024).decode("utf-8", errors="replace")
+        markdown = re.sub(r"^(?:---?\n)?(?:<!DOCTYPE[^>]*>)?\s*", "", markdown, count=1)
+        markdown = markdown.strip()
+
+        if not markdown or len(markdown) < 30:
+            raise AuthWallError(
+                f"Jina fallback returned empty content for {url}"
+            )
+
+        # Jina markdown starts with a "Title: ..." header line for pages
+        # that have one; extract it for a cleaner title.
+        title_match = re.match(r"Title:\s*(.+)", markdown)
+        title = title_match.group(1).strip() if title_match else self._fallback_title(url)
+        markdown = re.sub(r"^(?:Title:.*\n|URL Source:.*\n|Published Time:.*\n|Markdown Content:\s*\n?)+", "", markdown).strip()
+
+        logger.info("Jina fallback succeeded for %s (%d chars)", url, len(markdown))
+        return FetchedContent(
+            url=url,
+            source_type="generic",
+            title=title[:180],
+            markdown=markdown,
+            meta={
+                "fetched_from": jina_url,
+                "via": "jina-fallback",
+                "length": len(markdown),
+            },
+        )
 
     def _fallback_title(self, url: str) -> str:
         """Derive a readable title from the URL when document.title is empty."""

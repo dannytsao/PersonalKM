@@ -114,7 +114,13 @@ class LineMessagePart:
 
 async def fetch_page(url: str, timeout_seconds: float, max_chars: int) -> ExtractedContent:
     headers = {
-        "User-Agent": "PersonalKMLineBot/0.1 (+https://github.com/dannytsao/PersonalKM)"
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/125.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8",
     }
     async with httpx.AsyncClient(follow_redirects=True, timeout=timeout_seconds, headers=headers) as client:
         response = await client.get(url)
