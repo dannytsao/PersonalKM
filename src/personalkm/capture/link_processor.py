@@ -464,7 +464,13 @@ def google_ai_mode_context_text(url: str, context_text: str, max_chars: int) -> 
 
 def social_caption_text(url: str, context_text: str, max_chars: int) -> str:
     """Return user-pasted caption text around a social URL, if present."""
-    return google_ai_mode_context_text(url, context_text, max_chars)
+    text = google_ai_mode_context_text(url, context_text, max_chars)
+    # Strip URL query-string residue: when a link is shared, the trailing
+    # "?igsh=..." / "?igsi=..." query can survive URL removal and look like
+    # a caption. Also drop pure-query / punctuation-only fragments.
+    text = re.sub(r"[?&][A-Za-z0-9_\-]+=[A-Za-z0-9_\-]+", " ", text)
+    text = " ".join(text.split())
+    return text
 
 
 def social_caption_content(url: str, context_text: str, max_chars: int) -> Optional[ExtractedContent]:
@@ -1449,13 +1455,26 @@ async def process_url(settings: Settings, url: str, context_text: str = "") -> L
         return to_note(content, url, summary, category)
 
     if is_restricted_platform(url):
-        caption_content = social_caption_content(url, context_text, settings.max_page_chars)
-        if caption_content:
-            summary, category = await summarize_with_llm(settings, caption_content.title, url, caption_content.text)
-            # Instagram/Threads are almost always lifestyle content — force photography
-            if caption_content.platform in ("instagram", "threads"):
-                category = "photography"
-            return to_note(caption_content, url, summary, category)
+        # Try Jina first — it renders the PUBLIC post content, which is the
+        # real value. A user-pasted caption is a thin fallback when Jina
+        # fails (private post, login wall, rate limit).
+        jina_content = await fetch_social_via_jina(
+            url, settings.request_timeout_seconds, settings.max_page_chars
+        )
+        if jina_content is not None:
+            content = jina_content
+        else:
+            caption_content = social_caption_content(url, context_text, settings.max_page_chars)
+            if caption_content is not None:
+                content = caption_content
+            else:
+                content = restricted_platform_fallback(url)
+
+        # Instagram/Threads are almost always lifestyle content — force photography
+        summary, category = await summarize_with_llm(settings, content.title, url, content.text)
+        if content.platform in ("instagram", "threads"):
+            category = "photography"
+        return to_note(content, url, summary, category)
 
     instagram_type = instagram_content_type(url)
     if instagram_type:
