@@ -1455,17 +1455,21 @@ async def process_url(settings: Settings, url: str, context_text: str = "") -> L
         return to_note(content, url, summary, category)
 
     if is_restricted_platform(url):
-        # Try Jina first — it renders the PUBLIC post content, which is the
-        # real value. A user-pasted caption is a thin fallback when Jina
-        # fails (private post, login wall, rate limit).
-        jina_content = await fetch_social_via_jina(
-            url, settings.request_timeout_seconds, settings.max_page_chars
-        )
-        if jina_content is not None:
-            content = jina_content
+        # A long user-pasted caption IS the content — use it directly
+        # (fast, no auth-wall fetch). A short/absent caption means the
+        # post itself is the value: try Jina Reader, which renders the
+        # public post; caption is a thin fallback when Jina fails.
+        caption_content = social_caption_content(url, context_text, settings.max_page_chars)
+        caption_body = caption_content.text[len("使用者貼上的社群貼文內容："):] if caption_content else ""
+        if caption_content is not None and len(caption_body) >= 30:
+            content = caption_content
         else:
-            caption_content = social_caption_content(url, context_text, settings.max_page_chars)
-            if caption_content is not None:
+            jina_content = await fetch_social_via_jina(
+                url, settings.request_timeout_seconds, settings.max_page_chars
+            )
+            if jina_content is not None:
+                content = jina_content
+            elif caption_content is not None:
                 content = caption_content
             else:
                 content = restricted_platform_fallback(url)
