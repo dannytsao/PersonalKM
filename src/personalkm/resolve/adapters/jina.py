@@ -13,13 +13,14 @@ Design:
     - Matches threads.net, threads.com, instagram.com, facebook.com, fb.com
     - Pre-pends ``https://r.jina.ai/`` to the original URL
     - Returns clean markdown from Jina's response
-    - On failure → AuthWallError (promotes to stub in resolver)
+    - Optional JINA_API_KEY env var lifts the anonymous-layer rate limit
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import urllib.error
 import urllib.request
@@ -158,6 +159,11 @@ class JinaAdapter(Adapter):
             jina_url,
             headers={
                 "X-Return-Format": "markdown",
+                **(
+                    {"Authorization": f"Bearer {os.environ['JINA_API_KEY']}"}
+                    if os.environ.get("JINA_API_KEY")
+                    else {}
+                ),
             },
         )
         with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
@@ -167,13 +173,17 @@ class JinaAdapter(Adapter):
 
     def _extract_title(self, markdown: str, fallback_url: str) -> str:
         """Extract title from Jina's markdown response."""
+        # Jina prefixes responses with "Title: ..." — prefer it.
+        m = re.search(r"^Title:\s*(.+)$", markdown, re.MULTILINE)
+        if m:
+            return m.group(1).strip()
         # First H1
         m = re.search(r"^#\s+(.+)$", markdown, re.MULTILINE)
         if m:
             return m.group(1).strip()
         # Fallback: derive from URL
         path = re.sub(r"https?://[^/]+/", "", fallback_url).strip("/")
-        segments = [s for s in path.split("/") if s]
+        segments = [s for s in path.split("/") if s and not s.startswith("?")]
         if segments:
             return segments[-1].replace("-", " ").replace("_", " ").title()
         return "Untitled"

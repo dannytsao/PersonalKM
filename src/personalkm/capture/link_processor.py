@@ -152,6 +152,7 @@ async def fetch_social_via_jina(
     url: str,
     timeout_seconds: float,
     max_chars: int,
+    settings: Optional[Settings] = None,
 ) -> Optional[ExtractedContent]:
     """Fetch a public IG/Threads post via Jina Reader (r.jina.ai).
 
@@ -167,6 +168,10 @@ async def fetch_social_via_jina(
     """
     jina_url = f"https://r.jina.ai/{url}"
     headers = {"X-Return-Format": "markdown"}
+    # Optional API key lifts the anonymous-layer rate limit
+    # (instagram.com in particular gets domain-blocked for abuse).
+    if settings is not None and settings.jina_api_key:
+        headers["Authorization"] = f"Bearer {settings.jina_api_key}"
     try:
         async with httpx.AsyncClient(
             follow_redirects=True, timeout=timeout_seconds, headers=headers
@@ -1465,7 +1470,7 @@ async def process_url(settings: Settings, url: str, context_text: str = "") -> L
             content = caption_content
         else:
             jina_content = await fetch_social_via_jina(
-                url, settings.request_timeout_seconds, settings.max_page_chars
+                url, settings.request_timeout_seconds, settings.max_page_chars, settings
             )
             if jina_content is not None:
                 content = jina_content
@@ -1494,7 +1499,7 @@ async def process_url(settings: Settings, url: str, context_text: str = "") -> L
             # fetch returns a login shell (or fails), but r.jina.ai renders
             # the public post. Try it before falling back to a hollow stub.
             jina_content = await fetch_social_via_jina(
-                url, settings.request_timeout_seconds, settings.max_page_chars
+                url, settings.request_timeout_seconds, settings.max_page_chars, settings
             )
             content = jina_content or instagram_fallback_content(instagram_type)
 

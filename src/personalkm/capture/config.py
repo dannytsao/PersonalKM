@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     minimax_api_key: str = Field(default="", alias="MINIMAX_API_KEY")
     minimax_model: str = Field(default="MiniMax-M2.7", alias="MINIMAX_MODEL")
 
+    # Jina Reader API key (optional) — anonymous layer rate-limits
+    # instagram.com; the key lifts that limit.
+    jina_api_key: str = Field(default="", alias="JINA_API_KEY")
+
     # Tech vault (primary)
     vault_repo_url: str = Field(default="https://github.com/dannytsao/PersonalKM.git", alias="VAULT_REPO_URL")
     vault_branch: str = Field(default="main", alias="VAULT_BRANCH")

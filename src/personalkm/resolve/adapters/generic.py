@@ -14,6 +14,7 @@ Handles:
 from __future__ import annotations
 
 import logging
+import os
 import re
 import ssl
 import urllib.error
@@ -204,13 +205,12 @@ class GenericAdapter(Adapter):
         # fronted by Cloudflare; a "browser UA + non-browser TLS fingerprint"
         # combination is exactly what Cloudflare flags as a spoofed bot
         # (HTTP 403). The plain, Jina-official request (just
-        # X-Return-Format: markdown) passes cleanly.
-        req = urllib.request.Request(
-            jina_url,
-            headers={
-                "X-Return-Format": "markdown",
-            },
-        )
+        # X-Return-Format: markdown) passes cleanly. Optional JINA_API_KEY
+        # lifts the anonymous-layer rate limit.
+        headers = {"X-Return-Format": "markdown"}
+        if os.environ.get("JINA_API_KEY"):
+            headers["Authorization"] = f"Bearer {os.environ['JINA_API_KEY']}"
+        req = urllib.request.Request(jina_url, headers=headers)
         try:
             try:
                 resp = urllib.request.urlopen(req, timeout=45)
