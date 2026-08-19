@@ -418,7 +418,12 @@ def is_instagram_shell_text(text: str) -> bool:
         "sign up",
         "meta verified",
     ]
-    return "instagram" in lowered and sum(marker in lowered for marker in shell_markers) >= 2
+    if "instagram" in lowered and sum(marker in lowered for marker in shell_markers) >= 2:
+        return True
+    # A rendered IG post has real content (hundreds of chars). A page whose
+    # text is basically just "Instagram" is the un-rendered JS shell — the
+    # markers above won't match because the shell HTML never executed.
+    return len(text.strip()) < 200
 
 
 def blocked_platform_content(platform: str, content_label: str) -> ExtractedContent:
@@ -839,12 +844,27 @@ async def fetch_youtube_content(settings: Settings, url: str, video_id: str) -> 
     )
 
 
+def _contains_keyword(corpus: str, keyword: str) -> bool:
+    """Keyword match that avoids substring false positives on short ASCII terms.
+
+    ``"api" in "rapid"`` and ``"cli" in "public"`` are both True, which
+    misclassifies lifestyle content as tech when Jina-fetched text contains
+    incidental short ASCII words. ASCII keywords get a word boundary
+    (``\\b``-equivalent without relying on unicode-aware \\b); CJK keywords
+    keep plain substring matching (no word boundaries in CJK).
+    """
+    if re.fullmatch(r"[a-z0-9.\-]+", keyword) and len(keyword) <= 16:
+        # Lookbehind/lookahead on [a-z0-9] ≈ word boundary, works next to CJK too
+        return re.search(rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])", corpus) is not None
+    return keyword in corpus
+
+
 def fallback_category(title: str, page_text: str) -> str:
     corpus = f"{title} {page_text}".lower()
 
     # ── Tech keywords ──────────────────────────────────────────────────
     # Canonical entities (from entities.yaml) + hot AI/tech terms
-    if any(keyword in corpus for keyword in [
+    if any(_contains_keyword(corpus, keyword) for keyword in [
         # Canonical entity slugs (34 total)
         "anges-ai", "anthropic", "antigravity", "apple-silicon",
         "chatgpt", "claude-code", "cloudflare", "codex", "cometapi",
@@ -875,7 +895,7 @@ def fallback_category(title: str, page_text: str) -> str:
         return "tech"
 
     # ── Photography keywords ───────────────────────────────────────────
-    if any(keyword in corpus for keyword in [
+    if any(_contains_keyword(corpus, keyword) for keyword in [
         "camera", "photo", "photography", "photograph",
         "景點", "拍照", "攝影", "相機", "鏡頭", "光圈",
         "快門", "曝光", "構圖", "旅拍", "空拍", "銀河",
@@ -892,7 +912,7 @@ def fallback_category(title: str, page_text: str) -> str:
         return "photography"
 
     # ── Food keywords ──────────────────────────────────────────────────
-    if any(keyword in corpus for keyword in [
+    if any(_contains_keyword(corpus, keyword) for keyword in [
         "restaurant", "food", "cafe", "cuisine", "dining", "eatery",
         "美食", "餐廳", "咖啡", "料理", "小吃", "甜點", "蛋糕",
         "吃到飽", "buffet", "燒肉", "火鍋", "牛排", "海鮮",
@@ -1441,10 +1461,19 @@ async def process_url(settings: Settings, url: str, context_text: str = "") -> L
     if instagram_type:
         try:
             content = await fetch_page(url, settings.request_timeout_seconds, settings.max_page_chars)
-            if is_instagram_shell_text(content.text):
-                content = instagram_fallback_content(instagram_type)
+            shell = is_instagram_shell_text(content.text)
         except httpx.HTTPError:
-            content = instagram_fallback_content(instagram_type)
+            content = None
+            shell = True  # direct fetch failed entirely → try Jina
+
+        if shell:
+            # Public IG posts ARE fetchable via Jina Reader — the direct
+            # fetch returns a login shell (or fails), but r.jina.ai renders
+            # the public post. Try it before falling back to a hollow stub.
+            jina_content = await fetch_social_via_jina(
+                url, settings.request_timeout_seconds, settings.max_page_chars
+            )
+            content = jina_content or instagram_fallback_content(instagram_type)
 
         summary, category = await summarize_with_llm(settings, content.title, url, content.text)
         return to_note(content, url, summary, category)
