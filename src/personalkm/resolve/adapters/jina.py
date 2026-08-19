@@ -47,6 +47,12 @@ _JINA_PATTERNS = [
 _TIMEOUT = 45  # seconds
 _MAX_BYTES = 300 * 1024  # 300 KB
 
+# A genuine login wall is a SHORT page — just the prompt and a login link.
+# Public social posts are LONG (multi-KB) even when they end with a
+# "Log in to see more replies" footer. Run auth-signal detection only
+# below this length so the footer can't cause a false positive.
+_AUTH_WALL_MAX_CHARS = 2000
+
 
 class JinaAdapter(Adapter):
     """Adapter for Threads / Instagram / Facebook — JS-heavy social media.
@@ -98,18 +104,26 @@ class JinaAdapter(Adapter):
                 "likely blocked by login wall"
             )
 
-        # Detect explicit login-wall signals in Jina output
-        lower = markdown.lower()
-        auth_signals = [
-            "log in", "log in to continue", "sign in", "sign up to see",
-            "this content isn't available", "page isn't available",
-            "sorry, this page", "join instagram", "log in to instagram",
-            "create an account", "you must be logged in",
-        ]
-        if any(s in lower for s in auth_signals):
-            raise AuthWallError(
-                f"Jina hit login wall for {url} — content requires authentication"
-            )
+        # Detect login-wall responses. IMPORTANT: only treat the response
+        # as a wall when the CONTENT ITSELF is a wall — i.e. when there is
+        # no substantive text beyond the login prompt. Social sites (Threads,
+        # IG) append a page-footer "Log in to see more replies" line to an
+        # otherwise fully public post; matching "log in" anywhere would
+        # discard 46KB of real content. So: run the signals only against a
+        # body that is short (< _AUTH_WALL_MAX_CHARS) — a real wall is
+        # short, a real post with a footer is not.
+        if len(markdown) < _AUTH_WALL_MAX_CHARS:
+            lower = markdown.lower()
+            auth_signals = [
+                "log in", "log in to continue", "sign in", "sign up to see",
+                "this content isn't available", "page isn't available",
+                "sorry, this page", "join instagram", "log in to instagram",
+                "create an account", "you must be logged in",
+            ]
+            if any(s in lower for s in auth_signals):
+                raise AuthWallError(
+                    f"Jina hit login wall for {url} — content requires authentication"
+                )
 
         # Extract title from first heading
         title = self._extract_title(markdown, url)
@@ -134,16 +148,15 @@ class JinaAdapter(Adapter):
         """Fetch content from Jina Reader API.
 
         Returns (raw_bytes, final_url).
+
+        IMPORTANT: do NOT send a browser User-Agent. r.jina.ai is fronted
+        by Cloudflare; a "browser UA + non-browser TLS fingerprint"
+        combination is flagged as a spoofed bot (HTTP 403). The plain
+        Jina-official request (just X-Return-Format) passes cleanly.
         """
         req = urllib.request.Request(
             jina_url,
             headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/125.0.0.0 Safari/537.36"
-                ),
-                "Accept": "text/plain, text/markdown, */*",
                 "X-Return-Format": "markdown",
             },
         )

@@ -148,6 +148,69 @@ async def fetch_page(url: str, timeout_seconds: float, max_chars: int) -> Extrac
     )
 
 
+async def fetch_social_via_jina(
+    url: str,
+    timeout_seconds: float,
+    max_chars: int,
+) -> Optional[ExtractedContent]:
+    """Fetch a public IG/Threads post via Jina Reader (r.jina.ai).
+
+    Direct fetches to IG/Threads return a login shell; r.jina.ai renders
+    the public post from its own infrastructure. Returns None when Jina
+    also fails (private post, login wall, rate limit) so the caller falls
+    back to a stub.
+
+    IMPORTANT: do NOT send a browser User-Agent. r.jina.ai is fronted by
+    Cloudflare, which flags "browser UA + non-browser TLS fingerprint"
+    (httpx) as a spoofed bot → HTTP 403. The plain request with just
+    X-Return-Format passes cleanly.
+    """
+    jina_url = f"https://r.jina.ai/{url}"
+    headers = {"X-Return-Format": "markdown"}
+    try:
+        async with httpx.AsyncClient(
+            follow_redirects=True, timeout=timeout_seconds, headers=headers
+        ) as client:
+            response = await client.get(jina_url)
+            response.raise_for_status()
+    except httpx.HTTPError:
+        return None
+
+    markdown = response.text.strip()
+    if len(markdown) < 30:
+        return None
+
+    # A genuine login wall is short; a public post with a "Log in to see
+    # more replies" footer is long. Only treat short bodies as walls.
+    lower = markdown.lower()
+    if len(markdown) < 2000 and any(
+        sig in lower
+        for sig in (
+            "log in", "log in to continue", "sign in", "sign up to see",
+            "this content isn't available", "page isn't available",
+            "sorry, this page", "join instagram", "log in to instagram",
+            "create an account", "you must be logged in",
+        )
+    ):
+        return None
+
+    # Jina markdown starts with "Title: ..." / "URL Source: ..." headers.
+    title_match = re.match(r"Title:\s*(.+)", markdown)
+    title = title_match.group(1).strip() if title_match else platform_from_url(url)
+    markdown = re.sub(
+        r"^(?:Title:.*\n|URL Source:.*\n|Published Time:.*\n|Markdown Content:\s*\n?)+",
+        "",
+        markdown,
+    ).strip()
+
+    return ExtractedContent(
+        title=title[:180],
+        text=markdown[:max_chars],
+        platform=platform_from_url(url),
+        extraction_status="ok",
+    )
+
+
 # ── Layer 2 Content Cleaning ──────────────────────────────────────────
 
 # HTML elements to remove completely before text extraction
@@ -1389,10 +1452,18 @@ async def process_url(settings: Settings, url: str, context_text: str = "") -> L
     if is_restricted_platform(url):
         try:
             content = await fetch_page(url, settings.request_timeout_seconds, settings.max_page_chars)
-            if is_restricted_shell_text(content.platform, content.text):
-                content = restricted_platform_fallback(url)
+            shell = is_restricted_shell_text(content.platform, content.text)
         except httpx.HTTPError:
-            content = restricted_platform_fallback(url)
+            content = None
+            shell = True  # direct fetch failed entirely → try Jina
+
+        if shell:
+            # Public IG/Threads posts ARE fetchable via Jina Reader — the
+            # direct fetch returns a login shell (or fails), but r.jina.ai
+            # renders the public post. Try it before falling back to a
+            # hollow stub.
+            jina_content = await fetch_social_via_jina(url, settings.request_timeout_seconds, settings.max_page_chars)
+            content = jina_content or restricted_platform_fallback(url)
 
         summary, category = await summarize_with_llm(settings, content.title, url, content.text)
         return to_note(content, url, summary, category)
