@@ -53,7 +53,7 @@ def _entity_mentioned_in_body(entity_slug: str, body_lower: str) -> bool:
     if len(normalized) >= 4 and normalized in body_lower:
         return True
     return False
-DEFAULT_OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
+DEFAULT_OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3.5:9b")
 DEFAULT_OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
 
 

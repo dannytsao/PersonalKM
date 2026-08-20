@@ -444,7 +444,7 @@ def run_phase_b(
     vault_root = wiki_root  # for git operations
 
     logger.info("=" * 70)
-    logger.info("PHASE B: Post-Link via Ollama (qwen3:8b)")
+    logger.info("PHASE B: Post-Link via Ollama (qwen3.5:9b)")
     logger.info(f"WIKI ROOT: {wiki_root}")
     logger.info(f"MODE: {'DRY RUN' if dry_run else 'LIVE'}")
     logger.info("=" * 70)
