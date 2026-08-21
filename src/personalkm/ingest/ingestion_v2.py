@@ -343,7 +343,10 @@ Your task is to distill raw notes into a concise, structured wiki summary.
 
 RULES:
 - Extract key facts only — no fluff, no repetition
-- Use English for entity names (e.g., "Claude Code" not "克勞德代碼")
+- WRITE THE SUMMARY AND KEY FACTS IN TRADITIONAL CHINESE (zh-TW, Taiwan usage).
+  The raw notes are in Traditional Chinese; the wiki should match.
+- Use English ONLY for entity/tool names (e.g., "Claude Code" not "克勞德代碼"),
+  normalized to lowercase-hyphenated identifiers
 - Keep summaries to 3-5 sentences max
 - Key facts should be specific (versions, commands, configurations — not generic)
 - OUTPUT JSON ONLY — no markdown code fences, no explanations."""
@@ -357,10 +360,10 @@ CONTENT:
 
 Respond ONLY with this JSON (no markdown, no code fences):
 {{
-  "summary": "3-5 sentence summary in English",
+  "summary": "3-5 sentence summary in Traditional Chinese (zh-TW)",
   "key_facts": [
-    "{{fact 1 — specific and concrete}}",
-    "{{fact 2 — specific and concrete}}",
+    "{{fact 1 — specific and concrete, in Traditional Chinese}}",
+    "{{fact 2 — specific and concrete, in Traditional Chinese}}",
     "{{fact 3}}"
   ],
   "confidence": "high|medium|low"

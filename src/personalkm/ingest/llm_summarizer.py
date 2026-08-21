@@ -33,8 +33,10 @@ RULES:
   (e.g. docker, claude, llm, 2025, to-read, recall — NOT a second topic label)
   A note can have 0 tags if nothing cross-topic applies.
 - Extract key facts only — no fluff, no repetition
-- Use English for entity names (e.g., "Claude Code" not "克勞德代碼")
-- Normalize entity names to plain English identifiers (lowercase, hyphens)
+- WRITE THE SUMMARY AND KEY FACTS IN TRADITIONAL CHINESE (zh-TW, Taiwan usage).
+  The raw notes are in Traditional Chinese; the wiki should match.
+- Use English ONLY for entity/tool names (e.g., "Claude Code" not "克勞德代碼"),
+  and normalize entity names to plain English identifiers (lowercase, hyphens)
 - Keep summaries to 3-5 sentences max
 - Key facts should be specific (versions, commands, configurations — not generic)
 - Always cite the source file
@@ -51,10 +53,10 @@ CONTENT:
 Respond ONLY with this JSON (no markdown, no code fences):
 {{
   "topic": "AI-Agent-&-Tools | Automation-Workflows | PKM-&-System-Design | Tech-Trends-&-Insights | Personal-Interests",
-  "summary": "3-5 sentence summary in English",
+  "summary": "3-5 sentence summary in Traditional Chinese (zh-TW)",
   "key_facts": [
-    "{{fact 1 — specific and concrete}}",
-    "{{fact 2 — specific and concrete}}",
+    "{{fact 1 — specific and concrete, in Traditional Chinese}}",
+    "{{fact 2 — specific and concrete, in Traditional Chinese}}",
     "{{fact 3}}"
   ],
   "entities_mentioned": ["entity-name-1", "entity-name-2"],
@@ -73,10 +75,10 @@ CONTENT:
 Respond ONLY with this JSON (no markdown, no code fences):
 {{
   "topic": "AI-Agent-&-Tools | Automation-Workflows | PKM-&-System-Design | Tech-Trends-&-Insights | Personal-Interests",
-  "summary": "3-5 sentence summary explaining this concept",
+  "summary": "3-5 sentence summary in Traditional Chinese (zh-TW)",
   "key_facts": [
-    "{{practical fact 1 — how to apply it}}",
-    "{{practical fact 2 — concrete steps}}",
+    "{{practical fact 1 — how to apply it, in Traditional Chinese}}",
+    "{{practical fact 2 — concrete steps, in Traditional Chinese}}",
     "{{practical fact 3}}"
   ],
   "prerequisites": ["prereq-concept-1"],
