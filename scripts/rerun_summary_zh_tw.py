@@ -61,12 +61,25 @@ def rewrite_sections(markdown: str, summary: str, key_facts: list[str]) -> str:
     return md
 
 
+def is_zh_summary(markdown: str) -> bool:
+    """True if the ## Summary section already contains CJK characters."""
+    m = re.search(r"## Summary\n\n(.+?)(?=\n## |\n\*\*Source:\*\*|\Z)", markdown, re.DOTALL)
+    if not m:
+        return False
+    summary = m.group(1)
+    return any("\u4e00" <= ch <= "\u9fff" for ch in summary)
+
+
 def process_page(vault: Path, page: Path) -> dict:
     text = page.read_text(encoding="utf-8", errors="replace")
     fm_match = re.match(r"^---\n(.*?)\n---\n(.*)$", text, re.DOTALL)
     if not fm_match:
         return {"path": str(page), "status": "skip", "reason": "no frontmatter"}
     frontmatter, body = fm_match.group(1), fm_match.group(2)
+
+    # Already in Chinese — skip (avoids re-calling the LLM on re-runs)
+    if is_zh_summary(body):
+        return {"path": str(page), "status": "skip", "reason": "already zh-TW"}
 
     # Parse sources list
     sources = re.findall(r"^\s*-\s*\[\[(.+?)\]\]\s*$", frontmatter, re.MULTILINE)
