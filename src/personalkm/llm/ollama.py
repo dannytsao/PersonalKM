@@ -33,6 +33,10 @@ class OllamaProvider(Provider):
             "model": model,
             "prompt": prompt,
             "stream": False,
+            # qwen3.5+ are thinking models: without this they burn the whole
+            # num_predict budget on a <think> pass and return an empty string
+            # (eval_count == num_predict, done_reason == "length").
+            "think": False,
             "options": {"num_predict": max_output_tokens},
         }
         if system:
