@@ -156,6 +156,18 @@ def _analyze_vault(vault_root: Path | None = None) -> dict[str, Any]:
     archive_dir = vault_root / "Archive"
     if archive_dir.exists():
         state["archive_count"] = len(list(archive_dir.rglob("*.md")))
+        # Citation integrity: an archived raw note must be cited by some wiki
+        # page ([[Archive/raw/...]]). Orphans = silently lost knowledge (page
+        # deleted/migrated without the archive copy, or the file was swept in
+        # by a non-pipeline writer before Phase A ingested it).
+        from personalkm.ingest.archive_integrity import find_archive_orphans
+
+        try:
+            orphans = find_archive_orphans(vault_root)
+        except Exception:  # never let monitoring break status reporting
+            orphans = []
+        state["archive_orphans"] = len(orphans)
+        state["archive_orphan_paths"] = orphans[:20]
 
     # Wiki stats
     wiki_dir = vault_root / "wiki"
@@ -234,6 +246,18 @@ def _analyze_blockers(pipeline: dict[str, Any]) -> list[dict[str, Any]]:
             "phase": "A",
             "reason": f"{raw_resolvable} resolvable raw files have been unprocessed for {raw_oldest} days (out of {raw_count} total raw)",
             "fix": "Resolve vault dirty state first, then next cron tick will process them",
+        })
+
+    # Archive citation integrity (2026-08-23: 39 orphaned archive files had
+    # accumulated for six weeks because nothing checked this invariant)
+    orphans = vault.get("archive_orphans", 0)
+    if orphans > 0:
+        sample = ", ".join(vault.get("archive_orphan_paths", [])[:3])
+        blockers.append({
+            "severity": "medium" if orphans < 10 else "high",
+            "phase": "A",
+            "reason": f"{orphans} archived raw note(s) are cited by no wiki page — knowledge silently lost",
+            "fix": f"Inspect: python -m personalkm.ingest.archive_integrity. Re-ingest or restore pages for: {sample}",
         })
 
     return blockers
