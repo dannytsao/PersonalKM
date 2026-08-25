@@ -71,8 +71,21 @@ RESTRICTED_PLATFORM_HOSTS = {
     "www.threads.net": "threads",
     "threads.com": "threads",
     "www.threads.com": "threads",
+    # 2026-08-24: facebook share links (share/p/...) were falling through to
+    # the generic web branch, where a direct httpx GET gets HTTP 400 from
+    # Facebook and the capture became an error stub. FB post pages are
+    # login-walled for plain fetchers but render fine via Jina Reader
+    # (verified: r.jina.ai returns the full public post). Route them through
+    # the same caption → Jina → stub chain as IG/Threads.
+    "facebook.com": "facebook",
+    "www.facebook.com": "facebook",
+    "m.facebook.com": "facebook",
+    "web.facebook.com": "facebook",
+    "fb.com": "facebook",
+    "www.fb.com": "facebook",
+    "fb.me": "facebook",
 }
-LOCAL_WORKER_PLATFORMS = {"youtube", "instagram", "tiktok", "x", "threads", "google-ai-mode"}
+LOCAL_WORKER_PLATFORMS = {"youtube", "instagram", "tiktok", "x", "threads", "facebook", "google-ai-mode"}
 LOCAL_WORKER_STATUSES = {"partial", "blocked"}
 TAIWAN_ADDRESS_PATTERN = re.compile(
     r"((?:台北|臺北|新北|桃園|台中|臺中|台南|臺南|高雄|基隆|新竹|苗栗|彰化|南投|雲林|嘉義|屏東|宜蘭|花蓮|台東|臺東|澎湖|金門|連江)"
@@ -456,6 +469,7 @@ def restricted_platform_fallback(url: str) -> ExtractedContent:
         "tiktok": "TikTok video",
         "x": "X/Twitter post",
         "threads": "Threads post",
+        "facebook": "Facebook post",
     }
     return blocked_platform_content(platform, labels.get(platform, f"{platform} link"))
 
@@ -489,6 +503,7 @@ def social_caption_content(url: str, context_text: str, max_chars: int) -> Optio
         "tiktok": "TikTok pasted caption",
         "x": "X/Twitter pasted post",
         "threads": "Threads pasted post",
+        "facebook": "Facebook pasted caption",
     }
     return ExtractedContent(
         title=titles.get(platform, f"{platform} pasted social post"),
@@ -520,7 +535,7 @@ def google_ai_mode_share_content(url: str, context_text: str = "", max_chars: in
 
 
 def is_restricted_platform(url: str) -> bool:
-    return platform_from_url(url) in {"instagram", "tiktok", "x", "threads"}
+    return platform_from_url(url) in {"instagram", "tiktok", "x", "threads", "facebook"}
 
 
 def is_restricted_shell_text(platform: str, text: str) -> bool:
@@ -532,6 +547,8 @@ def is_restricted_shell_text(platform: str, text: str) -> bool:
         "tiktok": ["log in", "sign up", "tiktok"],
         "x": ["log in", "sign up", "x.com", "twitter"],
         "threads": ["log in", "threads", "instagram"],
+        # FB login shell: "Log into Facebook" + password field / create account
+        "facebook": ["log into facebook", "log in or sign up", "create new account"],
     }
     platform_markers = markers.get(platform, [])
     return bool(platform_markers) and sum(marker in lowered for marker in platform_markers) >= 2
@@ -540,7 +557,7 @@ def is_restricted_shell_text(platform: str, text: str) -> bool:
 def content_type_for_platform(platform: str) -> str:
     if platform == "youtube":
         return "video"
-    if platform in {"instagram", "tiktok", "x", "threads"}:
+    if platform in {"instagram", "tiktok", "x", "threads", "facebook"}:
         return "social_post"
     if platform == "google-ai-mode":
         return "ai_answer"

@@ -321,6 +321,11 @@ def test_platform_from_url_detects_restricted_platforms():
     assert platform_from_url("https://www.threads.net/@user/post/1") == "threads"
     assert platform_from_url("https://www.threads.com/@user/post/1") == "threads"
     assert platform_from_url("https://share.google/aimode/8uyYWVgle7A2ZDGFx") == "google-ai-mode"
+    # 2026-08-24: FB share links must NOT be treated as generic web — a direct
+    # fetch gets HTTP 400 and the capture became an error stub.
+    assert platform_from_url("https://www.facebook.com/share/p/1DeswYpjik/") == "facebook"
+    assert platform_from_url("https://m.facebook.com/story.php?story_fbid=1&id=2") == "facebook"
+    assert platform_from_url("https://fb.me/abc123") == "facebook"
     assert platform_from_url("https://example.com/a") == "web"
 
 
@@ -335,6 +340,7 @@ def test_restricted_platform_fallback_sets_review_metadata():
 
 def test_is_restricted_platform():
     assert is_restricted_platform("https://www.tiktok.com/@user/video/1")
+    assert is_restricted_platform("https://www.facebook.com/share/p/1DeswYpjik/")
     assert not is_restricted_platform("https://example.com/a")
 
 
