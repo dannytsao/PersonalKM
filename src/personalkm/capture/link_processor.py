@@ -984,6 +984,47 @@ def fallback_category(title: str, page_text: str) -> str:
     return "general"
 
 
+def upgrade_general_category(title: str, page_text: str, llm_category: str) -> str:
+    """Second-chance lifestyle upgrade when the LLM answered ``general``.
+
+    2026-08-25 (埔里 note): a travel YouTube video whose transcript fetch
+    failed went to the LLM with only the failure-stub text — the title's
+    obvious travel keywords (瀑布/溫泉/香酥鴨) never got a vote, category
+    stayed general, and the note landed in the tech vault. The same happened
+    for the pasted-context note because ``capture_line_messages`` re-routes
+    URL notes only.
+
+    Rule: when the classifier output is ``general``, let the
+    photography/food keyword lists have a second look (title + text).
+    NEVER upgrade TO tech (the tech list is prefix-checked in
+    fallback_category and dominated the first pass already) and never
+    override a specific LLM verdict (food/photography/tech pass through).
+    """
+    if llm_category != "general":
+        return llm_category
+
+    corpus = f"{title} {page_text}".lower()
+
+    # Photography keywords (travel/landscape subset — mirrors fallback_category)
+    if any(_contains_keyword(corpus, keyword) for keyword in [
+        "景點", "拍照", "攝影", "風景", "美景",
+        "步道", "登山", "健行", "秘境", "古道", "瀑布", "溪流",
+        "花季", "櫻花", "楓葉", "露營", "自行車",
+        "sunset", "sunrise", "landscape", "hiking", "trail",
+    ]):
+        return "photography"
+
+    # Food keywords (subset — mirrors fallback_category)
+    if any(_contains_keyword(corpus, keyword) for keyword in [
+        "美食", "餐廳", "小吃", "料理",
+        "必吃", "包子", "便當", "銅板價", "伴手禮",
+        "排隊", "名店", "老店",
+    ]):
+        return "food"
+
+    return "general"
+
+
 def fallback_summary(title: str, page_text: str) -> str:
     text = page_text.strip()
     if not text:
@@ -1312,6 +1353,11 @@ async def summarize_with_llm(settings: Settings, title: str, url: str, page_text
     category = str(data.get("category") or "general").strip()
     if category not in CATEGORY_VALUES:
         category = "general"
+    # Second chance: a "general" verdict on content whose TITLE carries
+    # obvious lifestyle keywords (travel/food) misroutes the note to the
+    # tech vault — the LLM often never saw the title (e.g. YouTube
+    # transcript-failure stubs). Keyword-upgrade general only.
+    category = upgrade_general_category(title, page_text, category)
     return ensure_food_summary_details(title, page_text, summary, category), category
 
 
@@ -1453,6 +1499,7 @@ async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, 
     category = str(data.get("category") or "general").strip()
     if category not in CATEGORY_VALUES:
         category = "general"
+    category = upgrade_general_category(title, transcript_text, category)
     body_markdown = str(data.get("body_markdown") or "").strip()
     if not body_markdown:
         _, _, body_markdown = fallback_youtube_deep_note(title, url, transcript_text)

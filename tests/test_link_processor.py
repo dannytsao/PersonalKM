@@ -28,6 +28,7 @@ from bot.link_processor import (
     parse_line_message_part,
     parse_watch_caption_tracks,
     platform_from_url,
+    upgrade_general_category,
     restricted_platform_fallback,
     should_capture_line_message_context,
     social_caption_text,
@@ -505,3 +506,29 @@ def test_youtube_key_concepts_extracts_tool_names():
 
     assert "Claude Code" in concepts
     assert "GitHub Actions" in concepts
+
+
+def test_upgrade_general_category_upgrades_travel_title_from_general():
+    """2026-08-25 regression: Puli travel video, transcript fetch failed,
+    LLM saw only the failure stub and answered general → wrong vault."""
+    title = "封閉4年開放了❗埔里仙境「神秘千層瀑布」❗全台最新溫泉區免費❗銅板價巨無霸包子、隱藏版酒廠便當、古早味香酥鴨｜埔里❌南投"
+    stub = "無法擷取該 YouTube 影片的字幕或逐字稿。建議直接點擊連結觀看影片以獲取詳細資訊。"
+
+    assert upgrade_general_category(title, stub, "general") == "photography"
+
+
+def test_upgrade_general_category_does_not_touch_specific_verdicts():
+    title = "Claude Code 完整教學"
+    text = "介紹 Claude Code 工具與開發流程。"
+
+    # Specific LLM verdicts pass through untouched
+    assert upgrade_general_category(title, text, "tech") == "tech"
+    assert upgrade_general_category(title, text, "food") == "food"
+    assert upgrade_general_category(title, text, "photography") == "photography"
+    # tech keyword corpus with general verdict is NOT upgraded to tech
+    assert upgrade_general_category(title, text, "general") == "general"
+
+
+def test_upgrade_general_category_food_keywords():
+    assert upgrade_general_category("銅板價巨無霸包子", "", "general") == "food"
+    assert upgrade_general_category("老店便當推薦", "", "general") == "food"

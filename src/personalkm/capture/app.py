@@ -312,8 +312,30 @@ async def capture_line_messages(events: list[LineTextEvent], background_tasks: B
         if should_capture_line_message_context(text, settings.max_page_chars):
             try:
                 note = await process_line_message_context(settings, text, urls)
-                await save_note(settings, vault_path, note, log_id, vault_config)
-                saved_any_note = True
+                # 2026-08-25: context notes skipped the re-route that URL
+                # notes get — a pasted AI summary of a travel video stayed
+                # in the tech vault because only URLs were re-checked.
+                if note.category in ("food", "photography") and vault_config.repo_url == settings.vault_repo_url:
+                    lifestyle_cfg = _get_vault_config(settings, note.category)
+                    if lifestyle_cfg.repo_url != settings.vault_repo_url:
+                        logger.info(
+                            "Re-routing pasted context note to lifestyle vault (category=%s)",
+                            note.category,
+                        )
+                        try:
+                            lifestyle_path = await asyncio.to_thread(ensure_vault, settings, lifestyle_cfg)
+                            await save_note(settings, lifestyle_path, note, log_id, lifestyle_cfg)
+                            saved_any_note = True
+                        except Exception:
+                            logger.exception("Lifestyle re-route failed; saving context note to tech vault")
+                            await save_note(settings, vault_path, note, log_id, vault_config)
+                            saved_any_note = True
+                    else:
+                        await save_note(settings, vault_path, note, log_id, vault_config)
+                        saved_any_note = True
+                else:
+                    await save_note(settings, vault_path, note, log_id, vault_config)
+                    saved_any_note = True
             except Exception:
                 logger.exception("Failed to capture LINE pasted message")
 
