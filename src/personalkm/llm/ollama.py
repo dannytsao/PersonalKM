@@ -28,6 +28,7 @@ class OllamaProvider(Provider):
         system: str | None = None,
         max_output_tokens: int = 1000,
         timeout_s: int = 120,
+        json_mode: bool = False,
     ) -> Completion:
         payload = {
             "model": model,
@@ -39,6 +40,12 @@ class OllamaProvider(Provider):
             "think": False,
             "options": {"num_predict": max_output_tokens},
         }
+        if json_mode:
+            # Structured-output constraint: forces valid JSON (quoted keys AND
+            # quoted array elements). qwen3.5:9b free-form output sometimes
+            # emits bare tags ([restaurant, taiwan]) which json.loads rejects
+            # and retries can't fix (2026-08-26 Phase A failure).
+            payload["format"] = "json"
         if system:
             payload["system"] = system
         req = urllib.request.Request(

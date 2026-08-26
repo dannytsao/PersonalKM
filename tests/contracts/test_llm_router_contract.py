@@ -23,7 +23,7 @@ class FakeProvider(Provider):
         self.calls = 0
 
     def complete(self, model, prompt, *, system=None,
-                 max_output_tokens=1000, timeout_s=120):
+                 max_output_tokens=1000, timeout_s=120, json_mode=False):
         self.calls += 1
         if self.behavior == "boom":
             raise ConnectionError("provider down")

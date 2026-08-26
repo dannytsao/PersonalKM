@@ -37,6 +37,7 @@ class OpenAICompatProvider(Provider):
         system: str | None = None,
         max_output_tokens: int = 1000,
         timeout_s: int = 120,
+        json_mode: bool = False,
     ) -> Completion:
         client = self._get_client()
         messages = []

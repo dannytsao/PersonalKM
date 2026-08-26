@@ -42,6 +42,7 @@ class Provider(ABC):
         system: str | None = None,
         max_output_tokens: int = 1000,
         timeout_s: int = 120,
+        json_mode: bool = False,
     ) -> Completion:
         """Return a completion or raise (any exception => router falls back)."""
 

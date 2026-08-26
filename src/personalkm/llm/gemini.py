@@ -19,6 +19,7 @@ class GeminiProvider(Provider):
         system: str | None = None,
         max_output_tokens: int = 1000,
         timeout_s: int = 120,
+        json_mode: bool = False,
     ) -> Completion:
         from google import genai  # lazy import; only file allowed to import it
 

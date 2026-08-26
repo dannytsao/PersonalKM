@@ -104,6 +104,7 @@ def route(
                 comp: Completion = provider.complete(
                     model, prompt, system=system,
                     max_output_tokens=max_out, timeout_s=timeout_s,
+                    json_mode=bool(expect_json or stage_cfg.get("json_only")),
                 )
                 usage.record(provider_name, comp.input_tokens, comp.output_tokens)
                 if expect_json or stage_cfg.get("json_only"):
