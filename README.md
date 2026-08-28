@@ -1,9 +1,9 @@
 # PersonalKM — AI-Powered Second Brain
 
-**Status:** ✅ ALL PHASES STABLE — Render webhook + Mac Mini cron (Ollama-only) + Phase A/B auto + git self-recovery guard
-**Last Updated:** 2026-08-05 — Render cron @url: + sparse checkout + daily scheduling fixes. Phase A: 06:00/18:00, Phase B: 08:00/20:00 GMT+8. Chron job auto-deploy fixed. Phase A/B log entries in wiki/log.md.
+**Status:** ✅ ALL PHASES STABLE — Render webhook + Dual Vaults (Tech & Lifestyle split) + Mac Mini cron (Ollama-only) + Phase A/B auto + git self-recovery guard
+**Last Updated:** 2026-08-28 — Dual-vault architecture fully stabilized. Expanded AIGC keywords (Midjourney, ComfyUI, Seedance, Suno) & lifestyle travel keywords (飯店, 溫泉, 爵士, 旅宿). Ingest-synthesis & classification cleanly routed.
 
-LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每月報告追踪過時的技術知識。
+LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每月報告追踪過時的技術知識。 分流至獨立的 Tech 與 Lifestyle 知識庫。
 
 ---
 
@@ -79,25 +79,38 @@ confidence: high | medium | low
 
 ## 🏗️ 系統架構
 
+### 雙庫分流架構 (Dual-Vault Architecture)
+自 2026 年 8 月起，系統全面重構為**技術庫 (Tech)**與**生活庫 (Lifestyle)**雙知識庫分流架構。在 LINE 捕獲當下或 LLM 二次重分類後，系統會自動評估並精準派送至對應的 GitHub 知識庫儲存庫：
+
+- **技術庫 (`Personalkm-vault`)**：專注於 AI, programming, MCP, LangChain, 提示詞工程及各類 AIGC 技術（如 Midjourney, ComfyUI, Seedance, Suno 等 AIGC 專業關鍵字會強制留在技術庫）。
+- **生活庫 (`Personalkm-lifestyle-vault`)**：專注於美食、旅遊、攝影、休閒、生活博主 Threads 等主題（具備飯店、民宿、爵士、泡湯、秘境、觀光等生活旅遊關鍵字之內容會自動升級並派送至此）。
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │  RENDER (Webhook — Stateless)                                 │
-│  LINE message → raw file → GitHub push (commit + push)       │
-│  僅負責即時擷取，不做任何 AI 處理                             │
+│  LINE message → Classification & AIGC Lock → Vault Config   │
+│  僅負責即時擷取與精準派送路由，不做任何 Ingestion 處理         │
 └──────────────────────────────────────────────────────────────┘
                               │
-                              │ vault/raw/ on GitHub
+             ┌────────────────┴────────────────┐
+             ▼ (Tech Vault URL)                ▼ (Lifestyle Vault URL)
+┌──────────────────────────┐      ┌──────────────────────────┐
+│  Personalkm-vault        │      │  Personalkm-lifestyle    │
+│  (AI, Code, Tech Topics) │      │  (Food, Scenery, Travel) │
+└──────────────────────────┘      └──────────────────────────┘
+             │                                 │
+             └────────────────┬────────────────┘
                               ▼
 ┌──────────────────────────────────────────────────────────────┐
 │  MAC MINI (Cron — 每小時)                                     │
 │                                                              │
-│  Phase A: scripts/ingest_wiki.py                             │
+│  Phase A: scripts/ingest_wiki.py (按指定 --vault 執行)       │
 │    └─ git pull → ingest_raw_to_wiki → _commit_and_push_wiki  │
-│    └─ wiki/entities/ + wiki/concepts/ → GitHub              │
+│    └─ wiki/entities/ + wiki/concepts/ → 各自知識庫 GitHub    │
 │                                                              │
-│  Phase B: scripts/post_link_ollama.py                        │
-│    └─ OllamaWikilinkAnalyzer (qwen3:8b)                     │
-│    └─ wikilinks + backlinks → GitHub                         │
+│  Phase B: scripts/post_link_ollama.py (按指定 --vault 執行)   │
+│    └─ OllamaWikilinkAnalyzer (qwen3.5:9b)                    │
+│    └─ wikilinks + backlinks → 各自知識庫 GitHub               │
 └──────────────────────────────────────────────────────────────┘
 ```
 
