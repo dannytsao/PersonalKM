@@ -1,6 +1,6 @@
 # PersonalKM — 知識管理系統設計文檔
 
-> 最後更新：2026-08-05 — Render cron @url: wrapper fix + sparse checkout + daily scheduling (Phase A 06:00/18:00, Phase B 08:00/20:00 GMT+8)。cloud_housekeeping.py commit 檢查修正、Phase A log 加入每筆檔案明細。術語對照表無變動。
+> 最後更新：2026-08-28 — 新增 Nearby MVP 需求與 SDD（設計中，尚未改動 runtime code）；既有 capture／resolve／ingest／propagate／query 術語對照與雙 vault runtime flow 無變動。
 
 ---
 
@@ -179,6 +179,17 @@ raw/ capture
 - Hybrid search: `wiki/` title/frontmatter/body/entity registry + `raw/` / `resolved/` source metadata and excerpts
 - Raw/resolved matches include source URL and `log_id` when available
 - LLM synthesis with `[[wikilink]]` citations (可用 `--no-llm` 關閉)
+
+### Nearby MVP（設計中）
+
+Nearby 的正式需求與實作設計分開維護：
+
+- [`docs/nearby-mvp-requirements.md`](docs/nearby-mvp-requirements.md)：使用流程、功能／安全需求與驗收情境
+- [`docs/nearby-mvp-sdd.md`](docs/nearby-mvp-sdd.md)：Query stage 架構、Lifestyle registry、LINE event 對接、sparse checkout 邊界與逐檔變更計畫
+
+此能力尚未併入 runtime。設計原則是預設只讀 Lifestyle Vault 的
+`wiki/_registry/city-subject-store.json`；只有 `+`／`＋` 才搜尋 Google Places，
+而收藏動作仍走既有 capture → ingest → enrichment 管線。
 
 ### Sanity Check & Repair
 

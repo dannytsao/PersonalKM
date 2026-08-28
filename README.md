@@ -1,7 +1,7 @@
 # PersonalKM — AI-Powered Second Brain
 
 **Status:** ✅ ALL PHASES STABLE — Render webhook + Dual Vaults (Tech & Lifestyle split) + Mac Mini cron (Ollama-only) + Phase A/B auto + git self-recovery guard
-**Last Updated:** 2026-08-28 — Dual-vault architecture fully stabilized. Expanded AIGC keywords (Midjourney, ComfyUI, Seedance, Suno) & lifestyle travel keywords (飯店, 溫泉, 爵士, 旅宿). Ingest-synthesis & classification cleanly routed.
+**Last Updated:** 2026-08-28 — Dual-vault architecture fully stabilized. Expanded AIGC keywords (Midjourney, ComfyUI, Seedance, Suno) & lifestyle travel keywords (飯店, 溫泉, 爵士, 旅宿). Ingest-synthesis & classification cleanly routed. Nearby MVP requirements and SDD are documented for the next implementation phase.
 
 LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每月報告追踪過時的技術知識。 分流至獨立的 Tech 與 Lifestyle 知識庫。
 
@@ -66,6 +66,8 @@ confidence: high | medium | low
 | 文件 | 用途 |
 |------|------|
 | `DESIGN.md` | **[NEW 2026-06-26]** 系統架構、Phase A/B 流程、Lessons Learned、故障排除 |
+| `docs/nearby-mvp-requirements.md` | Nearby MVP 需求規格、使用流程、功能需求與驗收情境 |
+| `docs/nearby-mvp-sdd.md` | Nearby MVP 架構、資料流、邊界與逐檔 implementation plan |
 | `LLMWIKI-INTEGRATION-CHANGENOTE.md` | LLM Wiki (Karpathy pattern) 整合說明、檔案清單、變更紀錄 |
 | `LINE Bot + Obsidian 連結整理系統：需求與實施結論.md` | 系統需求、架構與目前狀態 |
 | `IMPROVEMENT-BACKLOG.md` | 後續改善事項與優先順序 |

@@ -2,6 +2,16 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
+## 2026-08-28
+
+### Added
+
+- **Nearby MVP design package**: Added the active requirements specification and
+  software design description for the Lifestyle Vault nearby-query capability.
+  The documents define GPS/location handling, saved-only versus `+` web search,
+  result sessions, explicit collection actions, acceptance scenarios, and the
+  file-level implementation plan. Runtime code is unchanged.
+
 ## 2026-08-05
 
 ### Fixed
