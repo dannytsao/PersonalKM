@@ -539,3 +539,11 @@ def test_upgrade_general_category_leisure_and_hotel_keywords():
     assert upgrade_general_category("全台唯一西班牙運河飯店", "", "general") == "photography"
     assert upgrade_general_category("在台北如果要聽爵士可以到blue-note", "", "general") == "photography"
     assert upgrade_general_category("白沙屯拱天宮首創膠囊旅館", "", "general") == "photography"
+
+
+def test_fallback_category_aigc_keywords():
+    # AIGC keywords added 2026-08-28 should trigger tech
+    assert fallback_category("comfyui 繪圖工作流教學", "") == "tech"
+    assert fallback_category("midjourney 攝影風格 prompt 生成美景", "") == "tech"
+    assert fallback_category("用 suno 寫一首爵士樂歌曲", "") == "tech"
+    assert fallback_category("seedance 短劇影片生成工具", "") == "tech"

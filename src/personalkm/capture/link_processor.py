@@ -910,6 +910,11 @@ def fallback_category(title: str, page_text: str) -> str:
         "vibecoding", "vibe coding",
         "google ai", "gemini api",
         "openai", "openai.com",
+        # 2026-08-28: AIGC, image, video, music and generation tools
+        "aigc", "generative ai", "生成式 ai", "提示詞", "prompt engineering",
+        "midjourney", "comfyui", "sdwebui", "stable diffusion", "lora", "controlnet",
+        "seedance", "sora", "runway", "luma", "kling",
+        "suno", "udio", "elevenlabs", "viggle",
         # Tech infrastructure
         "docker", "kubernetes", "linux", "macos", "windows",
         "terminal", "cli", "command line", "git",
