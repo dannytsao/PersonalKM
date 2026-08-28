@@ -532,3 +532,10 @@ def test_upgrade_general_category_does_not_touch_specific_verdicts():
 def test_upgrade_general_category_food_keywords():
     assert upgrade_general_category("銅板價巨無霸包子", "", "general") == "food"
     assert upgrade_general_category("老店便當推薦", "", "general") == "food"
+
+
+def test_upgrade_general_category_leisure_and_hotel_keywords():
+    # hotel/resort/leisure keywords added 2026-08-28
+    assert upgrade_general_category("全台唯一西班牙運河飯店", "", "general") == "photography"
+    assert upgrade_general_category("在台北如果要聽爵士可以到blue-note", "", "general") == "photography"
+    assert upgrade_general_category("白沙屯拱天宮首創膠囊旅館", "", "general") == "photography"

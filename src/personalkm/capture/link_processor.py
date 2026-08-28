@@ -936,6 +936,9 @@ def fallback_category(title: str, page_text: str) -> str:
         "花季", "櫻花", "楓葉", "落羽松", "油桐花",
         "古道", "瀑布", "溪流", "海洋", "沙灘",
         "自行車", "單車", "騎行", "bike",
+        # 2026-08-28: travel, resorts, hotels, leisure (from general -> lifestyle)
+        "飯店", "民宿", "旅館", "渡假", "住宿", "香客大樓", "運河", "泳池", "水簾洞", "溫泉",
+        "爵士", "blue-note", "玩轉盤", "抽獎", "樂園", "展覽", "市集",
     ]):
         return "photography"
 
@@ -1011,6 +1014,9 @@ def upgrade_general_category(title: str, page_text: str, llm_category: str) -> s
         "步道", "登山", "健行", "秘境", "古道", "瀑布", "溪流",
         "花季", "櫻花", "楓葉", "露營", "自行車",
         "sunset", "sunrise", "landscape", "hiking", "trail",
+        # 2026-08-28: travel, resorts, hotels, leisure (from general -> lifestyle)
+        "飯店", "民宿", "旅館", "渡假", "住宿", "香客大樓", "運河", "泳池", "水簾洞", "溫泉",
+        "爵士", "blue-note", "玩轉盤", "抽獎", "樂園", "展覽", "市集",
     ]):
         return "photography"
 
