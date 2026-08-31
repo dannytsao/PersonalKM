@@ -816,3 +816,50 @@ Vault 修復（`scripts/fix_wiki_frontmatter_damage.py`，6 測試含 fixture gi
 *   **計畫**：
     - 撰寫一次性指令碼 `scripts/clean_legacy_graph.py`：掃描兩個 vault 的所有 `.md` 檔案，比對 `stop_words.txt`，自動將垃圾括號剝除。
     - 執行清理，重算 `knowledge-graph.md`，並將乾淨的兩個庫 commit 及 push。
+
+---
+
+## 🔴 Facebook 內容擷取改善方案 (2026-08-31 評估)
+
+### 現況
+
+LINE Bot 收到 Facebook 連結後，目前的擷取鏈如下：
+
+```
+LINE FB 連結
+   │
+   ├── 第 1 層：你貼上的內文 (social_caption_content)
+   │     └─ ✅ 有附文字則成功，裸連結則跳過
+   │
+   ├── 第 2 層：Jina Reader (r.jina.ai)
+   │     └─ ❌ 幾乎總是失敗 — FB 登入牆強度比 IG/Threads 高很多
+   │
+   ├── 第 3 層：Empty Stub (blocked_platform_content)
+   │     └─ ✅「Facebook post」模板 stub，extraction_status=blocked
+   │
+   └── 第 4 層：Mac Mini Resolver 每小時重試
+         └─ ❌ 同第 2 層，重試仍然失敗，浪費 cron 資源
+```
+
+**實際佔比**：659 筆 raw 中僅 29 筆（4.4%）來自 Facebook — Tech Vault 27 筆、Lifestyle Vault 2 筆。
+
+### 候選方案
+
+| # | 方案 | 難度 | 可行性 | 內容取得 | 開發時長 | 維護成本 |
+|---|------|------|--------|----------|----------|---------|
+| A | **oEmbed 公開端點** | 🟢 低 | ❌ **已死** — Facebook 已在 2023-2024 間關閉無授權 oEmbed 端點，curl 回傳 deprecated 訊息 | 無 | — | — |
+| B | **Cookie Session 注入** | 🟡 中 | ✅ 高 — yt-dlp 原生支援 `--cookies`，帶 FB 登入 cookie 後可正常抓取公開貼文 | ✅ 全文+圖片 | 3-4h | 🟠 中 — cookie 約 1-2 月過期，需手動重新匯出 |
+| C | **Graph API 官方端點** | 🔴 高 | 🟠 有限 — 需 FB App 審核、scope 授權，且對個人時間軸貼文存取限制多 | 🟠 中低 | 8h+ | 🔴 高 — API 政策常變更 |
+| D | **DLQ 自動跳過** | 🟢 低 | ✅ 高 — 標記 permanently_blocked，一次失敗即封存，不再每小時重試 | 無 | 1h | 🟢 無 |
+
+### 建議
+
+1. **做方案 D（DLQ 自動跳過）** — 不論 FB 多寡，這是純粹的 housekeeping 改善，1 小時即可完成。Resolver 遇到 FB stub 一次失敗即標記 permanently_blocked，不再每小時浪費資源重試。
+2. **方案 B（Cookie 注入）暫緩** — 以 4.4% 的來源佔比，加上每月需手動維護 cookie 的成本，ROI 偏低。未來若 FB 來源明顯增加（> 10%）再啟動。
+3. **方案 A（oEmbed）已確認死亡** — 舊無授權端點已廢棄，新端點需要 access_token，實質上等同方案 C。誤列為可行方案是評估時的失誤，以此為準。
+
+### 與現有改善計畫的關聯
+
+- 方案 D 可歸入原 **P1「失敗佇列 (DLQ) 重試上限與通知」** 範圍內
+- 方案 B 獨立於現有 9 項改善方案之外，需新開工作項目
+- 實作時機：DLQ 跳過可隨 P1 DLQ 項目一起做，Cookie 注入留待 backlog
