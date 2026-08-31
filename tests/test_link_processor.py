@@ -565,3 +565,18 @@ def test_threads_tech_verdict_not_forced_to_photography():
     if category == "general":
         category = "photography"
     assert category == "photography"
+
+
+def test_summarize_youtube_deep_note_prompt_includes_temporal_rules():
+    """Sprint 2: the system prompt must contain the temporal alignment rules
+    that force the LLM to use [MM:SS] anchors and ## Chapters instead of
+    hallucinating timestamps."""
+    import inspect
+    from src.personalkm.capture.link_processor import summarize_youtube_deep_note
+    src = inspect.getsource(summarize_youtube_deep_note)
+    # The prompt must reference the new temporal anchor rules
+    assert "時間戳重點" in src
+    assert "[MM:SS]" in src, "Prompt must reference coarse anchor format"
+    assert "嚴禁編造" in src, "Prompt must forbid hallucinated timestamps"
+    assert "## Chapters" in src, "Prompt must reference native chapters section"
+    assert "必須省略" in src, "Prompt must skip timestamps section when no anchors"
