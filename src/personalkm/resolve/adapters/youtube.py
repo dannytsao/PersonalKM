@@ -61,6 +61,7 @@ class YouTubeAdapter(Adapter):
         uploader = metadata.get("uploader", "")
         duration = metadata.get("duration", 0)
         video_id = metadata.get("id", "")
+        chapters = metadata.get("chapters") or []
 
         # 2. Try to get subtitles
         subtitle_text = self._get_subtitles(url, metadata)
@@ -74,6 +75,7 @@ class YouTubeAdapter(Adapter):
             description=description,
             subtitle_text=subtitle_text,
             url=url,
+            chapters=chapters,
         )
 
         fetch_url = f"https://youtu.be/{video_id}" if video_id else url
@@ -210,18 +212,32 @@ class YouTubeAdapter(Adapter):
 
         return None
 
-    def _parse_vtt(self, vtt_text: str) -> str:
+    def _parse_vtt(self, vtt_text: str, anchor_interval_s: int = 90) -> str:
         """Convert VTT subtitle format to plain text transcript.
 
-        Strips timestamps, WebVTT headers, and empty lines.
+        Strips WebVTT headers, cue identifiers and inline tags. Timestamp
+        LINES are consumed, but a coarse ``[MM:SS]`` anchor is re-emitted
+        every ``anchor_interval_s`` seconds so downstream LLM synthesis has
+        a real temporal alignment basis instead of hallucinating timestamps
+        (Sprint 1, 2026-08-28).
         """
-        lines = []
+        lines: list[str] = []
+        last_anchor_s = -10**9
         for line in vtt_text.splitlines():
             # Skip VTT header and metadata
-            if line.startswith("WEBVTT") or line.startswith("Kind:") or line.startswith("Language:"):
+            if line.startswith(("WEBVTT", "Kind:", "Language:")):
                 continue
-            # Skip timestamp lines
-            if re.match(r"^\d{2}:\d{2}:\d{2}\.\d+", line):
+            # Timestamp lines → maybe emit a coarse anchor
+            m = re.match(r"^(\d{2}):(\d{2}):(\d{2})\.\d+", line)
+            if m:
+                h, mi, s = (int(g) for g in m.groups())
+                total = h * 3600 + mi * 60 + s
+                if total - last_anchor_s >= anchor_interval_s:
+                    ah, rem = divmod(total, 3600)
+                    ami, as_ = divmod(rem, 60)
+                    anchor = f"[{ah:02d}:{ami:02d}:{as_:02d}]" if ah else f"[{ami:02d}:{as_:02d}]"
+                    lines.append(anchor)
+                    last_anchor_s = total
                 continue
             # Skip cue identifiers (sequential numbers)
             if re.match(r"^\d+$", line.strip()):
@@ -234,7 +250,14 @@ class YouTubeAdapter(Adapter):
             if clean:
                 lines.append(clean)
 
-        return "\n".join(lines)
+        # Drop a leading anchor if no text preceded... anchors precede text
+        # by construction, so nothing to do. Dedupe consecutive anchors.
+        deduped: list[str] = []
+        for item in lines:
+            if item.startswith("[") and item.endswith("]") and deduped and deduped[-1] == item:
+                continue
+            deduped.append(item)
+        return "\n".join(deduped)
 
     def _build_markdown(
         self,
@@ -244,12 +267,31 @@ class YouTubeAdapter(Adapter):
         description: str,
         subtitle_text: str,
         url: str,
+        chapters: list | None = None,
     ) -> str:
         """Build the unified markdown output."""
         parts = [f"# {title}"]
         parts.append(f"**Uploader:** {uploader}")
         parts.append(f"**Duration:** {self._format_duration(duration)}")
         parts.append(f"**URL:** {url}")
+
+        # Native yt-dlp chapters — ground-truth temporal anchors for the
+        # LLM (Sprint 1, 2026-08-28). Written near the top where they are
+        # impossible to miss during synthesis.
+        if chapters:
+            chapter_lines = []
+            for ch in chapters:
+                start = ch.get("start_time") or 0
+                label = (ch.get("title") or "").strip()
+                if not label:
+                    continue
+                m, s = divmod(int(start), 60)
+                h, m = divmod(m, 60)
+                stamp = f"{h:02d}:{m:02d}:{s:02d}" if h else f"{m:02d}:{s:02d}"
+                chapter_lines.append(f"- {stamp} {label}")
+            if chapter_lines:
+                parts.append("\n## Chapters")
+                parts.append("\n".join(chapter_lines))
 
         if subtitle_text:
             parts.append("\n## Transcript\n")

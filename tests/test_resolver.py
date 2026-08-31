@@ -285,7 +285,8 @@ class TestGenericAdapter:
             "00:00:05.000 --> 00:00:08.000\nSecond line\n"
         )
         result = a._parse_vtt(vtt)
-        assert result == "Hello world\nSecond line"
+        # first cue at 00:00:01 emits an anchor; second cue is <90s later → no anchor
+        assert result == "[00:01]\nHello world\nSecond line"
 
     def test_parse_vtt_with_tags(self):
         from src.personalkm.resolve.adapters.youtube import YouTubeAdapter
@@ -297,7 +298,71 @@ class TestGenericAdapter:
             "2\n00:00:04.000 --> 00:00:06.000\n<c>Line two</c>\n"
         )
         result = a._parse_vtt(vtt)
-        assert result == "Hello there\nLine two"
+        assert result == "[00:01]\nHello there\nLine two"
+
+    def test_parse_vtt_coarse_anchors_every_90s(self):
+        """Sprint 1: a [MM:SS] anchor is emitted at most every 90 seconds."""
+        from src.personalkm.resolve.adapters.youtube import YouTubeAdapter
+
+        a = YouTubeAdapter()
+        vtt = (
+            "WEBVTT\n\n"
+            "00:00:00.000 --> 00:00:05.000\nIntro\n\n"
+            "00:01:30.000 --> 00:01:35.000\nFirst section\n\n"
+            "00:03:10.000 --> 00:03:15.000\nMuch later\n"
+        )
+        result = a._parse_vtt(vtt)
+        lines = result.splitlines()
+        # anchors at 0:00, 1:30, 3:10 — but NOT between close cues
+        assert lines[0] == "[00:00]"
+        assert "[01:30]" in lines
+        assert "[03:10]" in lines
+        # no anchor between cues that are <90s apart
+        assert result.count("[") == 3
+
+    def test_parse_vtt_hour_format_anchor(self):
+        from src.personalkm.resolve.adapters.youtube import YouTubeAdapter
+
+        a = YouTubeAdapter()
+        vtt = (
+            "WEBVTT\n\n"
+            "01:02:30.000 --> 01:02:35.000\nDeep dive\n"
+        )
+        result = a._parse_vtt(vtt)
+        assert result == "[01:02:30]\nDeep dive"
+
+    def test_build_markdown_includes_native_chapters(self):
+        """Sprint 1: yt-dlp native chapters are written near the top."""
+        from src.personalkm.resolve.adapters.youtube import YouTubeAdapter
+
+        a = YouTubeAdapter()
+        md = a._build_markdown(
+            title="Test Video",
+            uploader="Someone",
+            duration=600,
+            description="desc",
+            subtitle_text="transcript body",
+            url="https://youtu.be/x",
+            chapters=[
+                {"start_time": 0, "title": "開場"},
+                {"start_time": 185.5, "title": "安裝環境"},
+                {"start_time": 400, "title": ""},  # untitled → skipped
+            ],
+        )
+        assert "## Chapters" in md
+        assert "- 00:00 開場" in md
+        assert "- 03:05 安裝環境" in md
+        assert "## Transcript" in md
+
+    def test_build_markdown_without_chapters_unchanged(self):
+        from src.personalkm.resolve.adapters.youtube import YouTubeAdapter
+
+        a = YouTubeAdapter()
+        md = a._build_markdown(
+            title="T", uploader="U", duration=60, description="",
+            subtitle_text="body", url="https://youtu.be/y",
+        )
+        assert "## Chapters" not in md
 
 
 # ── Runner tests ──────────────────────────────────────────────
