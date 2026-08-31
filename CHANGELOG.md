@@ -2,6 +2,24 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
+## 2026-08-31
+
+### Added
+
+- **Stage 1 (P10) — 多模態補完與知識圖譜純淨化**: 四個 Sprint 全部完成，提升 YouTube 筆記時間軸精確度與 Obsidian 圖譜純淨度。
+- **Sprint 1**: VTT 逐字稿保留粗粒度 `[MM:SS]` 時間錨點（每 90 秒一個），同時擷取 yt-dlp 原生 `## Chapters` 章節資訊寫入 resolved markdown 頂部。`YouTubeAdapter._parse_vtt()` 與 `_build_markdown()` 改寫，5 個新測試，真實 3Blue1Brown 影片端到端驗證通過。
+- **Sprint 2**: `summarize_youtube_deep_note` system prompt 新增強制對齊規則 — LLM 只能引用逐字稿中既存的真實錨點，嚴禁編造時間；無錨點則整段「時間戳重點」省略。
+- **Sprint 3**: 三層 Wikilink 停止詞過濾機制 — `config/stop_words.txt`（375 詞）、`src/personalkm/propagate/stop_words.py`（`load_stop_words()` + `filter_wikilinks()`）、與 `WikilinkAnalyzer.analyze_page()` 的 Phase B 整合。白名單（既有實體 slug）免疫過濾。11 個新測試。
+- **Sprint 4**: `scripts/clean_legacy_graph.py` — 跨雙庫歷史圖譜回溯淨化腳本（支援 `--dry-run`）。掃描 435 頁，僅 2 處修正（`[[Note]]`、`[[the|the·春]]`），圖譜已相當純淨。
+- **Facebook 擷取技術評估**: 驗證 oEmbed 公開端點已死（curl 回傳 deprecated）；四方案比較（ABCD）寫入 IMPROVEMENT-BACKLOG.md。建議：接受現狀，等 P1 DLQ Sprint 再順手做 DLQ 跳過。
+- **Raw note 平台分布分析**: 659 筆 raw 中 pasted-text 57.5%、instagram 16.2%、threads 8.6%、github 7.6%、facebook 4.4%、youtube 0.9% 等。
+- **Skill 建立**: `youtube-chapters-stopwords-sprint` 存入 Hermes skill，記錄 Sprint 1-4 完整工作流程。
+
+### Fixed
+
+- **IG/Threads 強制 photography 覆蓋（16ab2cd）**: 只將 `general` 判定升級為 photography；明確的 tech/food/photography 判定保留。2026-08-30 @software.player Antigravity 帖文因此留在 Tech Vault。已搬移 lifestyle 中兩顆誤置頁 (`@software.player`, `@mia.sidechat`) 回 Tech Vault，含 raw + resolved + wikilink 修正。
+- **AIGC 關鍵字補強（f55e4ce）**: comfyui, midjourney, lora, seedance, suno, udio, elevenlabs 等加入 Tech 優先關鍵字清單，防止 Prompt 中的畫面描述詞誤導入 Lifestyle Vault。
+
 ## 2026-08-28
 
 ### Added
