@@ -250,6 +250,15 @@ class WikilinkAnalyzer:
 
         forward_links, backward_links = parse_wikilink_output(raw_output)
 
+        # Sprint 3: Filter out stop-word wikilinks (common/generic terms)
+        # but keep any slug that matches a real existing entity/concept file.
+        existing_set = set(existing_entity_names) if existing_entity_names else set()
+        from personalkm.propagate.stop_words import filter_wikilinks, load_stop_words
+
+        stop_words = load_stop_words()
+        forward_links = filter_wikilinks(forward_links, stop_words, existing_set)
+        backward_links = filter_wikilinks(backward_links, stop_words, existing_set)
+
         logger.debug(
             f"Page '{page_title}': "
             f"forward={forward_links}, backward={backward_links}"
