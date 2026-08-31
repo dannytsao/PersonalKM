@@ -780,3 +780,39 @@ Vault 修復（`scripts/fix_wiki_frontmatter_damage.py`，6 測試含 fixture gi
 - Phase B 同理（`...phase-b-lifestyle`）。
 - 現有 health check cron（Hermes `personalkm-health-check`）增加 lifestyle vault 的檢查項目：Render webhook / vault last capture / pipeline status / stale raw。
 - `pipeline_status.sh` 改為報告兩個 vault 的狀態。
+
+---
+
+## P10 — 多模態補完與知識圖譜純淨化 (2026-08-28 規劃)
+
+本階段優化聚焦於解決：YouTube 時間戳幻覺、Ollama 圖譜專有名詞過度關聯（Stop-words）、以及 Meta CDN 破圖。
+以下是已拆分、單次開發時數控制在 4 小時內的 P0 階段 (Stage 1) 敏捷 Sprint 計畫：
+
+### 🎯 Stage 1 Sprints (P0 最優先項目)
+
+#### 🏃‍♂️ Sprint 1: 保留 VTT 時間錨點 & 原生 Chapters 擷取 (Est. 3h)
+*   **目標**：徹底解決無時間對齊基準導致 LLM 產生幻覺時間點的問題。
+*   **計畫**：
+    - 修改 `YouTubeAdapter._get_metadata()` 以擷取 `yt-dlp` 原生 `chapters` 資訊，並在 raw 頂部寫入章節對照表。
+    - 改寫 `YouTubeAdapter._parse_vtt()`：不再完全剔除時間戳，改為每 90 秒在逐字稿中插入一個 `[MM:SS]` 粗粒度錨點。
+    - 更新 `tests/` 補齊單元測試與 contract tests。
+
+#### 🏃‍♂️ Sprint 2: 時間軸保真 Ingest 與 LLM 深度整合 (Est. 3h)
+*   **目標**：讓 DeepSeek 提煉重點時能夠精準引用我們在 Sprint 1 中保留的真實時間錨點。
+*   **計畫**：
+    - 更新 `summarize_youtube_deep_note` 階段的 System Prompt，要求 LLM 生成 Highlights 時，必須完全對齊並引用逐字稿中隨附的 `[MM:SS]` 真實錨點與 Chapters，禁止編造。
+    - 驗證並測試 YouTube Ingest 端到端流程，驗收 synthesized note 的亮點時間軸。
+
+#### 🏃‍♂️ Sprint 3: 雙向語意連結消歧義 (Wikilinks Stop-words Filter) (Est. 4h)
+*   **目標**：阻止 Ollama (Qwen) 自動關聯 `[[測試]]`、`[[環境]]`、`[[問題]]`、`[[照片]]` 等日常無意義通用詞，維持圖譜純度。
+*   **計畫**：
+    - 建立 `config/stop_words.txt`，收錄常見的中文/英文圖譜停止詞。
+    - 在 `post_link_ollama.py` (Phase B) 的處理路徑中，對 Ollama 產出的 XML 標籤進行後處理過濾：比對停止詞，直接剝除括號（例如 `[[測試]]` ──► `測試`）。
+    - 引入已存在的 concept 標題與 `_registry/entities.yaml` 的「白名單優先機制」。
+    - 撰寫單元測試驗收過濾效果。
+
+#### 🏃‍♂️ Sprint 4: 歷史圖譜資料庫大淨化 (Graph Cleansing Script) (Est. 2h)
+*   **目標**：對現有的兩個知識庫 (Tech & Lifestyle) 進行回溯性清理，洗去過往累積的垃圾 wikilinks。
+*   **計畫**：
+    - 撰寫一次性指令碼 `scripts/clean_legacy_graph.py`：掃描兩個 vault 的所有 `.md` 檔案，比對 `stop_words.txt`，自動將垃圾括號剝除。
+    - 執行清理，重算 `knowledge-graph.md`，並將乾淨的兩個庫 commit 及 push。
