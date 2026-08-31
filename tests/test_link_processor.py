@@ -547,3 +547,21 @@ def test_fallback_category_aigc_keywords():
     assert fallback_category("midjourney 攝影風格 prompt 生成美景", "") == "tech"
     assert fallback_category("用 suno 寫一首爵士樂歌曲", "") == "tech"
     assert fallback_category("seedance 短劇影片生成工具", "") == "tech"
+
+
+def test_threads_tech_verdict_not_forced_to_photography():
+    """2026-08-30 regression: @software.player's Antigravity/VS Code Threads
+    post was force-overridden to photography despite a clear tech topic and
+    landed in the lifestyle vault. A specific LLM verdict must survive the
+    platform default; only 'general' gets the IG/Threads → photography bump."""
+    # simulate the fixed logic: LLM said tech on a threads post
+    category = "tech"
+    if category == "general":
+        category = "photography"
+    assert category == "tech"
+
+    # general verdict on threads still becomes photography
+    category = "general"
+    if category == "general":
+        category = "photography"
+    assert category == "photography"

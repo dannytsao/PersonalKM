@@ -1554,9 +1554,15 @@ async def process_url(settings: Settings, url: str, context_text: str = "") -> L
             else:
                 content = restricted_platform_fallback(url)
 
-        # Instagram/Threads are almost always lifestyle content — force photography
+        # Instagram/Threads are *usually* lifestyle content — but NOT always:
+        # tech posts (AI tools, tutorials) also circulate there. Only upgrade
+        # a 'general' verdict to photography; a specific LLM verdict (tech,
+        # food) means the content spoke for itself and must be kept — the
+        # 2026-08-30 @software.player Antigravity/VS Code post was forced to
+        # photography despite an obvious tech topic and landed in the wrong
+        # vault.
         summary, category = await summarize_with_llm(settings, content.title, url, content.text)
-        if content.platform in ("instagram", "threads"):
+        if content.platform in ("instagram", "threads") and category == "general":
             category = "photography"
         return to_note(content, url, summary, category)
 
