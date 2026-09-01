@@ -989,6 +989,23 @@ def fallback_category(title: str, page_text: str) -> str:
     if "pasted caption" in corpus and ("instagram" in corpus or "threads" in corpus):
         return "photography"
 
+    # ── Lifestyle news domains ─────────────────────────────────────────
+    # Travel/food/lifestyle news sites where the domain alone signals
+    # lifestyle content. Without this, a fetch failure produces a stub
+    # classified as "general" → stays in tech vault (2026-09-01
+    # travel.ettoday.net beef-noodle roundup — the article IS food content
+    # but the capture fetch failed and the raw note fell through to tech).
+    if any(domain in corpus for domain in [
+        "travel.ettoday.net",
+        "travel.udn.com",
+        "tripmoment.com",
+        "bobowin.com",
+        "anniekoko.com",
+        "journey.tw",
+        "foodmap.tw",
+    ]):
+        return "photography"
+
     return "general"
 
 
@@ -1369,6 +1386,25 @@ async def summarize_with_llm(settings: Settings, title: str, url: str, page_text
     # tech vault — the LLM often never saw the title (e.g. YouTube
     # transcript-failure stubs). Keyword-upgrade general only.
     category = upgrade_general_category(title, page_text, category)
+
+    # Third chance: URL-domain-based lifestyle upgrade. When the capture
+    # fetch fails (403/ReadError), both the LLM and upgrade_general_category
+    # see only the error stub text — they miss any food/travel content and
+    # return "general", which defaults to the tech vault. Known lifestyle
+    # news domains (travel.ettoday.net, foodmap.tw, etc.) override this.
+    if category == "general":
+        url_lower = url.lower()
+        if any(domain in url_lower for domain in [
+            "travel.ettoday.net",
+            "travel.udn.com",
+            "tripmoment.com",
+            "bobowin.com",
+            "anniekoko.com",
+            "journey.tw",
+            "foodmap.tw",
+        ]):
+            category = "photography"
+
     return ensure_food_summary_details(title, page_text, summary, category), category
 
 

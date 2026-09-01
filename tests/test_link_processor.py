@@ -580,3 +580,45 @@ def test_summarize_youtube_deep_note_prompt_includes_temporal_rules():
     assert "嚴禁編造" in src, "Prompt must forbid hallucinated timestamps"
     assert "## Chapters" in src, "Prompt must reference native chapters section"
     assert "必須省略" in src, "Prompt must skip timestamps section when no anchors"
+
+
+def test_fallback_category_lifestyle_news_domain():
+    """2026-09-01 regression: travel.ettoday.net beef-noodle article failed
+    to fetch on Render → LLM saw only error stub → "general" → tech vault.
+    The domain must trigger photography (lifestyle) even when URL is the
+    only meaningful signal (no food/photography keywords in stub text)."""
+    from src.personalkm.capture.link_processor import fallback_category
+
+    # Stub text only — no food/travel keywords → domain triggers photography
+    assert fallback_category("travel.ettoday.net",
+                             "無法擷取網頁內容：ReadError 請直接開啟原文連結查看") == "photography"
+    assert fallback_category("travel.udn.com",
+                             "ReadError") == "photography"
+    assert fallback_category("tripmoment.com",
+                             "無法擷取內容") == "photography"
+    assert fallback_category("bobowin.com",
+                             "") == "photography"
+    assert fallback_category("anniekoko.com",
+                             "error") == "photography"
+
+    # With actual food keywords → food (even more specific, still lifestyle)
+    assert fallback_category("travel.ettoday.net", "travel.ettoday.net 台北牛肉麵") == "food"
+
+
+def test_summarize_with_llm_url_domain_upgrade():
+    """Verify that known lifestyle news domains in the URL text trigger
+    photography classification when the stub text has no food/travel keywords
+    (simulating a capture-layer fetch failure)."""
+    from src.personalkm.capture.link_processor import fallback_category
+
+    # No keywords in stub text → domain-only detection kicks in
+    assert fallback_category(
+        "ReadError",
+        "travel.ettoday.net/article/3222600.htm 無法擷取網頁內容"
+    ) == "photography"
+
+    # travel.udn.com with generic error text
+    assert fallback_category(
+        "Network Error",
+        "travel.udn.com 無法連線"
+    ) == "photography"
