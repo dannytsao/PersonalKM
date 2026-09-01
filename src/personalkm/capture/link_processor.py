@@ -1001,6 +1001,7 @@ def fallback_category(title: str, page_text: str) -> str:
         "tripmoment.com",
         "bobowin.com",
         "anniekoko.com",
+        "annieko.tw",
         "journey.tw",
         "foodmap.tw",
     ]):
@@ -1400,6 +1401,7 @@ async def summarize_with_llm(settings: Settings, title: str, url: str, page_text
             "tripmoment.com",
             "bobowin.com",
             "anniekoko.com",
+            "annieko.tw",
             "journey.tw",
             "foodmap.tw",
         ]):
