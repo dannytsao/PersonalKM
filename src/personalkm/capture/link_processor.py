@@ -1492,9 +1492,10 @@ def youtube_key_concepts(title: str, transcript_text: str, max_items: int = 8) -
     return result
 
 
-def normalize_concept_slug(value: str) -> str:
+def normalize_concept_slug(value: str, max_length: int = 60) -> str:
     slug = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", value.lower()).strip("-")
-    return slug or "youtube-concept"
+    slug = slug[:max_length].strip("-") or "youtube-concept"
+    return slug
 
 
 async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, transcript_text: str) -> tuple[str, str, str]:

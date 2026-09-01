@@ -622,3 +622,27 @@ def test_summarize_with_llm_url_domain_upgrade():
         "Network Error",
         "travel.udn.com 無法連線"
     ) == "photography"
+
+
+def test_normalize_concept_slug_truncates_long_titles():
+    from src.personalkm.capture.link_processor import normalize_concept_slug
+
+    # Title way over 60 chars → truncated
+    long = "a" * 200
+    result = normalize_concept_slug(long)
+    assert len(result) <= 60, f"slug too long: {len(result)} chars"
+
+    # Short title unaffected
+    short = "claude-code"
+    assert normalize_concept_slug(short) == "claude-code"
+
+    # Custom max_length
+    result = normalize_concept_slug("anti-gravity-ai-coding-assistant", max_length=20)
+    assert len(result) == 20
+
+    # Strip trailing hyphen after truncation
+    result = normalize_concept_slug("hello-world-extra", max_length=12)
+    assert result == "hello-world"  # no trailing hyphen
+
+    # Empty fallback
+    assert normalize_concept_slug("") == "youtube-concept"
