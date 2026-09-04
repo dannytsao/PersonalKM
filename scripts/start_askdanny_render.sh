@@ -9,19 +9,19 @@
 #   bash scripts/start_askdanny_render.sh
 #
 # Required env vars on Render:
-#   VAULT_PAT                     GitHub PAT with `repo` scope
-#   ASKDANNY_CHANNEL_SECRET       LINE Channel Secret
+#   LIFESTYLE_VAULT_REPO_URL   Full clone URL with embedded PAT:
+#                              https://x-access-token:PAT@github.com/dannytsao/Personalkm-lifestyle-vault.git
+#   ASKDANNY_CHANNEL_SECRET    LINE Channel Secret
 #   ASKDANNY_CHANNEL_ACCESS_TOKEN LINE Channel Access Token
-#   MINIMAX_API_KEY               For query_answer stage
-#
+#   MINIMAX_API_KEY            For query_answer stage
+
 # Optional:
-#   ASKDANNY_ALLOWED_USERS        Comma-sep LINE userId whitelist (empty=open)
+#   ASKDANNY_ALLOWED_USERS     Comma-sep LINE userId whitelist (empty=open)
 set -euo pipefail
 
 VAULT_DIR="/opt/render/project/.vaults"
 LIFESTYLE_DIR="$VAULT_DIR/Personalkm-lifestyle-vault"
-
-LIFESTYLE_REPO="https://x-access-token:${VAULT_PAT:?}@github.com/dannytsao/Personalkm-lifestyle-vault.git"
+LIFESTYLE_REPO="${LIFESTYLE_VAULT_REPO_URL:?}"
 
 mkdir -p "$VAULT_DIR"
 
