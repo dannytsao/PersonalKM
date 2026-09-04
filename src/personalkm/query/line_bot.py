@@ -250,16 +250,21 @@ def _query_all(query: str, root: Path) -> dict:
     prompt = (
         "你是一個個人知識庫助手。根據以下 Danny 的筆記回答問題。"
         "如果上下文資訊不足，請誠實說不知道。回答時用[[wikilink]]標註來源。"
+        "注意：回覆是傳給 LINE 純文字訊息，不要使用表格、不要使用 @url: 連結、不要使用 markdown 格式。"
+        "用簡單的條列式（- 項目）和文字描述即可。"
         "\n\n上下文（按相關性排序）：\n"
         f"{context}\n\n"
         f"問題：{query}\n\n"
-        "回答（用[[wikilink]]標註來源）："
+        "回答（用[[wikilink]]標註來源，純文字條列式）："
     )
 
     try:
         completion = route("query_answer", prompt)
         answer_text = completion.text.strip()
         answer_text = WIKILINK_RE.sub(r"\1", answer_text)
+        # Strip any @url: references (safety net for LLM-generated links)
+        answer_text = re.sub(r"@url:`[^`]+`", "", answer_text)
+        answer_text = re.sub(r"https?://\S+", "", answer_text)
     except Exception:
         logger.exception("LLM synthesis failed")
         return {
