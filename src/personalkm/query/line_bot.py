@@ -203,15 +203,19 @@ def _summary_excerpt(body: str, max_chars: int = 300) -> str:
     return body[:max_chars]
 
 
-def _build_context(pages: list[dict], max_chars: int = 5000) -> str:
-    """Build context string for LLM from page data."""
+def _build_context(pages: list[dict], max_chars: int = 16000) -> str:
+    """Build context string for LLM: title + body of each page."""
     chunks = []
     total = 0
     for p in pages:
-        excerpt = _summary_excerpt(p["body"])
-        entry = f"## {p['title']}\n{excerpt}\n\n"
+        entry = f"## {p['title']}\n{p['body']}\n\n"
         if total + len(entry) > max_chars:
-            break
+            # Truncate on a section boundary if over budget
+            cut = entry.rfind("---", 0, max_chars - total)
+            if cut > 0:
+                entry = entry[:cut]
+            else:
+                entry = entry[:max_chars - total]
         chunks.append(entry)
         total += len(entry)
     return "".join(chunks)
