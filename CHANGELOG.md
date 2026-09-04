@@ -2,6 +2,23 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
+## 2026-09-03
+
+### Added
+
+- **AskDanny LINE query bot** (`src/personalkm/query/line_bot.py`): A new LINE Messaging API bot that lets friends & family query the lifestyle vault via natural language. Only searches `city-subject-store.md` + `tianmu-food.md`. Uses `llm.router` (MiniMax query_answer → Ollama fallback). Deployed on Render as a separate service.
+- **Render deployment script** (`scripts/start_askdanny_render.sh`): Clones lifestyle vault + starts uvicorn, with long-filename handling for Linux ext4 filesystem.
+- **log.md auto-trim** (`~/.hermes/scripts/trim-lifestyle-log.py`): Daily cron job (03:00) that keeps only the last 31 days of lifestyle vault log entries.
+
+### Changed
+
+- **tianmu-food.md** — Expanded from 6 stores (Tianmu only) to 40+ stores across 5 areas: Tianmu (11), Shilin (16), Beitou (27), Tamsui (5), Sanzhi (10). Re-evaluated 3 boundary-case lists: "16家士林必吃" and "北投18家" now absorbed into the main list; "17家雙北海鮮" remains excluded.
+- **README.md**: Updated Last Updated date.
+
+### Fixed
+
+- AskDanny bot multiple deployment issues: long filenames on Linux, `uv` not available on Render, `query_engine` dependency on missing `tools` module (now inlined with direct `llm.router` call), LLM context now sends full page body instead of excerpt, LINE response stripped of `@url:` and markdown artifacts.
+
 ## 2026-08-31
 
 ### Added

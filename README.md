@@ -1,7 +1,7 @@
 # PersonalKM — AI-Powered Second Brain
 
 **Status:** ✅ ALL PHASES STABLE — Render webhook + Dual Vaults (Tech & Lifestyle split) + Mac Mini cron (Ollama-only) + Phase A/B auto + git self-recovery guard + YouTube temporal anchor alignment & wikilink stop-word filtering
-**Last Updated:** 2026-08-31 — Stage 1 P10 complete (YouTube anchors, stop-words, graph cleansing). AIGC keyword locking deployed. Dual-vault routing stabilized. Nearby MVP requirements and SDD are documented for the next implementation phase.
+**Last Updated:** 2026-09-03 — AskDanny LINE query bot deployed (lifestyle vault Q&A for friends & family via Render). tianmu-food page expanded to 5-area coverage (40+ stores).
 
 LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每月報告追踪過時的技術知識。 分流至獨立的 Tech 與 Lifestyle 知識庫。
 

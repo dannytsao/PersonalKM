@@ -1,6 +1,6 @@
 # PersonalKM — 知識管理系統設計文檔
 
-> 最後更新：2026-08-28 — 新增 Nearby MVP 需求與 SDD（設計中，尚未改動 runtime code）；既有 capture／resolve／ingest／propagate／query 術語對照與雙 vault runtime flow 無變動。
+> 最後更新：2026-09-03 — 新增 AskDanny LINE query bot（lifestyle vault 查詢介面，部署於 Render）；query 層新增 LINE 回覆通道，核心架構無變動。
 
 ---
 
