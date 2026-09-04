@@ -37,7 +37,6 @@ from personalkm.capture.line import verify_line_signature
 from personalkm.query.query_engine import (
     answer_with_llm,
     build_llm_context,
-    search_vault,
 )
 
 app = FastAPI(title="AskDanny — PersonalKM LINE Query Bot")
@@ -154,24 +153,112 @@ async def reply_message(access_token: str, reply_token: str, text: str) -> bool:
 
 # ── Query pipeline (combined across vaults) ───────────────────────────────
 
+ALLOWED_PAGES = [
+    "wiki/concepts/city-subject-store.md",
+    "wiki/concepts/tianmu-food.md",
+]
+
+
 def query_all_vaults(query: str, roots: list[Path], top_k: int = 6) -> dict:
     """
-    Search the lifestyle vault, run LLM synthesis across the results.
+    Search only ALLOWED_PAGES within the lifestyle vault, run LLM synthesis.
 
     Returns dict with keys: answer, sources (list of titles), error.
     Uses query_engine's existing pieces — never exposes raw file paths.
     """
-    from personalkm.propagate.entity_dedup import EntityRegistry
+    query_lower = query.lower().strip()
 
     all_results = []
     for root in roots:
         wiki_path = root / "wiki"
-        try:
-            registry = EntityRegistry(wiki_path) if wiki_path.exists() else None
-            results = search_vault(query, root, top_k=top_k, registry=registry)
-            all_results.extend(results)
-        except Exception:
-            logger.exception("search_vault failed for %s", root)
+        for rel_path_str in ALLOWED_PAGES:
+            fpath = wiki_path.parent / rel_path_str
+            if not fpath.exists():
+                logger.warning("Allowed page not found: %s", fpath)
+                continue
+            try:
+                content = fpath.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                continue
+
+            # Simple keyword scoring against the page content
+            title = ""
+            frontmatter_end = content.find("---", 3)
+            body = content
+            if content.startswith("---") and frontmatter_end > 0:
+                fm_block = content[3:frontmatter_end]
+                body = content[frontmatter_end + 3:].strip()
+                for line in fm_block.strip().split("\n"):
+                    if ":" in line:
+                        key, val = line.split(":", 1)
+                        if key.strip() == "title":
+                            title = val.strip().strip("\"'")
+
+            slug = fpath.stem
+            if not title:
+                title = slug
+
+            haystack = f"{title}\n{body}".lower()
+            score = 0.0
+            tokens = set(re.findall(r"[a-z0-9\u4e00-\u9fff\-_]+", query_lower))
+            for token in tokens:
+                if len(token) > 1 and token in haystack:
+                    score += 2
+            if any(t in title.lower() for t in tokens if len(t) > 1):
+                score += 5
+
+            if score > 0:
+                # Extract summary excerpt
+                summary_excerpt = ""
+                summary_match = re.search(
+                    r"## Summary\s*\n\n(.+?)(?:\n\n|$)", body, re.DOTALL
+                )
+                if summary_match:
+                    summary_excerpt = summary_match.group(1).strip()[:300]
+                if not summary_excerpt:
+                    paras = [p.strip() for p in re.split(r"\n\n+", body)
+                             if p.strip() and not p.strip().startswith("#")]
+                    for p in paras:
+                        if len(p) > 30:
+                            summary_excerpt = p[:300]
+                            break
+
+                all_results.append({
+                    "page": rel_path_str,
+                    "slug": slug,
+                    "title": title,
+                    "source_kind": "wiki",
+                    "type": "concept",
+                    "topic": "",
+                    "tags": "",
+                    "confidence": "medium",
+                    "score": score,
+                    "match_reason": "keyword_match",
+                    "sources": "",
+                    "summary_excerpt": summary_excerpt,
+                    "url": "",
+                    "_body": body,
+                })
+            else:
+                # Still include unscored pages so user can ask about them
+                # even if query has no keyword overlap.
+                all_results.append({
+                    "page": rel_path_str,
+                    "slug": slug,
+                    "title": title,
+                    "source_kind": "wiki",
+                    "type": "concept",
+                    "topic": "",
+                    "tags": "",
+                    "confidence": "medium",
+                    "score": 0,
+                    "match_reason": "no_match",
+                    "sources": "",
+                    "summary_excerpt": "",
+                    "url": "",
+                    "_body": body,
+                })
+
     if not all_results:
         return {"answer": None, "sources": [], "error": "no_match"}
 
@@ -179,7 +266,6 @@ def query_all_vaults(query: str, roots: list[Path], top_k: int = 6) -> dict:
     all_results = all_results[:top_k]
     context = build_llm_context(all_results, max_chars=5000)
 
-    # Source titles for citation display (no paths, no slugs).
     source_titles = []
     for r in all_results:
         title = (r.get("title") or "").strip()
