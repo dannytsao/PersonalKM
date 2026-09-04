@@ -53,7 +53,7 @@ echo "✅ $WIKI_COUNT wiki files available"
 export ASKDANNY_LIFESTYLE_VAULT="$LIFESTYLE_DIR"
 
 echo "🚀 Starting AskDanny uvicorn..."
-exec uv run uvicorn personalkm.query.line_bot:app \
+exec python3 -m uvicorn personalkm.query.line_bot:app \
   --host 0.0.0.0 \
   --port "${PORT:-10000}" \
   --log-level info
