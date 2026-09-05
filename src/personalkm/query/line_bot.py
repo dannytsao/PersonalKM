@@ -77,16 +77,19 @@ def _detect_location(query: str) -> set[str]:
 
 
 def _page_has_location(page: dict, locations: set[str]) -> bool:
-    """Return True only if the PAGE TITLE is about one of the requested locations.
+    """Return True only if the page is PRIMARILY about the requested location.
 
-    Checks the page title (not the body) to avoid false positives when a
-    location is only mentioned incidentally (e.g. the Tianmu page mentioning
-    'Beitou 18 restaurants' as a list that was excluded).
+    Takes only the first segment of the page title (split on list separators
+    like 、・,， etc.) before checking. This rejects multi-area pages like
+    '北海岸美食彙整（天母・士林・北投・淡水・三芝）' when asked about 北投,
+    while still allowing single-area pages.
     """
     title = page.get("title", "")
     title_lower = title.lower()
+    # Primary focus = first segment before any list separator
+    primary = re.split(r"[、，,・·/]\s*", title_lower, maxsplit=1)[0]
     for loc in locations:
-        if loc in title_lower:
+        if loc in primary:
             return True
     return False
 
