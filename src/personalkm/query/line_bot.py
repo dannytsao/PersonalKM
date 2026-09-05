@@ -66,6 +66,34 @@ uvicorn_logger.setLevel(logging.INFO)
 WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]")
 TOKEN_RE = re.compile(r"[a-z0-9\u4e00-\u9fff\-_]+")
 
+# ── Geographic location detection ─────────────────────────────────────────
+
+LOCATION_KEYWORDS = ["北投", "天母", "士林", "芝山", "石牌", "陽明山", "淡水", "三芝", "金山", "萬里"]
+FOOD_INDICATORS = ["餐廳", "店", "咖啡", "早餐", "早午餐", "美食", "小吃", "食堂", "飯", "麵", "鍋", "餃", "包", "吧"]
+
+
+def _detect_location(query: str) -> set[str]:
+    """Return set of known locations mentioned in the query."""
+    return {loc for loc in LOCATION_KEYWORDS if loc in query}
+
+
+def _page_has_location(page: dict, locations: set[str]) -> bool:
+    """Return True if the page has actual content mentioning the location + food nearby."""
+    body = page.get("body", "")
+    lines = body.split("\n")
+    for loc in locations:
+        for i, line in enumerate(lines):
+            if loc not in line:
+                continue
+            # Look at 2 lines above and below for food indicators
+            start = max(0, i - 2)
+            end = i + 3
+            nearby = "\n".join(lines[start:end])
+            if any(kw in nearby for kw in FOOD_INDICATORS):
+                return True
+    return False
+
+
 # ── Only these two pages are queryable ────────────────────────────────────
 
 ALLOWED_PAGES = [
@@ -243,6 +271,15 @@ def _query_all(query: str, root: Path) -> dict:
         scored.append((s, p))
     scored.sort(key=lambda x: -x[0])
     scored = scored[:6]
+
+    # Geographic filter: if user asks about a specific location, drop pages
+    # that only mention it incidentally (no actual food content nearby).
+    locations = _detect_location(query)
+    if locations:
+        filtered = [(s, p) for s, p in scored if _page_has_location(p, locations)]
+        if not filtered:
+            return {"answer": None, "sources": [], "error": "no_match"}
+        scored = filtered
 
     context = _build_context([p for _, p in scored], max_chars=5000)
     source_titles = [p["title"] for _, p in scored]
