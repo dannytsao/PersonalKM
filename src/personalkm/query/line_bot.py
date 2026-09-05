@@ -243,7 +243,7 @@ def _query_all(query: str, root: Path) -> dict:
         scored.append((s, p))
     scored.sort(key=lambda x: -x[0])
 
-    context = _build_context([p for _, p in scored], max_chars=16000)
+    context = _build_context([p for _, p in scored], max_chars=50000)
     source_titles = [p["title"] for _, p in scored]
 
     prompt = (
