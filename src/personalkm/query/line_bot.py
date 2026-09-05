@@ -247,15 +247,18 @@ def _query_all(query: str, root: Path) -> dict:
     source_titles = [p["title"] for _, p in scored]
 
     prompt = (
-        "你是一個個人知識庫助手。根據以下 Danny 的筆記回答問題。"
-        "如果上下文資訊不足，請誠實說不知道。回答時用[[wikilink]]標註來源。"
-        "注意：回覆是傳給 LINE 純文字訊息，不要使用表格、不要使用 @url: 連結、不要使用 markdown 格式。"
-        "用簡單的條列式（- 項目）和文字描述即可。"
-        "\n\n上下文（按相關性排序）：\n"
-        f"{context}\n\n"
-        f"問題：{query}\n\n"
-        "回答（用[[wikilink]]標註來源，純文字條列式）："
-    )
+            "你是一個個人知識庫助手。根據以下 Danny 的筆記回答問題。"
+            "如果上下文資訊不足，請誠實說不知道。回答時用[[wikilink]]標註來源。"
+            "注意：回覆是傳給 LINE 純文字訊息，不要使用表格、不要使用 @url: 連結、不要使用 markdown 格式。"
+            "用簡單的條列式（- 項目）和文字描述即可。"
+            "重要：以下包含一個全區域的店家彙整表 (registry) 和一個北海岸主題彙整頁。"
+            "registry 裡有完整的地址資料，優先依 registry 的店家資訊回答。"
+            "如果主題頁提到某區域的清單「未收錄於本頁」，那只是該頁面的限制，不代表 registry 也沒有。"
+            "\n\n上下文（按相關性排序）：\n"
+            f"{context}\n\n"
+            f"問題：{query}\n\n"
+            "回答（用[[wikilink]]標註來源，純文字條列式）："
+        )
 
     try:
         completion = route("query_answer", prompt)
