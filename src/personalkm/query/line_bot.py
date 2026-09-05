@@ -77,20 +77,27 @@ def _detect_location(query: str) -> set[str]:
 
 
 def _page_has_location(page: dict, locations: set[str]) -> bool:
-    """Return True only if the page is PRIMARILY about the requested location.
+    """Return True if the page has actual address-level data for the location.
 
-    Takes only the first segment of the page title (split on list separators
-    like 、・,， etc.) before checking. This rejects multi-area pages like
-    '北海岸美食彙整（天母・士林・北投・淡水・三芝）' when asked about 北投,
-    while still allowing single-area pages.
+    Checks the page body for the location in an address context (e.g. 北投區,
+    臺北市北投), which differentiates a comprehensive registry with genuine
+    location entries from a multi-area page that incidentally mentions the name.
+    When the location is a non-administrative neighborhood (天母), falls back
+    to checking the page title's primary segment.
     """
-    title = page.get("title", "")
-    title_lower = title.lower()
-    # Primary focus = first segment before any list separator
-    primary = re.split(r"[、，,・·/]\s*", title_lower, maxsplit=1)[0]
+    body = page.get("body", "")
     for loc in locations:
-        if loc in primary:
-            return True
+        # Administrative district: check for 區/市 suffix in addresses
+        if loc in ("北投", "士林", "淡水", "三芝", "金山", "萬里"):
+            if re.search(rf"{loc}[區市]", body):
+                return True
+        # Non-administrative toponym (天母, 芝山, 石牌, 陽明山): check
+        # page title primary segment instead
+        else:
+            title = page.get("title", "")
+            primary = re.split(r"[、，,・·/]\s*", title.lower(), maxsplit=1)[0]
+            if loc in primary:
+                return True
     return False
 
 
