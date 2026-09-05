@@ -69,7 +69,6 @@ TOKEN_RE = re.compile(r"[a-z0-9\u4e00-\u9fff\-_]+")
 # ── Geographic location detection ─────────────────────────────────────────
 
 LOCATION_KEYWORDS = ["北投", "天母", "士林", "芝山", "石牌", "陽明山", "淡水", "三芝", "金山", "萬里"]
-FOOD_INDICATORS = ["餐廳", "店", "咖啡", "早餐", "早午餐", "美食", "小吃", "食堂", "飯", "麵", "鍋", "餃", "包", "吧"]
 
 
 def _detect_location(query: str) -> set[str]:
@@ -78,19 +77,17 @@ def _detect_location(query: str) -> set[str]:
 
 
 def _page_has_location(page: dict, locations: set[str]) -> bool:
-    """Return True if the page has actual content mentioning the location + food nearby."""
-    body = page.get("body", "")
-    lines = body.split("\n")
+    """Return True only if the PAGE TITLE is about one of the requested locations.
+
+    Checks the page title (not the body) to avoid false positives when a
+    location is only mentioned incidentally (e.g. the Tianmu page mentioning
+    'Beitou 18 restaurants' as a list that was excluded).
+    """
+    title = page.get("title", "")
+    title_lower = title.lower()
     for loc in locations:
-        for i, line in enumerate(lines):
-            if loc not in line:
-                continue
-            # Look at 2 lines above and below for food indicators
-            start = max(0, i - 2)
-            end = i + 3
-            nearby = "\n".join(lines[start:end])
-            if any(kw in nearby for kw in FOOD_INDICATORS):
-                return True
+        if loc in title_lower:
+            return True
     return False
 
 
