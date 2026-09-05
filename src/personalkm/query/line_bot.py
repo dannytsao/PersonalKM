@@ -66,41 +66,6 @@ uvicorn_logger.setLevel(logging.INFO)
 WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]")
 TOKEN_RE = re.compile(r"[a-z0-9\u4e00-\u9fff\-_]+")
 
-# ── Geographic location detection ─────────────────────────────────────────
-
-LOCATION_KEYWORDS = ["北投", "天母", "士林", "芝山", "石牌", "陽明山", "淡水", "三芝", "金山", "萬里"]
-
-
-def _detect_location(query: str) -> set[str]:
-    """Return set of known locations mentioned in the query."""
-    return {loc for loc in LOCATION_KEYWORDS if loc in query}
-
-
-def _page_has_location(page: dict, locations: set[str]) -> bool:
-    """Return True if the page has actual address-level data for the location.
-
-    Checks the page body for the location in an address context (e.g. 北投區,
-    臺北市北投), which differentiates a comprehensive registry with genuine
-    location entries from a multi-area page that incidentally mentions the name.
-    When the location is a non-administrative neighborhood (天母), falls back
-    to checking the page title's primary segment.
-    """
-    body = page.get("body", "")
-    for loc in locations:
-        # Administrative district: check for 區/市 suffix in addresses
-        if loc in ("北投", "士林", "淡水", "三芝", "金山", "萬里"):
-            if re.search(rf"{loc}[區市]", body):
-                return True
-        # Non-administrative toponym (天母, 芝山, 石牌, 陽明山): check
-        # page title primary segment instead
-        else:
-            title = page.get("title", "")
-            primary = re.split(r"[、，,・·/]\s*", title.lower(), maxsplit=1)[0]
-            if loc in primary:
-                return True
-    return False
-
-
 # ── Only these two pages are queryable ────────────────────────────────────
 
 ALLOWED_PAGES = [
@@ -277,18 +242,8 @@ def _query_all(query: str, root: Path) -> dict:
         s = _score_page(query_tokens, p)
         scored.append((s, p))
     scored.sort(key=lambda x: -x[0])
-    scored = scored[:6]
 
-    # Geographic filter: if user asks about a specific location, drop pages
-    # that only mention it incidentally (no actual food content nearby).
-    locations = _detect_location(query)
-    if locations:
-        filtered = [(s, p) for s, p in scored if _page_has_location(p, locations)]
-        if not filtered:
-            return {"answer": None, "sources": [], "error": "no_match"}
-        scored = filtered
-
-    context = _build_context([p for _, p in scored], max_chars=5000)
+    context = _build_context([p for _, p in scored], max_chars=16000)
     source_titles = [p["title"] for _, p in scored]
 
     prompt = (
