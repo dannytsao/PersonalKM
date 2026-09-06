@@ -121,7 +121,7 @@ Registry 命中時，每筆依下列順序使用 LINE 純文字顯示；欄位�
 
 1. 再看幾筆：使用者回覆「再看 N 筆」，只顯示同一次查詢尚未顯示的資料；
 2. 終止輸出：清除這次查詢狀態；
-3. 匯出到 Google Sheet：只匯出目前已顯示的資料，使用者先以自己的 Google 帳號完成 OAuth 授權，匯出完成後終止這次查詢。
+3. 匯出到 Google Sheet：只匯出目前已顯示的資料，使用者先以自己的 Google 帳號完成一次性 OAuth 授權，匯出完成後終止這次查詢。AskDanny 不保存 Google email、帳號識別、access token 或 refresh token。
 
 不得輸出原始檔案路徑、raw 內容、frontmatter 或私人筆記全文。
 

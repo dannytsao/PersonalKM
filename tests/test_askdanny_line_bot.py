@@ -2,8 +2,10 @@ import json
 import anyio
 from pathlib import Path
 from types import SimpleNamespace
+from urllib.parse import parse_qs, urlparse
 
 from personalkm.query import line_bot
+from personalkm.query.google_sheets import GoogleOAuthConfig, google_authorization_url
 
 
 def _write_registry(root: Path, entries: list[dict]) -> None:
@@ -415,6 +417,20 @@ def test_google_export_stores_only_currently_displayed_entries(monkeypatch) -> N
     assert len(line_bot.PENDING_GOOGLE_EXPORTS) == 1
     pending = next(iter(line_bot.PENDING_GOOGLE_EXPORTS.values()))
     assert pending.entries == entries[:2]
+
+
+def test_google_authorization_is_one_time_and_does_not_request_account_identity() -> None:
+    url = google_authorization_url(
+        GoogleOAuthConfig("client-id", "client-secret", "https://example.test/callback"),
+        "opaque-state",
+    )
+    params = parse_qs(urlparse(url).query)
+
+    assert params["access_type"] == ["online"]
+    assert params["prompt"] == ["select_account"]
+    assert params["scope"] == ["https://www.googleapis.com/auth/spreadsheets"]
+    assert "email" not in params
+    assert "openid" not in params
 
 
 def test_llm_query_replaces_reasoning_leak_with_safe_fallback(tmp_path: Path, monkeypatch) -> None:

@@ -44,8 +44,8 @@ def google_authorization_url(config: GoogleOAuthConfig, state: str) -> str:
         'redirect_uri': config.redirect_uri,
         'response_type': 'code',
         'scope': GOOGLE_SHEETS_SCOPE,
-        'access_type': 'offline',
-        'prompt': 'consent',
+        'access_type': 'online',
+        'prompt': 'select_account',
         'state': state,
     }
     return f"{GOOGLE_AUTHORIZE_URL}?{urlencode(params)}"
