@@ -327,6 +327,13 @@ def _score_page(query_tokens: set[str], page: dict) -> int:
     return score
 
 
+def _query_tokens(query: str) -> set[str]:
+    tokens = set(TOKEN_RE.findall(query.lower()))
+    for phrase in re.findall(r"[\u4e00-\u9fff]{2,}", query.lower()):
+        tokens.update(phrase[index : index + 2] for index in range(len(phrase) - 1))
+    return tokens
+
+
 def _summary_excerpt(body: str, max_chars: int = 300) -> str:
     """Extract first meaningful paragraph as summary."""
     m = re.search(r"## Summary\s*\n\n(.+?)(?:\n\n|$)", body, re.DOTALL)
@@ -370,7 +377,7 @@ def _query_all(query: str, root: Path) -> dict:
 
     wiki_root = root / "wiki"
     query_lower = query.lower().strip()
-    query_tokens = set(TOKEN_RE.findall(query_lower))
+    query_tokens = _query_tokens(query_lower)
 
     pages = []
     for rel in ALLOWED_PAGES:
