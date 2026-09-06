@@ -6,11 +6,12 @@ AskDanny — PersonalKM LINE Query Bot
 來源頁面標題。**永不暴露原始 MD 檔案**：回應只含答案文字與來源名稱，
 不含任何檔案路徑、frontmatter 或原始內容全文。
 
-只開放查詢兩個頁面：city-subject-store.md + tianmu-food.md
+優先查詢結構化 registry；無法用結構化條件命中時，才查詢兩個補充頁面。
 
 架構:
     LINE → LINE Platform → Render (uvicorn)
-                            ├─ 讀取 2 頁 → 關鍵字搜尋
+                            ├─ registry 先依地區／類型篩選
+                            ├─ 未命中結構化條件才讀取補充頁面
                             ├─ build_llm_context → route("query_answer")
                             └─ reply → LINE
 
@@ -24,7 +25,10 @@ AskDanny — PersonalKM LINE Query Bot
 執行（Render）:
     bash scripts/start_askdanny_render.sh
 """
+from __future__ import annotations
+
 import asyncio
+import json
 import logging
 import os
 import re
@@ -73,6 +77,26 @@ ALLOWED_PAGES = [
     "wiki/concepts/tianmu-food.md",
 ]
 
+REGISTRY_SOURCE_TITLE = "城市 × 主題 × 店家彙整"
+SUBJECT_ALIASES = {
+    "早午餐": ("早午餐", "brunch"),
+    "住宿": ("住宿", "旅館", "民宿", "飯店", "酒店", "lodging"),
+    "咖啡廳": ("咖啡廳", "咖啡館", "咖啡店", "cafe", "coffee"),
+    "餐廳": ("餐廳", "restaurant"),
+}
+REASONING_BLOCK_RE = re.compile(
+    r"<(?:think|analysis)>.*?</(?:think|analysis)>", re.IGNORECASE | re.DOTALL
+)
+REASONING_TAG_RE = re.compile(r"</?(?:think|analysis)\b", re.IGNORECASE)
+INTERNAL_MARKERS = (
+    "我先檢視",
+    "接下來搜尋",
+    "接下來需要確認",
+    "我發現",
+    "tool_calls",
+    "function_call",
+)
+
 
 # ── Event model ────────────────────────────────────────────────────────────
 
@@ -81,6 +105,19 @@ class AskDannyEvent:
     reply_token: str
     user_id: str
     text: str
+
+
+@dataclass(frozen=True)
+class RegistryEntry:
+    city: str
+    subject: str
+    store: str
+    source: str
+    address: str
+    highlights: tuple[str, ...]
+    rating: float | None
+    rating_count: int | None
+    status: str
 
 
 def askdanny_events_from_webhook(payload: dict) -> list[AskDannyEvent]:
@@ -179,6 +216,105 @@ def _read_page(wiki_root: Path, rel_path: str) -> Optional[dict]:
     return {"title": title, "slug": slug, "body": body, "rel_path": rel_path}
 
 
+def _load_registry_entries(root: Path) -> list[RegistryEntry]:
+    registry_path = root / "wiki" / "_registry" / "city-subject-store.json"
+    try:
+        payload = json.loads(registry_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        logger.warning("Lifestyle registry unavailable at %s", registry_path)
+        return []
+
+    raw_entries = payload.get("entries", []) if isinstance(payload, dict) else []
+    if not isinstance(raw_entries, list):
+        return []
+
+    entries: list[RegistryEntry] = []
+    for raw in raw_entries:
+        if not isinstance(raw, dict) or raw.get("status") == "removed":
+            continue
+        highlights = raw.get("highlights", [])
+        rating = raw.get("rating")
+        rating_count = raw.get("rating_count")
+        entries.append(
+            RegistryEntry(
+                city=str(raw.get("city", "")).strip(),
+                subject=str(raw.get("subject", "")).strip(),
+                store=str(raw.get("store", "")).strip(),
+                source=str(raw.get("source", "")).strip(),
+                address=str(raw.get("address", "")).strip(),
+                highlights=tuple(
+                    item.strip() for item in highlights if isinstance(item, str) and item.strip()
+                )
+                if isinstance(highlights, list)
+                else (),
+                rating=float(rating) if isinstance(rating, (int, float)) else None,
+                rating_count=int(rating_count) if isinstance(rating_count, int) else None,
+                status=str(raw.get("status", "")).strip(),
+            )
+        )
+    return entries
+
+
+def _query_subject(query: str) -> str | None:
+    query_lower = query.lower()
+    for subject, aliases in SUBJECT_ALIASES.items():
+        if any(alias.lower() in query_lower for alias in aliases):
+            return subject
+    return None
+
+
+def _entry_matches_location(query: str, entry: RegistryEntry) -> bool:
+    query_lower = query.lower()
+    city = entry.city.lower()
+    if city and (city in query_lower or city.removesuffix("市") in query_lower):
+        return True
+    districts = re.findall(r"(?:市|縣)([\u4e00-\u9fff]{2,4})(區|鄉|鎮)", entry.address)
+    for district, suffix in districts:
+        full_name = f"{district}{suffix}".lower()
+        if full_name in query_lower or district.lower() in query_lower:
+            return True
+    return False
+
+
+def _registry_matches(query: str, entries: list[RegistryEntry]) -> list[RegistryEntry] | None:
+    subject = _query_subject(query)
+    if subject is None:
+        return None
+    if not any(_entry_matches_location(query, entry) for entry in entries):
+        return None
+    matches = [
+        entry
+        for entry in entries
+        if entry.subject == subject and _entry_matches_location(query, entry)
+    ]
+    return sorted(matches, key=lambda entry: (-(entry.rating or 0), entry.store))
+
+
+def _render_registry_answer(entries: list[RegistryEntry]) -> str:
+    lines = [f"目前整理到 {len(entries)} 筆符合條件的資料："]
+    for entry in entries[:5]:
+        lines.append(f"\n- {entry.store}")
+        if entry.address:
+            lines.append(f"  地址：{entry.address}")
+        if entry.rating is not None:
+            rating_text = f"{entry.rating:g}"
+            if entry.rating_count is not None:
+                rating_text += f"（{entry.rating_count} 則）"
+            lines.append(f"  評分：{rating_text}")
+        if entry.highlights:
+            lines.append(f"  特色：{'；'.join(entry.highlights[:3])}")
+    return "\n".join(lines)
+
+
+def _safe_llm_answer(answer: str) -> str | None:
+    cleaned = REASONING_BLOCK_RE.sub("", answer).strip()
+    if not cleaned or REASONING_TAG_RE.search(cleaned):
+        return None
+    if any(marker in cleaned for marker in INTERNAL_MARKERS):
+        return None
+    return cleaned
+
+
 def _score_page(query_tokens: set[str], page: dict) -> int:
     """Simple keyword match score: 5 for title hit, 2 per keyword in body."""
     haystack = f"{page['title']}\n{page['body']}".lower()
@@ -222,6 +358,16 @@ def _build_context(pages: list[dict], max_chars: int = 16000) -> str:
 
 def _query_all(query: str, root: Path) -> dict:
     """Search allowed pages, run ONE LLM synthesis. Returns {answer, sources, error}."""
+    registry_matches = _registry_matches(query, _load_registry_entries(root))
+    if registry_matches is not None:
+        if not registry_matches:
+            return {"answer": None, "sources": [], "error": "no_match"}
+        return {
+            "answer": _render_registry_answer(registry_matches),
+            "sources": [REGISTRY_SOURCE_TITLE],
+            "error": None,
+        }
+
     wiki_root = root / "wiki"
     query_lower = query.lower().strip()
     query_tokens = set(TOKEN_RE.findall(query_lower))
@@ -235,15 +381,17 @@ def _query_all(query: str, root: Path) -> dict:
     if not pages:
         return {"answer": None, "sources": [], "error": "no_match"}
 
-    # Score and include all (even unscored, so LLM can still answer general questions)
     scored = []
     for p in pages:
         s = _score_page(query_tokens, p)
         scored.append((s, p))
     scored.sort(key=lambda x: -x[0])
 
-    context = _build_context([p for _, p in scored], max_chars=50000)
-    source_titles = [p["title"] for _, p in scored]
+    relevant_pages = [p for score, p in scored if score > 0]
+    if not relevant_pages:
+        relevant_pages = [scored[0][1]]
+    context = _build_context(relevant_pages, max_chars=12000)
+    source_titles = [p["title"] for p in relevant_pages]
 
     prompt = (
             "你是一個個人知識庫助手。根據以下 Danny 的筆記回答問題。"
@@ -261,7 +409,13 @@ def _query_all(query: str, root: Path) -> dict:
 
     try:
         completion = route("query_answer", prompt)
-        answer_text = completion.text.strip()
+        answer_text = _safe_llm_answer(completion.text)
+        if answer_text is None:
+            return {
+                "answer": "抱歉，我目前無法把這筆資料整理成可靠的簡短回答，請換個問法。",
+                "sources": source_titles,
+                "error": "unsafe_llm_output",
+            }
         answer_text = WIKILINK_RE.sub(r"\1", answer_text)
         # Strip any @url: references (safety net for LLM-generated links)
         answer_text = re.sub(r"@url:`[^`]+`", "", answer_text)
@@ -308,7 +462,7 @@ async def handle_text_event(cfg: dict, event: AskDannyEvent) -> None:
     if result.get("error") == "no_match":
         await reply_message(
             cfg["access_token"], event.reply_token,
-            "我查了一下知識庫，好像沒有找到相關的資料 🤔\n可以換個問法，或問我 /help 看看我能回答什麼。",
+            "目前 Danny 的 Lifestyle Vault 沒有整理到相關資料。\n可以換個問法，或問我 /help 看看我能回答什麼。",
         )
         return
 
