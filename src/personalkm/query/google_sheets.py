@@ -86,7 +86,7 @@ async def export_to_google_sheet(
 
         row_end = max(len(rows), 1)
         values_response = await client.put(
-            f"{GOOGLE_SHEETS_API}/{spreadsheet_id}/values/A1:F{row_end}",
+            f"{GOOGLE_SHEETS_API}/{spreadsheet_id}/values/A1:H{row_end}",
             params={"valueInputOption": "USER_ENTERED"},
             headers={"Authorization": f"Bearer {access_token}"},
             json={"majorDimension": "ROWS", "values": rows},

@@ -139,6 +139,8 @@ class RegistryEntry:
     rating: float | None
     rating_count: int | None
     status: str
+    phone: str = ""
+    reservation_url: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -322,6 +324,8 @@ def _load_registry_entries(root: Path) -> list[RegistryEntry]:
                 rating=float(rating) if isinstance(rating, (int, float)) else None,
                 rating_count=int(rating_count) if isinstance(rating_count, int) else None,
                 status=str(raw.get("status", "")).strip(),
+                phone=str(raw.get("phone", "")).strip(),
+                reservation_url=str(raw.get("reservation_url", "")).strip(),
             )
         )
     return entries
@@ -378,6 +382,12 @@ def _render_registry_answer(entries: list[RegistryEntry]) -> str:
 
 def _render_registry_entry_lines(entry: RegistryEntry) -> list[str]:
     lines = [f"\n- 主題：{entry.subject}", f"- 店名：{entry.store}"]
+    if entry.address:
+        lines.append(f"- 地址：{entry.address}")
+    if entry.phone:
+        lines.append(f"- 電話：{entry.phone}")
+    if entry.reservation_url:
+        lines.append(f"- 預約連結：{entry.reservation_url}")
     if entry.rating is not None:
         rating_text = f"{entry.rating:g}"
         if entry.rating_count is not None:
@@ -422,7 +432,7 @@ def _render_query_options(has_more: bool) -> str:
 
 
 def _registry_entry_rows(entries: tuple[RegistryEntry, ...]) -> list[list[str]]:
-    rows = [["主題", "店名", "Google 星等", "特色說明", "GPS"]]
+    rows = [["主題", "店名", "地址", "電話", "預約連結", "Google 星等", "特色說明", "GPS"]]
     for entry in entries:
         rating = ""
         if entry.rating is not None:
@@ -440,6 +450,9 @@ def _registry_entry_rows(entries: tuple[RegistryEntry, ...]) -> list[list[str]]:
         rows.append([
             entry.subject,
             entry.store,
+            entry.address,
+            entry.phone,
+            entry.reservation_url,
             rating,
             "；".join(entry.highlights[:3]),
             gps,

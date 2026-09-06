@@ -16,7 +16,13 @@ def _write_registry(root: Path, entries: list[dict]) -> None:
     )
 
 
-def _entry(store: str, subject: str = "餐廳") -> line_bot.RegistryEntry:
+def _entry(
+    store: str,
+    subject: str = "餐廳",
+    *,
+    phone: str = "02-1234-5678",
+    reservation_url: str = "https://example.test/reserve",
+) -> line_bot.RegistryEntry:
     return line_bot.RegistryEntry(
         city="新北市",
         subject=subject,
@@ -28,6 +34,8 @@ def _entry(store: str, subject: str = "餐廳") -> line_bot.RegistryEntry:
         rating=4.5,
         rating_count=10,
         status="resolved",
+        phone=phone,
+        reservation_url=reservation_url,
     )
 
 
@@ -43,6 +51,8 @@ def test_registry_query_filters_location_and_subject_without_llm(tmp_path: Path,
                 "address": "臺北市北投區中央北路二段68之5號",
                 "gps": [25.1375317, 121.4943154],
                 "highlights": ["澳式早午餐店", "高蛋白巧克力軟餅乾"],
+                "phone": "02-2897-1234",
+                "reservation_url": "https://example.test/coffee-first/reserve",
                 "rating": 4.9,
                 "rating_count": 72,
                 "status": "resolved",
@@ -82,10 +92,12 @@ def test_registry_query_filters_location_and_subject_without_llm(tmp_path: Path,
     assert "北投旅館" not in result["answer"]
     assert "- 主題：早午餐" in result["answer"]
     assert "- 店名：COFFEE FIRST" in result["answer"]
+    assert "- 地址：臺北市北投區中央北路二段68之5號" in result["answer"]
+    assert "- 電話：02-2897-1234" in result["answer"]
+    assert "- 預約連結：https://example.test/coffee-first/reserve" in result["answer"]
     assert "- Google 星等：⭐ 4.9（72 則）" in result["answer"]
     assert "- 特色說明：澳式早午餐店；高蛋白巧克力軟餅乾" in result["answer"]
     assert "- GPS：https://www.google.com/maps/search/?api=1&query=25.1375317,121.4943154" in result["answer"]
-    assert "地址：" not in result["answer"]
     assert "<think>" not in result["answer"]
 
 
@@ -120,6 +132,8 @@ def test_registry_query_excludes_removed_entries_and_supports_lodging(tmp_path: 
     assert "北投溫泉旅館" in result["answer"]
     assert "已移除旅館" not in result["answer"]
     assert "GPS：" not in result["answer"]
+    assert "電話：" not in result["answer"]
+    assert "預約連結：" not in result["answer"]
 
 
 def test_registry_query_returns_no_match_for_known_location_without_subject(tmp_path: Path, monkeypatch) -> None:
@@ -256,10 +270,13 @@ def test_query_options_and_sheet_rows_use_the_explicit_export_contract() -> None
     assert "2. 終止輸出" in options
     assert "3. 匯出目前已顯示的資料到我的 Google Sheet" in options
     assert rows == [
-        ["主題", "店名", "Google 星等", "特色說明", "GPS"],
+        ["主題", "店名", "地址", "電話", "預約連結", "Google 星等", "特色說明", "GPS"],
         [
             "餐廳",
             "測試餐廳",
+            "新北市板橋區文化路1號",
+            "02-1234-5678",
+            "https://example.test/reserve",
             "⭐ 4.5（10 則）",
             "特色",
             "https://www.google.com/maps/search/?api=1&query=25,121",
