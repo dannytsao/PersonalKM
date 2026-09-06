@@ -124,6 +124,57 @@ def test_registry_query_returns_no_match_for_known_location_without_subject(tmp_
     assert result == {"answer": None, "sources": [], "error": "no_match"}
 
 
+def test_registry_query_expands_food_alias_across_subjects_without_llm(tmp_path: Path, monkeypatch) -> None:
+    _write_registry(
+        tmp_path,
+        [
+            {
+                "city": "新北市",
+                "subject": "餐廳",
+                "store": "新北餐廳",
+                "address": "新北市板橋區文化路1號",
+                "rating": 4.7,
+                "status": "resolved",
+            },
+            {
+                "city": "新北市",
+                "subject": "咖啡廳",
+                "store": "新北咖啡廳",
+                "address": "新北市淡水區中正路2號",
+                "rating": 4.9,
+                "status": "resolved",
+            },
+            {
+                "city": "新北市",
+                "subject": "甜點",
+                "store": "新北甜點店",
+                "address": "新北市三重區重新路3號",
+                "rating": 4.6,
+                "status": "resolved",
+            },
+            {
+                "city": "台北市",
+                "subject": "餐廳",
+                "store": "台北餐廳",
+                "address": "台北市大安區信義路4號",
+                "rating": 5.0,
+                "status": "resolved",
+            },
+        ],
+    )
+    monkeypatch.setattr(line_bot, "route", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError()))
+
+    result = line_bot._query_all("新北市有什麼美食？", tmp_path)
+
+    assert result["error"] is None
+    assert result["sources"] == ["城市 × 主題 × 店家彙整"]
+    assert "目前整理到 3 筆符合條件的資料：" in result["answer"]
+    assert "新北餐廳" in result["answer"]
+    assert "新北咖啡廳" in result["answer"]
+    assert "新北甜點店" in result["answer"]
+    assert "台北餐廳" not in result["answer"]
+
+
 def test_llm_query_only_includes_relevant_allowed_page(tmp_path: Path, monkeypatch) -> None:
     concepts = tmp_path / "wiki" / "concepts"
     concepts.mkdir(parents=True)

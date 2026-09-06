@@ -79,10 +79,14 @@ ALLOWED_PAGES = [
 
 REGISTRY_SOURCE_TITLE = "城市 × 主題 × 店家彙整"
 SUBJECT_ALIASES = {
+    "美食": ("美食",),
     "早午餐": ("早午餐", "brunch"),
     "住宿": ("住宿", "旅館", "民宿", "飯店", "酒店", "lodging"),
     "咖啡廳": ("咖啡廳", "咖啡館", "咖啡店", "cafe", "coffee"),
     "餐廳": ("餐廳", "restaurant"),
+}
+BROAD_SUBJECTS = {
+    "美食": ("餐廳", "小吃", "早午餐", "咖啡廳", "甜點", "酒吧"),
 }
 REASONING_BLOCK_RE = re.compile(
     r"<(?:think|analysis)>.*?</(?:think|analysis)>", re.IGNORECASE | re.DOTALL
@@ -295,14 +299,21 @@ def _registry_matches(query: str, entries: list[RegistryEntry]) -> list[Registry
     matches = [
         entry
         for entry in entries
-        if entry.subject == subject and _entry_matches_location(query, entry)
+        if entry.subject in BROAD_SUBJECTS.get(subject, (subject,))
+        and _entry_matches_location(query, entry)
     ]
     return sorted(matches, key=lambda entry: (-(entry.rating or 0), entry.store))
 
 
 def _render_registry_answer(entries: list[RegistryEntry]) -> str:
-    lines = [f"目前整理到 {len(entries)} 筆符合條件的資料："]
-    for entry in entries[:5]:
+    displayed_entries = entries[:5]
+    if len(entries) > len(displayed_entries):
+        lines = [
+            f"目前整理到 {len(entries)} 筆符合條件的資料，先列出前 {len(displayed_entries)} 筆："
+        ]
+    else:
+        lines = [f"目前整理到 {len(entries)} 筆符合條件的資料："]
+    for entry in displayed_entries:
         lines.append(f"\n- 主題：{entry.subject}")
         lines.append(f"- 店名：{entry.store}")
         if entry.rating is not None:
