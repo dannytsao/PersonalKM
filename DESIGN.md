@@ -1,6 +1,6 @@
 # PersonalKM — 知識管理系統設計文檔
 
-> 最後更新：2026-09-06 — AskDanny Phase 1 改為 registry-first 查詢並以獨立 Render service 執行；核心 Capture／Resolve／Ingest／Propagate 架構不變。
+> 最後更新：2026-09-06 — AskDanny Phase 1 改為 registry-first 查詢並以獨立 Render service 執行，結果可帶回地址／電話／預約連結；核心 Capture／Resolve／Ingest／Propagate 架構不變。
 
 ---
 

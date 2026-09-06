@@ -12,6 +12,8 @@ All completed implementation reports, one-time analyses, and delivery summaries 
 
 - **AskDanny Render service** (`render.yaml`): declared and synced the independent `personalkm-askdanny` web service with the existing startup script and secret-backed environment variables. Live URL: `https://personalkm.onrender.com`.
 - **Phase 1 requirements** (`docs/ASKDANNY-PHASE1-REQUIREMENTS.md`): recorded the registry-first query and output-safety acceptance case.
+- **AskDanny result fields** (`src/personalkm/query/line_bot.py`, `src/personalkm/query/google_sheets.py`): registry results and Google Sheet exports now include address, phone, and reservation URL when present; missing values are omitted without guessing. The export range now covers all eight columns.
+- **AskDanny verification** (`tests/test_askdanny_line_bot.py`): added coverage for contact fields and null-value omission. Render is live on commit `55e2807`.
 
 ## 2026-09-03
 
