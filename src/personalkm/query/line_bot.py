@@ -210,12 +210,11 @@ def _build_context(pages: list[dict], max_chars: int = 16000) -> str:
     for p in pages:
         entry = f"## {p['title']}\n{p['body']}\n\n"
         if total + len(entry) > max_chars:
-            # Truncate on a section boundary if over budget
-            cut = entry.rfind("---", 0, max_chars - total)
-            if cut > 0:
-                entry = entry[:cut]
-            else:
-                entry = entry[:max_chars - total]
+            # Flat character truncation — no "---" boundary logic because
+            # the registry page uses "---" as horizontal rules AND table
+            # separators (|---|---|), so rfind("---") would find the
+            # early table separator and cut off ALL data rows.
+            entry = entry[:max_chars - total]
         chunks.append(entry)
         total += len(entry)
     return "".join(chunks)
