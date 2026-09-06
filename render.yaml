@@ -1,5 +1,27 @@
 services:
   - type: web
+    name: personalkm-askdanny
+    runtime: python
+    plan: starter
+    branch: main
+    buildCommand: pip install -r requirements.txt && pip install -e ".[dev,llm]"
+    startCommand: bash scripts/start_askdanny_render.sh
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: LIFESTYLE_VAULT_REPO_URL
+        sync: false
+      - key: ASKDANNY_CHANNEL_SECRET
+        sync: false
+      - key: ASKDANNY_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: ASKDANNY_ALLOWED_USERS
+        sync: false
+      - key: MINIMAX_API_KEY
+        sync: false
+  - type: web
     name: personal-km-line-bot
     runtime: python
     plan: starter
