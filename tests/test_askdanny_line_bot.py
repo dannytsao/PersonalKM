@@ -298,6 +298,33 @@ def test_query_session_can_show_user_selected_count_and_terminate(monkeypatch) -
     assert "user-1" not in line_bot.QUERY_SESSIONS
 
 
+def test_query_session_accepts_bare_numeric_count_after_prompt(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    line_bot.QUERY_SESSIONS.clear()
+    line_bot.QUERY_SESSIONS["user-1"] = line_bot.QuerySession(
+        entries=(_entry("第一家"), _entry("第二家"), _entry("第三家")),
+        offset=1,
+    )
+
+    handled = anyio.run(
+        line_bot._handle_query_session_event,
+        {"access_token": "token"},
+        line_bot.AskDannyEvent("reply-1", "user-1", "10"),
+        "10",
+    )
+
+    assert handled is True
+    assert "第二家" in sent[0]
+    assert "第三家" in sent[0]
+    assert line_bot.QUERY_SESSIONS["user-1"].offset == 3
+
+
 def test_google_export_option_is_fail_closed_without_oauth_config(monkeypatch) -> None:
     sent: list[str] = []
 

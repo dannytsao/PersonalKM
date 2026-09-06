@@ -112,7 +112,7 @@ INTERNAL_MARKERS = (
     "tool_calls",
     "function_call",
 )
-MORE_COMMAND_RE = re.compile(r"^(?:再看|更多|看更多)\s*(\d{1,3})\s*(?:筆|列)?$")
+MORE_COMMAND_RE = re.compile(r"^(?:(?:再看|更多|看更多)\s*)?(\d{1,3})\s*(?:筆|列)?$")
 TERMINATE_COMMANDS = frozenset(("2", "終止", "終止輸出", "停止輸出", "取消"))
 EXPORT_COMMANDS = frozenset(("3", "匯出", "匯出到 Google Sheet", "匯出 Google Sheet"))
 SESSION_TTL_SECONDS = 1800
