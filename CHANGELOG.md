@@ -2,6 +2,17 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
+## 2026-09-06
+
+### Fixed
+
+- **AskDanny Phase 1 query output** (`src/personalkm/query/line_bot.py`): location＋subject questions now filter the Lifestyle registry before rendering a concise answer, preventing unrelated candidates, unused source pages, unsupported inferences, and leaked `<think>`／`<analysis>` content.
+
+### Changed
+
+- **AskDanny Render service** (`render.yaml`): declared the independent `personalkm-askdanny` web service with the existing startup script and secret-backed environment variables. Blueprint sync is still required before the public service becomes live.
+- **Phase 1 requirements** (`docs/ASKDANNY-PHASE1-REQUIREMENTS.md`): recorded the registry-first query and output-safety acceptance case.
+
 ## 2026-09-03
 
 ### Added

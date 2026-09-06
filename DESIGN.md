@@ -1,6 +1,6 @@
 # PersonalKM — 知識管理系統設計文檔
 
-> 最後更新：2026-09-03 — 新增 AskDanny LINE query bot（lifestyle vault 查詢介面，部署於 Render）；query 層新增 LINE 回覆通道，核心架構無變動。
+> 最後更新：2026-09-06 — AskDanny Phase 1 改為 registry-first 查詢並以獨立 Render service 執行；核心 Capture／Resolve／Ingest／Propagate 架構不變。
 
 ---
 
