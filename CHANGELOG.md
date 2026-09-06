@@ -10,7 +10,7 @@ All completed implementation reports, one-time analyses, and delivery summaries 
 
 ### Changed
 
-- **AskDanny Render service** (`render.yaml`): declared the independent `personalkm-askdanny` web service with the existing startup script and secret-backed environment variables. Blueprint sync is still required before the public service becomes live.
+- **AskDanny Render service** (`render.yaml`): declared and synced the independent `personalkm-askdanny` web service with the existing startup script and secret-backed environment variables. Live URL: `https://personalkm.onrender.com`.
 - **Phase 1 requirements** (`docs/ASKDANNY-PHASE1-REQUIREMENTS.md`): recorded the registry-first query and output-safety acceptance case.
 
 ## 2026-09-03
