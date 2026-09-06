@@ -114,6 +114,7 @@ class RegistryEntry:
     store: str
     source: str
     address: str
+    gps: tuple[float, float] | None
     highlights: tuple[str, ...]
     rating: float | None
     rating_count: int | None
@@ -235,6 +236,14 @@ def _load_registry_entries(root: Path) -> list[RegistryEntry]:
         highlights = raw.get("highlights", [])
         rating = raw.get("rating")
         rating_count = raw.get("rating_count")
+        gps_raw = raw.get("gps")
+        gps = (
+            (float(gps_raw[0]), float(gps_raw[1]))
+            if isinstance(gps_raw, list)
+            and len(gps_raw) == 2
+            and all(isinstance(value, (int, float)) and not isinstance(value, bool) for value in gps_raw)
+            else None
+        )
         entries.append(
             RegistryEntry(
                 city=str(raw.get("city", "")).strip(),
@@ -242,6 +251,7 @@ def _load_registry_entries(root: Path) -> list[RegistryEntry]:
                 store=str(raw.get("store", "")).strip(),
                 source=str(raw.get("source", "")).strip(),
                 address=str(raw.get("address", "")).strip(),
+                gps=gps,
                 highlights=tuple(
                     item.strip() for item in highlights if isinstance(item, str) and item.strip()
                 )
@@ -293,16 +303,25 @@ def _registry_matches(query: str, entries: list[RegistryEntry]) -> list[Registry
 def _render_registry_answer(entries: list[RegistryEntry]) -> str:
     lines = [f"目前整理到 {len(entries)} 筆符合條件的資料："]
     for entry in entries[:5]:
-        lines.append(f"\n- {entry.store}")
-        if entry.address:
-            lines.append(f"  地址：{entry.address}")
+        lines.append(f"\n- 主題：{entry.subject}")
+        lines.append(f"- 店名：{entry.store}")
         if entry.rating is not None:
             rating_text = f"{entry.rating:g}"
             if entry.rating_count is not None:
                 rating_text += f"（{entry.rating_count} 則）"
-            lines.append(f"  評分：{rating_text}")
+            lines.append(f"- Google 星等：⭐ {rating_text}")
         if entry.highlights:
-            lines.append(f"  特色：{'；'.join(entry.highlights[:3])}")
+            lines.append(f"- 特色說明：{'；'.join(entry.highlights[:3])}")
+        if entry.gps:
+            latitude, longitude = entry.gps
+            coordinates = ",".join(
+                f"{coordinate:.7f}".rstrip("0").rstrip(".")
+                for coordinate in (latitude, longitude)
+            )
+            lines.append(
+                "- GPS：https://www.google.com/maps/search/?api=1&query="
+                f"{coordinates}"
+            )
     return "\n".join(lines)
 
 

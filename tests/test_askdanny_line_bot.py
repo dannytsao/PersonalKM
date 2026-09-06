@@ -23,6 +23,7 @@ def test_registry_query_filters_location_and_subject_without_llm(tmp_path: Path,
                 "store": "COFFEE FIRST",
                 "source": "wiki/entities/coffee.md",
                 "address": "臺北市北投區中央北路二段68之5號",
+                "gps": [25.1375317, 121.4943154],
                 "highlights": ["澳式早午餐店", "高蛋白巧克力軟餅乾"],
                 "rating": 4.9,
                 "rating_count": 72,
@@ -61,6 +62,12 @@ def test_registry_query_filters_location_and_subject_without_llm(tmp_path: Path,
     assert "COFFEE FIRST" in result["answer"]
     assert "士林早午餐" not in result["answer"]
     assert "北投旅館" not in result["answer"]
+    assert "- 主題：早午餐" in result["answer"]
+    assert "- 店名：COFFEE FIRST" in result["answer"]
+    assert "- Google 星等：⭐ 4.9（72 則）" in result["answer"]
+    assert "- 特色說明：澳式早午餐店；高蛋白巧克力軟餅乾" in result["answer"]
+    assert "- GPS：https://www.google.com/maps/search/?api=1&query=25.1375317,121.4943154" in result["answer"]
+    assert "地址：" not in result["answer"]
     assert "<think>" not in result["answer"]
 
 
@@ -94,6 +101,7 @@ def test_registry_query_excludes_removed_entries_and_supports_lodging(tmp_path: 
     assert result["error"] is None
     assert "北投溫泉旅館" in result["answer"]
     assert "已移除旅館" not in result["answer"]
+    assert "GPS：" not in result["answer"]
 
 
 def test_registry_query_returns_no_match_for_known_location_without_subject(tmp_path: Path, monkeypatch) -> None:
