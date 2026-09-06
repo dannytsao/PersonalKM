@@ -110,6 +110,8 @@ def test_registry_query_excludes_removed_entries_and_supports_lodging(tmp_path: 
                 "subject": "住宿",
                 "store": "北投溫泉旅館",
                 "address": "臺北市北投區中山路1號",
+                "phone": None,
+                "reservation_url": None,
                 "highlights": ["溫泉"],
                 "rating": 4.8,
                 "rating_count": 20,

@@ -297,6 +297,8 @@ def _load_registry_entries(root: Path) -> list[RegistryEntry]:
     for raw in raw_entries:
         if not isinstance(raw, dict) or raw.get("status") == "removed":
             continue
+        phone = raw.get("phone")
+        reservation_url = raw.get("reservation_url")
         highlights = raw.get("highlights", [])
         rating = raw.get("rating")
         rating_count = raw.get("rating_count")
@@ -324,8 +326,10 @@ def _load_registry_entries(root: Path) -> list[RegistryEntry]:
                 rating=float(rating) if isinstance(rating, (int, float)) else None,
                 rating_count=int(rating_count) if isinstance(rating_count, int) else None,
                 status=str(raw.get("status", "")).strip(),
-                phone=str(raw.get("phone", "")).strip(),
-                reservation_url=str(raw.get("reservation_url", "")).strip(),
+                phone=phone.strip() if isinstance(phone, str) else "",
+                reservation_url=(
+                    reservation_url.strip() if isinstance(reservation_url, str) else ""
+                ),
             )
         )
     return entries
