@@ -1,4 +1,5 @@
 import json
+import anyio
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -10,6 +11,21 @@ def _write_registry(root: Path, entries: list[dict]) -> None:
     registry.mkdir(parents=True)
     (registry / "city-subject-store.json").write_text(
         json.dumps({"entries": entries}, ensure_ascii=False), encoding="utf-8"
+    )
+
+
+def _entry(store: str, subject: str = "餐廳") -> line_bot.RegistryEntry:
+    return line_bot.RegistryEntry(
+        city="新北市",
+        subject=subject,
+        store=store,
+        source="wiki/entities/example.md",
+        address="新北市板橋區文化路1號",
+        gps=(25.0, 121.0),
+        highlights=("特色",),
+        rating=4.5,
+        rating_count=10,
+        status="resolved",
     )
 
 
@@ -228,6 +244,150 @@ def test_webhook_event_parser_accepts_text_and_ignores_other_events() -> None:
     )
 
     assert events == [line_bot.AskDannyEvent("reply-1", "user-1", "北投早午餐")]
+
+
+def test_query_options_and_sheet_rows_use_the_explicit_export_contract() -> None:
+    options = line_bot._render_query_options(True)
+    rows = line_bot._registry_entry_rows((_entry("測試餐廳"),))
+
+    assert "1. 再看幾筆（例如：再看 10 筆）" in options
+    assert "2. 終止輸出" in options
+    assert "3. 匯出目前已顯示的資料到我的 Google Sheet" in options
+    assert rows == [
+        ["主題", "店名", "Google 星等", "特色說明", "GPS"],
+        [
+            "餐廳",
+            "測試餐廳",
+            "⭐ 4.5（10 則）",
+            "特色",
+            "https://www.google.com/maps/search/?api=1&query=25,121",
+        ],
+    ]
+
+
+def test_query_session_can_show_user_selected_count_and_terminate(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    line_bot.QUERY_SESSIONS.clear()
+    line_bot.QUERY_SESSIONS["user-1"] = line_bot.QuerySession(
+        entries=(_entry("第一家"), _entry("第二家"), _entry("第三家")),
+        offset=1,
+    )
+    cfg = {"access_token": "token"}
+    event = line_bot.AskDannyEvent("reply-1", "user-1", "再看 2 筆")
+
+    anyio.run(line_bot._handle_query_session_event, cfg, event, event.text)
+
+    assert "第二家" in sent[0]
+    assert "第三家" in sent[0]
+    assert line_bot.QUERY_SESSIONS["user-1"].offset == 3
+
+    anyio.run(
+        line_bot._handle_query_session_event,
+        cfg,
+        line_bot.AskDannyEvent("reply-2", "user-1", "2"),
+        "2",
+    )
+
+    assert sent[-1] == "已終止這次輸出。"
+    assert "user-1" not in line_bot.QUERY_SESSIONS
+
+
+def test_google_export_option_is_fail_closed_without_oauth_config(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    monkeypatch.setattr(line_bot, "google_oauth_config_from_env", lambda: None)
+    line_bot.QUERY_SESSIONS.clear()
+    line_bot.QUERY_SESSIONS["user-1"] = line_bot.QuerySession(
+        entries=(_entry("第一家"),),
+        offset=1,
+    )
+
+    anyio.run(
+        line_bot._handle_query_session_event,
+        {"access_token": "token"},
+        line_bot.AskDannyEvent("reply-1", "user-1", "3"),
+        "3",
+    )
+
+    assert sent == ["Google Sheet 匯出尚未設定，請先通知 Danny 設定 Google OAuth。"]
+    assert "user-1" in line_bot.QUERY_SESSIONS
+
+
+def test_initial_registry_reply_includes_actions_and_stores_displayed_offset(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    entries = tuple(_entry(f"第 {index} 家") for index in range(1, 7))
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    monkeypatch.setattr(
+        line_bot,
+        "_query_all",
+        lambda _text, _root: {
+            "answer": line_bot._render_registry_answer(list(entries)),
+            "sources": [line_bot.REGISTRY_SOURCE_TITLE],
+            "error": None,
+            "registry_entries": entries,
+        },
+    )
+    monkeypatch.setattr(line_bot, "vault_root", lambda _cfg: Path("/tmp/lifestyle-vault"))
+    line_bot.QUERY_SESSIONS.clear()
+
+    anyio.run(
+        line_bot.handle_text_event,
+        {"access_token": "token", "allowed_users": set()},
+        line_bot.AskDannyEvent("reply-1", "user-1", "新北市有什麼美食？"),
+    )
+
+    assert "1. 再看幾筆（例如：再看 10 筆）" in sent[0]
+    assert "3. 匯出目前已顯示的資料到我的 Google Sheet" in sent[0]
+    assert line_bot.QUERY_SESSIONS["user-1"].offset == 5
+
+
+def test_google_export_stores_only_currently_displayed_entries(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    monkeypatch.setattr(line_bot, "google_oauth_config_from_env", lambda: object())
+    monkeypatch.setattr(
+        line_bot,
+        "google_authorization_url",
+        lambda _config, state: f"https://accounts.google.com/?state={state}",
+    )
+    line_bot.QUERY_SESSIONS.clear()
+    line_bot.PENDING_GOOGLE_EXPORTS.clear()
+    entries = tuple(_entry(f"第 {index} 家") for index in range(1, 5))
+    line_bot.QUERY_SESSIONS["user-1"] = line_bot.QuerySession(entries=entries, offset=2)
+
+    anyio.run(
+        line_bot._handle_query_session_event,
+        {"access_token": "token"},
+        line_bot.AskDannyEvent("reply-1", "user-1", "3"),
+        "3",
+    )
+
+    assert "請點擊以下連結" in sent[0]
+    assert "user-1" not in line_bot.QUERY_SESSIONS
+    assert len(line_bot.PENDING_GOOGLE_EXPORTS) == 1
+    pending = next(iter(line_bot.PENDING_GOOGLE_EXPORTS.values()))
+    assert pending.entries == entries[:2]
 
 
 def test_llm_query_replaces_reasoning_leak_with_safe_fallback(tmp_path: Path, monkeypatch) -> None:

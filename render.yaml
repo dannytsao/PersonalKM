@@ -19,6 +19,12 @@ services:
         sync: false
       - key: ASKDANNY_ALLOWED_USERS
         sync: false
+      - key: ASKDANNY_GOOGLE_CLIENT_ID
+        sync: false
+      - key: ASKDANNY_GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: ASKDANNY_GOOGLE_REDIRECT_URI
+        value: https://personalkm.onrender.com/oauth/google/callback
       - key: MINIMAX_API_KEY
         sync: false
   - type: web

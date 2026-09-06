@@ -21,6 +21,9 @@ AskDanny — PersonalKM LINE Query Bot
     ASKDANNY_ALLOWED_USERS        逗號分隔 LINE userId 白名單；空 = 全開放
     ASKDANNY_LIFESTYLE_VAULT      lifestyle vault 路徑
     ASKDANNY_HELP_TEXT            自訂 help 訊息（選填）
+    ASKDANNY_GOOGLE_CLIENT_ID     Google OAuth client ID（選填）
+    ASKDANNY_GOOGLE_CLIENT_SECRET Google OAuth client secret（選填）
+    ASKDANNY_GOOGLE_REDIRECT_URI  Google OAuth callback URL（選填）
 
 執行（Render）:
     bash scripts/start_askdanny_render.sh
@@ -28,19 +31,28 @@ AskDanny — PersonalKM LINE Query Bot
 from __future__ import annotations
 
 import asyncio
+from html import escape
 import json
 import logging
 import os
 import re
-from dataclasses import dataclass
+import secrets
+import time
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
 import httpx
 from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
+from fastapi.responses import HTMLResponse
 
 from personalkm.capture.line import verify_line_signature
 from personalkm.llm.router import route
+from personalkm.query.google_sheets import (
+    export_to_google_sheet,
+    google_authorization_url,
+    google_oauth_config_from_env,
+)
 
 app = FastAPI(title="AskDanny — PersonalKM LINE Query Bot")
 logger = logging.getLogger(__name__)
@@ -100,6 +112,10 @@ INTERNAL_MARKERS = (
     "tool_calls",
     "function_call",
 )
+MORE_COMMAND_RE = re.compile(r"^(?:再看|更多|看更多)\s*(\d{1,3})\s*(?:筆|列)?$")
+TERMINATE_COMMANDS = frozenset(("2", "終止", "終止輸出", "停止輸出", "取消"))
+EXPORT_COMMANDS = frozenset(("3", "匯出", "匯出到 Google Sheet", "匯出 Google Sheet"))
+SESSION_TTL_SECONDS = 1800
 
 
 # ── Event model ────────────────────────────────────────────────────────────
@@ -123,6 +139,24 @@ class RegistryEntry:
     rating: float | None
     rating_count: int | None
     status: str
+
+
+@dataclass(frozen=True, slots=True)
+class QuerySession:
+    entries: tuple[RegistryEntry, ...]
+    offset: int
+    created_at: float = field(default_factory=time.monotonic)
+
+
+@dataclass(frozen=True, slots=True)
+class PendingGoogleExport:
+    user_id: str
+    entries: tuple[RegistryEntry, ...]
+    created_at: float
+
+
+QUERY_SESSIONS: dict[str, QuerySession] = {}
+PENDING_GOOGLE_EXPORTS: dict[str, PendingGoogleExport] = {}
 
 
 def askdanny_events_from_webhook(payload: dict) -> list[AskDannyEvent]:
@@ -188,6 +222,30 @@ async def reply_message(access_token: str, reply_token: str, text: str) -> bool:
             return True
     except Exception:
         logger.exception("LINE reply request failed")
+        return False
+
+
+async def push_message(access_token: str, user_id: str, text: str) -> bool:
+    if not access_token or not user_id:
+        return False
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+    }
+    payload = {"to": user_id, "messages": [{"type": "text", "text": text}]}
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                "https://api.line.me/v2/bot/message/push",
+                headers=headers,
+                json=payload,
+            )
+            if response.status_code >= 400:
+                logger.error("LINE push failed: %s %s", response.status_code, response.text[:300])
+                return False
+            return True
+    except Exception:
+        logger.exception("LINE push request failed")
         return False
 
 
@@ -314,26 +372,181 @@ def _render_registry_answer(entries: list[RegistryEntry]) -> str:
     else:
         lines = [f"目前整理到 {len(entries)} 筆符合條件的資料："]
     for entry in displayed_entries:
-        lines.append(f"\n- 主題：{entry.subject}")
-        lines.append(f"- 店名：{entry.store}")
+        lines.extend(_render_registry_entry_lines(entry))
+    return "\n".join(lines)
+
+
+def _render_registry_entry_lines(entry: RegistryEntry) -> list[str]:
+    lines = [f"\n- 主題：{entry.subject}", f"- 店名：{entry.store}"]
+    if entry.rating is not None:
+        rating_text = f"{entry.rating:g}"
+        if entry.rating_count is not None:
+            rating_text += f"（{entry.rating_count} 則）"
+        lines.append(f"- Google 星等：⭐ {rating_text}")
+    if entry.highlights:
+        lines.append(f"- 特色說明：{'；'.join(entry.highlights[:3])}")
+    if entry.gps:
+        latitude, longitude = entry.gps
+        coordinates = ",".join(
+            f"{coordinate:.7f}".rstrip("0").rstrip(".")
+            for coordinate in (latitude, longitude)
+        )
+        lines.append(
+            "- GPS：https://www.google.com/maps/search/?api=1&query="
+            f"{coordinates}"
+        )
+    return lines
+
+
+def _render_registry_page(
+    entries: tuple[RegistryEntry, ...],
+    start: int,
+    end: int,
+) -> str:
+    page_entries = entries[start:end]
+    lines = [f"目前顯示第 {start + 1}–{end} 筆，共 {len(entries)} 筆："]
+    for entry in page_entries:
+        lines.extend(_render_registry_entry_lines(entry))
+    return "\n".join(lines)
+
+
+def _render_query_options(has_more: bool) -> str:
+    lines = ["\n\n請選擇下一步："]
+    if has_more:
+        lines.append("1. 再看幾筆（例如：再看 10 筆）")
+    else:
+        lines.append("1. 已沒有更多資料")
+    lines.append("2. 終止輸出")
+    lines.append("3. 匯出目前已顯示的資料到我的 Google Sheet")
+    return "\n".join(lines)
+
+
+def _registry_entry_rows(entries: tuple[RegistryEntry, ...]) -> list[list[str]]:
+    rows = [["主題", "店名", "Google 星等", "特色說明", "GPS"]]
+    for entry in entries:
+        rating = ""
         if entry.rating is not None:
-            rating_text = f"{entry.rating:g}"
+            rating = f"⭐ {entry.rating:g}"
             if entry.rating_count is not None:
-                rating_text += f"（{entry.rating_count} 則）"
-            lines.append(f"- Google 星等：⭐ {rating_text}")
-        if entry.highlights:
-            lines.append(f"- 特色說明：{'；'.join(entry.highlights[:3])}")
+                rating += f"（{entry.rating_count} 則）"
+        gps = ""
         if entry.gps:
             latitude, longitude = entry.gps
             coordinates = ",".join(
                 f"{coordinate:.7f}".rstrip("0").rstrip(".")
                 for coordinate in (latitude, longitude)
             )
-            lines.append(
-                "- GPS：https://www.google.com/maps/search/?api=1&query="
-                f"{coordinates}"
-            )
-    return "\n".join(lines)
+            gps = f"https://www.google.com/maps/search/?api=1&query={coordinates}"
+        rows.append([
+            entry.subject,
+            entry.store,
+            rating,
+            "；".join(entry.highlights[:3]),
+            gps,
+        ])
+    return rows
+
+
+def _parse_more_count(text: str) -> int | None:
+    match = MORE_COMMAND_RE.fullmatch(text.strip())
+    return int(match.group(1)) if match else None
+
+
+def _prune_pending_exports() -> None:
+    cutoff = time.monotonic() - SESSION_TTL_SECONDS
+    expired = [
+        state
+        for state, pending in PENDING_GOOGLE_EXPORTS.items()
+        if pending.created_at < cutoff
+    ]
+    for state in expired:
+        PENDING_GOOGLE_EXPORTS.pop(state, None)
+
+
+def _prune_query_sessions() -> None:
+    cutoff = time.monotonic() - SESSION_TTL_SECONDS
+    expired = [
+        user_id
+        for user_id, session in QUERY_SESSIONS.items()
+        if session.created_at < cutoff
+    ]
+    for user_id in expired:
+        QUERY_SESSIONS.pop(user_id, None)
+
+
+async def _start_google_export(cfg: dict, event: AskDannyEvent, session: QuerySession) -> None:
+    config = google_oauth_config_from_env()
+    if config is None:
+        await reply_message(
+            cfg["access_token"],
+            event.reply_token,
+            "Google Sheet 匯出尚未設定，請先通知 Danny 設定 Google OAuth。",
+        )
+        return
+
+    _prune_pending_exports()
+    state = secrets.token_urlsafe(32)
+    displayed_entries = session.entries[: session.offset]
+    PENDING_GOOGLE_EXPORTS[state] = PendingGoogleExport(
+        user_id=event.user_id,
+        entries=displayed_entries,
+        created_at=time.monotonic(),
+    )
+    QUERY_SESSIONS.pop(event.user_id, None)
+    url = google_authorization_url(config, state)
+    await reply_message(
+        cfg["access_token"],
+        event.reply_token,
+        "請點擊以下連結，用你的 Google 帳號授權建立 Sheet；完成後這次輸出會結束：\n" + url,
+    )
+
+
+async def _handle_query_session_event(
+    cfg: dict,
+    event: AskDannyEvent,
+    text: str,
+) -> bool:
+    _prune_query_sessions()
+    session = QUERY_SESSIONS.get(event.user_id)
+    if session is None:
+        return False
+    if text in TERMINATE_COMMANDS:
+        QUERY_SESSIONS.pop(event.user_id, None)
+        await reply_message(cfg["access_token"], event.reply_token, "已終止這次輸出。")
+        return True
+    if text == "1":
+        if session.offset >= len(session.entries):
+            await reply_message(cfg["access_token"], event.reply_token, "已沒有更多資料。")
+            return True
+        await reply_message(
+            cfg["access_token"], event.reply_token, "請輸入想再看的筆數，例如：再看 10 筆。"
+        )
+        return True
+    if text in EXPORT_COMMANDS:
+        await _start_google_export(cfg, event, session)
+        return True
+
+    count = _parse_more_count(text)
+    if count is None:
+        return False
+    if count < 1:
+        await reply_message(cfg["access_token"], event.reply_token, "筆數請輸入 1 以上。")
+        return True
+    if session.offset >= len(session.entries):
+        await reply_message(cfg["access_token"], event.reply_token, "已沒有更多資料。")
+        return True
+
+    start = session.offset
+    end = min(start + count, len(session.entries))
+    QUERY_SESSIONS[event.user_id] = QuerySession(
+        entries=session.entries,
+        offset=end,
+        created_at=session.created_at,
+    )
+    answer = _render_registry_page(session.entries, start, end)
+    answer += _render_query_options(end < len(session.entries))
+    await reply_message(cfg["access_token"], event.reply_token, answer)
+    return True
 
 
 def _safe_llm_answer(answer: str) -> str | None:
@@ -403,6 +616,7 @@ def _query_all(query: str, root: Path) -> dict:
             "answer": _render_registry_answer(registry_matches),
             "sources": [REGISTRY_SOURCE_TITLE],
             "error": None,
+            "registry_entries": tuple(registry_matches),
         }
 
     wiki_root = root / "wiki"
@@ -484,6 +698,9 @@ async def handle_text_event(cfg: dict, event: AskDannyEvent) -> None:
     text = event.text.strip()
     logger.info("AskDanny query from %s: %r", event.user_id[:8] or "?", text[:80])
 
+    if await _handle_query_session_event(cfg, event, text):
+        return
+
     if text.lower() in ("/help", "help", "說明", "怎麼用"):
         await reply_message(cfg["access_token"], event.reply_token, cfg["help_text"])
         return
@@ -493,6 +710,7 @@ async def handle_text_event(cfg: dict, event: AskDannyEvent) -> None:
         await reply_message(cfg["access_token"], event.reply_token, "知識庫目前沒有設定好，請通知 Danny。")
         return
 
+    QUERY_SESSIONS.pop(event.user_id, None)
     loop = asyncio.get_running_loop()
     result = await loop.run_in_executor(None, _query_all, text, root)
 
@@ -504,11 +722,49 @@ async def handle_text_event(cfg: dict, event: AskDannyEvent) -> None:
         return
 
     answer = (result.get("answer") or "").strip()
+    registry_entries = result.get("registry_entries")
+    if isinstance(registry_entries, tuple) and registry_entries:
+        session = QuerySession(entries=registry_entries, offset=min(5, len(registry_entries)))
+        QUERY_SESSIONS[event.user_id] = session
+        answer += _render_query_options(session.offset < len(session.entries))
     sources = result.get("sources") or []
     lines = [answer]
     if sources:
         lines.append("\n📚 來源：" + "、".join(sources[:6]))
     await reply_message(cfg["access_token"], event.reply_token, "\n".join(lines))
+
+
+@app.get("/oauth/google/callback")
+async def google_oauth_callback(
+    code: Optional[str] = None,
+    state: Optional[str] = None,
+    error: Optional[str] = None,
+) -> HTMLResponse:
+    if error:
+        return HTMLResponse("<h1>Google 授權已取消</h1><p>你可以關閉這個頁面，回到 LINE。</p>")
+    if not code or not state:
+        return HTMLResponse("<h1>Google 授權資料不完整</h1>", status_code=400)
+
+    pending = PENDING_GOOGLE_EXPORTS.pop(state, None)
+    if pending is None or time.monotonic() - pending.created_at > SESSION_TTL_SECONDS:
+        return HTMLResponse("<h1>這個匯出連結已失效</h1><p>請回到 LINE 重新操作。</p>", status_code=400)
+
+    config = google_oauth_config_from_env()
+    if config is None:
+        return HTMLResponse("<h1>Google Sheet 匯出尚未設定</h1>", status_code=503)
+
+    try:
+        result = await export_to_google_sheet(config, code, _registry_entry_rows(pending.entries))
+    except (httpx.HTTPError, ValueError):
+        logger.exception("Google Sheet export failed")
+        return HTMLResponse("<h1>Google Sheet 匯出失敗</h1><p>請回到 LINE 稍後重試。</p>", status_code=502)
+
+    cfg = askdanny_settings()
+    await push_message(cfg["access_token"], pending.user_id, f"Google Sheet 已建立：{result.url}")
+    safe_url = escape(result.url, quote=True)
+    return HTMLResponse(
+        f'<h1>匯出完成</h1><p><a href="{safe_url}">開啟 Google Sheet</a></p>'
+    )
 
 
 @app.post("/webhook/line/askdanny")
