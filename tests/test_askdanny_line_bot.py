@@ -101,6 +101,55 @@ def test_registry_query_filters_location_and_subject_without_llm(tmp_path: Path,
     assert "<think>" not in result["answer"]
 
 
+def test_registry_query_filters_beef_noodle_results_to_requested_district(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _write_registry(
+        tmp_path,
+        [
+            {
+                "city": "台北市",
+                "subject": "小吃",
+                "store": "吳家牛肉麵店",
+                "address": "台北市北投區中央北路一段224號",
+                "status": "resolved",
+            },
+            {
+                "city": "台北市",
+                "subject": "小吃",
+                "store": "93番茄牛肉麵",
+                "address": "台北市中正區青島東路3-2號",
+                "status": "resolved",
+            },
+            {
+                "city": "新北市",
+                "subject": "小吃",
+                "store": "蔡家牛肉麵",
+                "address": "新北市中和區秀朗路三段153巷16弄12號",
+                "booking_url": "https://example.test/cai/reserve",
+                "status": "resolved",
+            },
+            {
+                "city": "新北市",
+                "subject": "餐廳",
+                "store": "中和牛排館",
+                "address": "新北市中和區景平路100號",
+                "status": "resolved",
+            },
+        ],
+    )
+    monkeypatch.setattr(line_bot, "route", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError()))
+
+    result = line_bot._query_all("中和牛肉麵", tmp_path)
+
+    assert result["error"] is None
+    assert "蔡家牛肉麵" in result["answer"]
+    assert "- 預約連結：https://example.test/cai/reserve" in result["answer"]
+    assert "中和牛排館" not in result["answer"]
+    assert "吳家牛肉麵店" not in result["answer"]
+    assert "93番茄牛肉麵" not in result["answer"]
+
+
 def test_registry_query_excludes_removed_entries_and_supports_lodging(tmp_path: Path, monkeypatch) -> None:
     _write_registry(
         tmp_path,

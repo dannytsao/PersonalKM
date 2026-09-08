@@ -93,12 +93,17 @@ REGISTRY_SOURCE_TITLE = "城市 × 主題 × 店家彙整"
 SUBJECT_ALIASES = {
     "美食": ("美食",),
     "早午餐": ("早午餐", "brunch"),
+    "牛肉麵": ("牛肉麵", "牛肉面"),
     "住宿": ("住宿", "旅館", "民宿", "飯店", "酒店", "lodging"),
     "咖啡廳": ("咖啡廳", "咖啡館", "咖啡店", "cafe", "coffee"),
     "餐廳": ("餐廳", "restaurant"),
 }
 BROAD_SUBJECTS = {
     "美食": ("餐廳", "小吃", "早午餐", "咖啡廳", "甜點", "酒吧"),
+    "牛肉麵": ("小吃", "餐廳"),
+}
+SUBJECT_MATCH_TERMS = {
+    "牛肉麵": ("牛肉麵", "牛肉面"),
 }
 REASONING_BLOCK_RE = re.compile(
     r"<(?:think|analysis)>.*?</(?:think|analysis)>", re.IGNORECASE | re.DOTALL
@@ -298,7 +303,7 @@ def _load_registry_entries(root: Path) -> list[RegistryEntry]:
         if not isinstance(raw, dict) or raw.get("status") == "removed":
             continue
         phone = raw.get("phone")
-        reservation_url = raw.get("reservation_url")
+        reservation_url = raw.get("reservation_url") or raw.get("booking_url")
         highlights = raw.get("highlights", [])
         rating = raw.get("rating")
         rating_count = raw.get("rating_count")
@@ -356,6 +361,14 @@ def _entry_matches_location(query: str, entry: RegistryEntry) -> bool:
     return False
 
 
+def _entry_matches_subject(subject: str, entry: RegistryEntry) -> bool:
+    terms = SUBJECT_MATCH_TERMS.get(subject)
+    if terms is None:
+        return True
+    haystack = " ".join((entry.store, *entry.highlights)).lower()
+    return any(term.lower() in haystack for term in terms)
+
+
 def _registry_matches(query: str, entries: list[RegistryEntry]) -> list[RegistryEntry] | None:
     subject = _query_subject(query)
     if subject is None:
@@ -366,6 +379,7 @@ def _registry_matches(query: str, entries: list[RegistryEntry]) -> list[Registry
         entry
         for entry in entries
         if entry.subject in BROAD_SUBJECTS.get(subject, (subject,))
+        and _entry_matches_subject(subject, entry)
         and _entry_matches_location(query, entry)
     ]
     return sorted(matches, key=lambda entry: (-(entry.rating or 0), entry.store))
