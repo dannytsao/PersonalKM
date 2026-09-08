@@ -96,6 +96,7 @@ SUBJECT_ALIASES = {
     "美食": ("美食",),
     "早午餐": ("早午餐", "brunch"),
     "牛肉麵": ("牛肉麵", "牛肉面"),
+    "拉麵": ("拉麵", "拉面", "ramen"),
     "住宿": ("住宿", "旅館", "民宿", "飯店", "酒店", "lodging"),
     "咖啡廳": ("咖啡廳", "咖啡館", "咖啡店", "cafe", "coffee"),
     "餐廳": ("餐廳", "restaurant"),
@@ -103,9 +104,11 @@ SUBJECT_ALIASES = {
 BROAD_SUBJECTS = {
     "美食": ("餐廳", "小吃", "早午餐", "咖啡廳", "甜點", "酒吧"),
     "牛肉麵": ("小吃", "餐廳"),
+    "拉麵": ("小吃", "餐廳"),
 }
 SUBJECT_MATCH_TERMS = {
     "牛肉麵": ("牛肉麵", "牛肉面"),
+    "拉麵": ("拉麵", "拉面", "ramen"),
 }
 REASONING_BLOCK_RE = re.compile(
     r"<(?:think|analysis)>.*?</(?:think|analysis)>", re.IGNORECASE | re.DOTALL

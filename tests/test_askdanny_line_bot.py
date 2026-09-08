@@ -146,6 +146,46 @@ def test_tianmu_food_query_uses_curated_neighborhood_section_without_llm(
     assert "其他餐廳" not in result["answer"]
 
 
+def test_taipei_ramen_query_matches_ramen_mentions_across_food_subjects(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _write_registry(
+        tmp_path,
+        [
+            {
+                "city": "台北市",
+                "subject": "餐廳",
+                "store": "天玉麵",
+                "address": "台北市士林區中山北路七段63巷3號",
+                "highlights": ["天母商圈拉麵店"],
+                "status": "resolved",
+            },
+            {
+                "city": "台北市",
+                "subject": "小吃",
+                "store": "海鮮拉麵",
+                "address": "台北市北投區磺港路76號",
+                "status": "resolved",
+            },
+            {
+                "city": "台北市",
+                "subject": "餐廳",
+                "store": "其他餐廳",
+                "address": "台北市大安區仁愛路1號",
+                "status": "resolved",
+            },
+        ],
+    )
+    monkeypatch.setattr(line_bot, "route", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError()))
+
+    result = line_bot._query_all("台北好吃的拉麵", tmp_path)
+
+    assert result["error"] is None
+    assert "天玉麵" in result["answer"]
+    assert "海鮮拉麵" in result["answer"]
+    assert "其他餐廳" not in result["answer"]
+
+
 def test_registry_query_filters_beef_noodle_results_to_requested_district(
     tmp_path: Path, monkeypatch
 ) -> None:
