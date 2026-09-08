@@ -225,11 +225,133 @@ def test_registry_query_returns_no_match_for_known_location_without_subject(tmp_
             }
         ],
     )
-    monkeypatch.setattr(line_bot, "route", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError()))
+    monkeypatch.setattr(
+        line_bot,
+        "route",
+        lambda *_args, **_kwargs: {
+            "subject": "早午餐",
+            "scope": "unknown",
+            "locations": [],
+            "needs_confirmation": False,
+        },
+    )
 
     result = line_bot._query_all("北投有什麼早午餐？", tmp_path)
 
     assert result == {"answer": None, "sources": [], "error": "no_match"}
+
+
+def test_regional_location_query_requests_confirmation_before_expanding_scope(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _write_registry(
+        tmp_path,
+        [
+            {
+                "city": "嘉義縣",
+                "subject": "住宿",
+                "store": "竹崎住宿",
+                "address": "嘉義縣竹崎鄉石棹1號",
+                "status": "resolved",
+            },
+            {
+                "city": "嘉義縣",
+                "subject": "住宿",
+                "store": "番路住宿",
+                "address": "嘉義縣番路鄉隙頂1號",
+                "status": "resolved",
+            },
+            {
+                "city": "嘉義縣",
+                "subject": "餐廳",
+                "store": "阿里山餐廳",
+                "address": "嘉義縣阿里山鄉樂野1號",
+                "status": "resolved",
+            },
+        ],
+    )
+    monkeypatch.setattr(
+        line_bot,
+        "route",
+        lambda *_args, **_kwargs: {
+            "subject": "住宿",
+            "scope": "regional",
+            "locations": ["阿里山鄉", "竹崎鄉", "番路鄉"],
+            "needs_confirmation": True,
+        },
+    )
+
+    result = line_bot._query_all("阿里山住宿", tmp_path)
+
+    assert result["error"] == "needs_location_confirmation"
+    assert result["location_intent"].locations == ("阿里山鄉", "竹崎鄉", "番路鄉")
+
+
+def test_location_confirmation_runs_registry_filter_for_confirmed_regions(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _write_registry(
+        tmp_path,
+        [
+            {
+                "city": "嘉義縣",
+                "subject": "住宿",
+                "store": "竹崎住宿",
+                "address": "嘉義縣竹崎鄉石棹1號",
+                "status": "resolved",
+            },
+            {
+                "city": "嘉義縣",
+                "subject": "住宿",
+                "store": "番路住宿",
+                "address": "嘉義縣番路鄉隙頂1號",
+                "status": "resolved",
+            },
+            {
+                "city": "嘉義縣",
+                "subject": "餐廳",
+                "store": "阿里山餐廳",
+                "address": "嘉義縣阿里山鄉樂野1號",
+                "status": "resolved",
+            },
+        ],
+    )
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    line_bot.PENDING_LOCATION_CONFIRMATIONS.clear()
+    line_bot.QUERY_SESSIONS.clear()
+    intent = line_bot.LocationIntent(
+        subject="住宿",
+        scope="regional",
+        locations=("阿里山鄉", "竹崎鄉", "番路鄉"),
+        needs_confirmation=True,
+    )
+    line_bot.PENDING_LOCATION_CONFIRMATIONS["user-1"] = line_bot.PendingLocationConfirmation(
+        user_id="user-1",
+        query="阿里山住宿",
+        intent=intent,
+        created_at=line_bot.time.monotonic(),
+    )
+
+    handled = anyio.run(
+        line_bot._handle_location_confirmation_event,
+        {"access_token": "token", "lifestyle_vault": tmp_path},
+        line_bot.AskDannyEvent("reply-1", "user-1", "1"),
+        "1",
+    )
+
+    assert handled is True
+    assert "竹崎住宿" in sent[0]
+    assert "番路住宿" in sent[0]
+    assert "阿里山餐廳" not in sent[0]
+    assert line_bot.QUERY_SESSIONS["user-1"].offset == 2
+    assert "user-1" not in line_bot.PENDING_LOCATION_CONFIRMATIONS
+    line_bot.QUERY_SESSIONS.clear()
 
 
 def test_registry_query_expands_food_alias_across_subjects_without_llm(tmp_path: Path, monkeypatch) -> None:

@@ -121,6 +121,8 @@ INTERNAL_MARKERS = (
 MORE_COMMAND_RE = re.compile(r"^(?:(?:再看|更多|看更多)\s*)?(\d{1,3})\s*(?:筆|列)?$")
 TERMINATE_COMMANDS = frozenset(("2", "終止", "終止輸出", "停止輸出", "取消"))
 EXPORT_COMMANDS = frozenset(("3", "匯出", "匯出到 Google Sheet", "匯出 Google Sheet"))
+LOCATION_CONFIRM_YES = frozenset(("1", "是", "是的", "要", "包含", "包含這些地區", "好", "可以"))
+LOCATION_CONFIRM_NO = frozenset(("2", "否", "不是", "不要", "不包含", "取消"))
 SESSION_TTL_SECONDS = 1800
 
 
@@ -164,8 +166,25 @@ class PendingGoogleExport:
     created_at: float
 
 
+@dataclass(frozen=True, slots=True)
+class LocationIntent:
+    subject: str
+    scope: str
+    locations: tuple[str, ...]
+    needs_confirmation: bool
+
+
+@dataclass(frozen=True, slots=True)
+class PendingLocationConfirmation:
+    user_id: str
+    query: str
+    intent: LocationIntent
+    created_at: float
+
+
 QUERY_SESSIONS: dict[str, QuerySession] = {}
 PENDING_GOOGLE_EXPORTS: dict[str, PendingGoogleExport] = {}
+PENDING_LOCATION_CONFIRMATIONS: dict[str, PendingLocationConfirmation] = {}
 
 
 def askdanny_events_from_webhook(payload: dict) -> list[AskDannyEvent]:
@@ -367,12 +386,97 @@ def _entry_matches_location(query: str, entry: RegistryEntry) -> bool:
     return False
 
 
+def _entry_location_labels(entry: RegistryEntry) -> set[str]:
+    labels = {entry.city} if entry.city else set()
+    labels.update(
+        f"{district}{suffix}"
+        for district, suffix in re.findall(r"(?:市|縣)([\u4e00-\u9fff]{2,4})(區|鄉|鎮)", entry.address)
+    )
+    return labels
+
+
+def _registry_location_labels(entries: list[RegistryEntry]) -> tuple[str, ...]:
+    return tuple(sorted({label for entry in entries for label in _entry_location_labels(entry)}))
+
+
+def _registry_matches_for_locations(
+    subject: str,
+    locations: tuple[str, ...],
+    entries: list[RegistryEntry],
+) -> list[RegistryEntry]:
+    allowed_subjects = BROAD_SUBJECTS.get(subject, (subject,))
+    matches = [
+        entry
+        for entry in entries
+        if entry.subject in allowed_subjects
+        and _entry_matches_subject(subject, entry)
+        and _entry_location_labels(entry).intersection(locations)
+    ]
+    return sorted(matches, key=lambda entry: (-(entry.rating or 0), entry.store))
+
+
 def _entry_matches_subject(subject: str, entry: RegistryEntry) -> bool:
     terms = SUBJECT_MATCH_TERMS.get(subject)
     if terms is None:
         return True
     haystack = " ".join((entry.store, *entry.highlights)).lower()
     return any(term.lower() in haystack for term in terms)
+
+
+def _query_location_intent(
+    query: str,
+    entries: list[RegistryEntry],
+) -> tuple[LocationIntent | None, bool]:
+    subject = _query_subject(query)
+    if subject is None:
+        return None, False
+    labels = _registry_location_labels(entries)
+    prompt = (
+        "你是 AskDanny 的查詢意圖解析器，只能輸出 JSON，不要回答問題。"
+        "請將使用者查詢轉為 subject、scope、locations、needs_confirmation。"
+        "subject 必須使用指定主題；locations 只能從可用行政區清單選取。"
+        "exact 代表單一明確行政區；regional 代表旅遊區或跨行政區概念，必須要求確認；"
+        "unknown 代表無法安全判斷地區。不要選店家、不要補造資料。\n"
+        f"指定 subject：{subject}\n"
+        f"可用行政區清單：{json.dumps(labels, ensure_ascii=False)}\n"
+        f"使用者查詢：{query}\n"
+        'JSON 格式：{"subject":"...","scope":"exact|regional|unknown",'
+        '"locations":["..."],"needs_confirmation":true|false}'
+    )
+    try:
+        raw = route("query_answer", prompt, expect_json=True)
+    except Exception:
+        logger.exception("Query intent normalization failed")
+        return None, True
+    if not isinstance(raw, dict) or raw.get("subject") != subject:
+        return None, True
+    scope = raw.get("scope")
+    locations_raw = raw.get("locations")
+    if scope not in {"exact", "regional", "unknown"} or not isinstance(locations_raw, list):
+        return None, True
+    if not all(isinstance(location, str) for location in locations_raw):
+        return None, True
+    locations = tuple(dict.fromkeys(location.strip() for location in locations_raw if location.strip()))
+    if any(location not in labels for location in locations):
+        return None, True
+    if scope == "unknown" and locations:
+        return None, True
+    if scope == "exact" and len(locations) != 1:
+        return None, True
+    if scope == "regional" and not locations:
+        return None, True
+    needs_confirmation = scope == "regional" or bool(raw.get("needs_confirmation"))
+    if needs_confirmation and not locations:
+        return None, True
+    return (
+        LocationIntent(
+            subject=subject,
+            scope=scope,
+            locations=locations,
+            needs_confirmation=needs_confirmation,
+        ),
+        False,
+    )
 
 
 def _registry_matches(query: str, entries: list[RegistryEntry]) -> list[RegistryEntry] | None:
@@ -517,6 +621,71 @@ def _prune_query_sessions() -> None:
         QUERY_SESSIONS.pop(user_id, None)
 
 
+def _prune_location_confirmations() -> None:
+    cutoff = time.monotonic() - SESSION_TTL_SECONDS
+    expired = [
+        user_id
+        for user_id, pending in PENDING_LOCATION_CONFIRMATIONS.items()
+        if pending.created_at < cutoff
+    ]
+    for user_id in expired:
+        PENDING_LOCATION_CONFIRMATIONS.pop(user_id, None)
+
+
+def _location_confirmation_text(query: str, intent: LocationIntent) -> str:
+    locations = "、".join(intent.locations)
+    return (
+        f"「{query}」可能是區域查詢。是否要將以下行政區一起納入：{locations}？\n"
+        "1. 包含這些地區\n"
+        "2. 不包含，請重新指定地區"
+    )
+
+
+async def _handle_location_confirmation_event(
+    cfg: dict,
+    event: AskDannyEvent,
+    text: str,
+) -> bool:
+    _prune_location_confirmations()
+    pending = PENDING_LOCATION_CONFIRMATIONS.get(event.user_id)
+    if pending is None:
+        return False
+    if text in LOCATION_CONFIRM_YES:
+        PENDING_LOCATION_CONFIRMATIONS.pop(event.user_id, None)
+        root = vault_root(cfg)
+        if not root:
+            await reply_message(cfg["access_token"], event.reply_token, "知識庫目前沒有設定好，請通知 Danny。")
+            return True
+        entries = _load_registry_entries(root)
+        matches = _registry_matches_for_locations(
+            pending.intent.subject, pending.intent.locations, entries
+        )
+        if not matches:
+            await reply_message(
+                cfg["access_token"], event.reply_token,
+                "目前 Danny 的 Lifestyle Vault 沒有整理到確認範圍內的相關資料。",
+            )
+            return True
+        answer = _render_registry_answer(matches)
+        session = QuerySession(entries=tuple(matches), offset=min(5, len(matches)))
+        QUERY_SESSIONS[event.user_id] = session
+        answer += _render_query_options(session.offset < len(session.entries))
+        await reply_message(
+            cfg["access_token"], event.reply_token,
+            answer + "\n📚 來源：" + REGISTRY_SOURCE_TITLE,
+        )
+        return True
+    if text in LOCATION_CONFIRM_NO:
+        PENDING_LOCATION_CONFIRMATIONS.pop(event.user_id, None)
+        await reply_message(
+            cfg["access_token"], event.reply_token,
+            "好的，請重新指定行政區或地點，我不會自行擴大搜尋範圍。",
+        )
+        return True
+    PENDING_LOCATION_CONFIRMATIONS.pop(event.user_id, None)
+    return False
+
+
 async def _start_google_export(cfg: dict, event: AskDannyEvent, session: QuerySession) -> None:
     config = google_oauth_config_from_env()
     if config is None:
@@ -651,16 +820,47 @@ def _build_context(pages: list[dict], max_chars: int = 16000) -> str:
 
 def _query_all(query: str, root: Path) -> dict:
     """Search allowed pages, run ONE LLM synthesis. Returns {answer, sources, error}."""
-    registry_matches = _registry_matches(query, _load_registry_entries(root))
+    registry_entries = _load_registry_entries(root)
+    registry_matches = _registry_matches(query, registry_entries)
     if registry_matches is not None:
-        if not registry_matches:
+        if registry_matches:
+            return {
+                "answer": _render_registry_answer(registry_matches),
+                "sources": [REGISTRY_SOURCE_TITLE],
+                "error": None,
+                "registry_entries": tuple(registry_matches),
+            }
+
+    subject = _query_subject(query)
+    if subject is not None:
+        intent, intent_failed = _query_location_intent(query, registry_entries)
+        if intent_failed:
+            return {
+                "answer": "抱歉，我暫時無法判斷這個地區範圍，請稍後再試。",
+                "sources": [],
+                "error": "llm_failed",
+            }
+        if intent is not None and intent.locations:
+            if intent.needs_confirmation:
+                return {
+                    "answer": None,
+                    "sources": [],
+                    "error": "needs_location_confirmation",
+                    "location_intent": intent,
+                }
+            normalized_matches = _registry_matches_for_locations(
+                subject, intent.locations, registry_entries
+            )
+            if not normalized_matches:
+                return {"answer": None, "sources": [], "error": "no_match"}
+            return {
+                "answer": _render_registry_answer(normalized_matches),
+                "sources": [REGISTRY_SOURCE_TITLE],
+                "error": None,
+                "registry_entries": tuple(normalized_matches),
+            }
+        if registry_matches == []:
             return {"answer": None, "sources": [], "error": "no_match"}
-        return {
-            "answer": _render_registry_answer(registry_matches),
-            "sources": [REGISTRY_SOURCE_TITLE],
-            "error": None,
-            "registry_entries": tuple(registry_matches),
-        }
 
     wiki_root = root / "wiki"
     query_lower = query.lower().strip()
@@ -741,6 +941,8 @@ async def handle_text_event(cfg: dict, event: AskDannyEvent) -> None:
     text = event.text.strip()
     logger.info("AskDanny query from %s: %r", event.user_id[:8] or "?", text[:80])
 
+    if await _handle_location_confirmation_event(cfg, event, text):
+        return
     if await _handle_query_session_event(cfg, event, text):
         return
 
@@ -763,6 +965,21 @@ async def handle_text_event(cfg: dict, event: AskDannyEvent) -> None:
             "目前 Danny 的 Lifestyle Vault 沒有整理到相關資料。\n可以換個問法，或問我 /help 看看我能回答什麼。",
         )
         return
+    if result.get("error") == "needs_location_confirmation":
+        intent = result.get("location_intent")
+        if isinstance(intent, LocationIntent):
+            _prune_location_confirmations()
+            PENDING_LOCATION_CONFIRMATIONS[event.user_id] = PendingLocationConfirmation(
+                user_id=event.user_id,
+                query=text,
+                intent=intent,
+                created_at=time.monotonic(),
+            )
+            await reply_message(
+                cfg["access_token"], event.reply_token,
+                _location_confirmation_text(text, intent),
+            )
+            return
 
     answer = (result.get("answer") or "").strip()
     registry_entries = result.get("registry_entries")
