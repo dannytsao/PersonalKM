@@ -78,7 +78,7 @@ stages:
   # Query engine answers (LINE 我問)
   query_answer:
     primary:  minimax/MiniMax-M2.7-highspeed
-    fallback: [ollama/qwen3.5:9b]
+    fallback: [deepseek/deepseek-v4-flash, ollama/qwen3.5:9b]
     max_output_tokens: 1500
 
   # Pre-ingestion raw note quality check (cheap — classification only)

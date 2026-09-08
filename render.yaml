@@ -27,6 +27,8 @@ services:
         value: https://personalkm.onrender.com/oauth/google/callback
       - key: MINIMAX_API_KEY
         sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
   - type: web
     name: personal-km-line-bot
     runtime: python
