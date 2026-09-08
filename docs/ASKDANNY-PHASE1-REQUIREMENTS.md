@@ -110,7 +110,7 @@ Danny 已確認：**目前 registry 中的有效資料全部可供這 10 位親�
 Registry 命中時，每筆依下列順序使用 LINE 純文字顯示；欄位缺漏就省略，不補猜：
 
 - 主題；
-- 店名；
+- 店名；若 registry 有已查證的 Google Maps URL，或有地址／GPS 可產生標準 Google Maps 連結，於店名行附上可點擊的 Google 地圖連結；
 - 地址；
 - 電話；
 - 預約連結；

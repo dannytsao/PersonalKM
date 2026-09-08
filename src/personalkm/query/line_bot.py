@@ -41,6 +41,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
+from urllib.parse import quote_plus
 
 import httpx
 from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
@@ -146,6 +147,7 @@ class RegistryEntry:
     status: str
     phone: str = ""
     reservation_url: str = ""
+    google_maps_url: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -304,6 +306,7 @@ def _load_registry_entries(root: Path) -> list[RegistryEntry]:
             continue
         phone = raw.get("phone")
         reservation_url = raw.get("reservation_url") or raw.get("booking_url")
+        google_maps_url = raw.get("google_maps_url")
         highlights = raw.get("highlights", [])
         rating = raw.get("rating")
         rating_count = raw.get("rating_count")
@@ -334,6 +337,9 @@ def _load_registry_entries(root: Path) -> list[RegistryEntry]:
                 phone=phone.strip() if isinstance(phone, str) else "",
                 reservation_url=(
                     reservation_url.strip() if isinstance(reservation_url, str) else ""
+                ),
+                google_maps_url=(
+                    google_maps_url.strip() if isinstance(google_maps_url, str) else ""
                 ),
             )
         )
@@ -399,7 +405,11 @@ def _render_registry_answer(entries: list[RegistryEntry]) -> str:
 
 
 def _render_registry_entry_lines(entry: RegistryEntry) -> list[str]:
-    lines = [f"\n- 主題：{entry.subject}", f"- 店名：{entry.store}"]
+    maps_url = _registry_entry_maps_url(entry)
+    store_line = f"- 店名：{entry.store}"
+    if maps_url:
+        store_line += f"（Google 地圖：{maps_url}）"
+    lines = [f"\n- 主題：{entry.subject}", store_line]
     if entry.address:
         lines.append(f"- 地址：{entry.address}")
     if entry.phone:
@@ -414,16 +424,23 @@ def _render_registry_entry_lines(entry: RegistryEntry) -> list[str]:
     if entry.highlights:
         lines.append(f"- 特色說明：{'；'.join(entry.highlights[:3])}")
     if entry.gps:
+        lines.append(f"- GPS：{maps_url}")
+    return lines
+
+
+def _registry_entry_maps_url(entry: RegistryEntry) -> str:
+    if entry.google_maps_url:
+        return entry.google_maps_url
+    if entry.gps:
         latitude, longitude = entry.gps
         coordinates = ",".join(
             f"{coordinate:.7f}".rstrip("0").rstrip(".")
             for coordinate in (latitude, longitude)
         )
-        lines.append(
-            "- GPS：https://www.google.com/maps/search/?api=1&query="
-            f"{coordinates}"
-        )
-    return lines
+        return f"https://www.google.com/maps/search/?api=1&query={coordinates}"
+    if entry.address:
+        return f"https://www.google.com/maps/search/?api=1&query={quote_plus(entry.address)}"
+    return ""
 
 
 def _render_registry_page(
@@ -459,12 +476,7 @@ def _registry_entry_rows(entries: tuple[RegistryEntry, ...]) -> list[list[str]]:
                 rating += f"（{entry.rating_count} 則）"
         gps = ""
         if entry.gps:
-            latitude, longitude = entry.gps
-            coordinates = ",".join(
-                f"{coordinate:.7f}".rstrip("0").rstrip(".")
-                for coordinate in (latitude, longitude)
-            )
-            gps = f"https://www.google.com/maps/search/?api=1&query={coordinates}"
+            gps = _registry_entry_maps_url(entry)
         rows.append([
             entry.subject,
             entry.store,

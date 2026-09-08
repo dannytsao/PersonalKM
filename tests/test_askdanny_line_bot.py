@@ -22,6 +22,7 @@ def _entry(
     *,
     phone: str = "02-1234-5678",
     reservation_url: str = "https://example.test/reserve",
+    google_maps_url: str = "",
 ) -> line_bot.RegistryEntry:
     return line_bot.RegistryEntry(
         city="新北市",
@@ -36,6 +37,7 @@ def _entry(
         status="resolved",
         phone=phone,
         reservation_url=reservation_url,
+        google_maps_url=google_maps_url,
     )
 
 
@@ -92,6 +94,10 @@ def test_registry_query_filters_location_and_subject_without_llm(tmp_path: Path,
     assert "北投旅館" not in result["answer"]
     assert "- 主題：早午餐" in result["answer"]
     assert "- 店名：COFFEE FIRST" in result["answer"]
+    assert (
+        "- 店名：COFFEE FIRST（Google 地圖："
+        "https://www.google.com/maps/search/?api=1&query=25.1375317,121.4943154）"
+    ) in result["answer"]
     assert "- 地址：臺北市北投區中央北路二段68之5號" in result["answer"]
     assert "- 電話：02-2897-1234" in result["answer"]
     assert "- 預約連結：https://example.test/coffee-first/reserve" in result["answer"]
@@ -185,6 +191,25 @@ def test_registry_query_excludes_removed_entries_and_supports_lodging(tmp_path: 
     assert "GPS：" not in result["answer"]
     assert "電話：" not in result["answer"]
     assert "預約連結：" not in result["answer"]
+    assert (
+        "- 店名：北投溫泉旅館（Google 地圖："
+        "https://www.google.com/maps/search/?api=1&query=%E8%87%BA%E5%8C%97%E5%B8%82%E5%8C%97%E6%8A%95%E5%8D%80%E4%B8%AD%E5%B1%B1%E8%B7%AF1%E8%99%9F）"
+    ) in result["answer"]
+
+
+def test_registry_store_name_uses_explicit_google_maps_url() -> None:
+    entry = _entry(
+        "固定地圖店家",
+        google_maps_url="https://maps.app.goo.gl/VniCUnrMFfqDtpCc7",
+    )
+
+    lines = line_bot._render_registry_entry_lines(entry)
+
+    assert (
+        "- 店名：固定地圖店家（Google 地圖："
+        "https://maps.app.goo.gl/VniCUnrMFfqDtpCc7）"
+    ) in lines
+    assert "- GPS：https://maps.app.goo.gl/VniCUnrMFfqDtpCc7" in lines
 
 
 def test_registry_query_returns_no_match_for_known_location_without_subject(tmp_path: Path, monkeypatch) -> None:
