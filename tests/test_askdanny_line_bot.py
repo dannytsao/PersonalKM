@@ -186,6 +186,39 @@ def test_taipei_ramen_query_matches_ramen_mentions_across_food_subjects(
     assert "其他餐廳" not in result["answer"]
 
 
+def test_hybrid_index_finds_topic_only_present_in_highlights(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _write_registry(
+        tmp_path,
+        [
+            {
+                "city": "台北市",
+                "subject": "餐廳",
+                "store": "親子餐廳",
+                "address": "台北市大安區仁愛路1號",
+                "highlights": ["有兒童遊戲區，適合親子用餐"],
+                "status": "resolved",
+            },
+            {
+                "city": "台北市",
+                "subject": "餐廳",
+                "store": "一般餐廳",
+                "address": "台北市大安區仁愛路2號",
+                "highlights": ["適合朋友聚餐"],
+                "status": "resolved",
+            },
+        ],
+    )
+    monkeypatch.setattr(line_bot, "route", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError()))
+
+    result = line_bot._query_all("台北適合親子的餐廳", tmp_path)
+
+    assert result["error"] is None
+    assert "親子餐廳" in result["answer"]
+    assert "一般餐廳" not in result["answer"]
+
+
 def test_registry_query_filters_beef_noodle_results_to_requested_district(
     tmp_path: Path, monkeypatch
 ) -> None:

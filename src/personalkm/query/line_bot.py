@@ -55,6 +55,7 @@ from personalkm.query.google_sheets import (
     google_authorization_url,
     google_oauth_config_from_env,
 )
+from personalkm.query.search_index import build_search_index, query_terms, search
 
 app = FastAPI(title="AskDanny — PersonalKM LINE Query Bot")
 logger = logging.getLogger(__name__)
@@ -110,6 +111,9 @@ SUBJECT_MATCH_TERMS = {
     "牛肉麵": ("牛肉麵", "牛肉面"),
     "拉麵": ("拉麵", "拉面", "ramen"),
 }
+QUERY_GENERIC_TERMS = (
+    "有什麼", "什麼", "推薦", "好吃", "好吃的", "地區", "附近", "哪裡", "適合", "可以", "想找", "請問",
+)
 REASONING_BLOCK_RE = re.compile(
     r"<(?:think|analysis)>.*?</(?:think|analysis)>", re.IGNORECASE | re.DOTALL
 )
@@ -453,6 +457,39 @@ def _registry_matches_for_locations(
         and _entry_location_labels(entry).intersection(locations)
     ]
     return sorted(matches, key=lambda entry: (-(entry.rating or 0), entry.store))
+
+
+def _indexed_registry_matches(
+    query: str,
+    entries: list[RegistryEntry],
+    index: object,
+) -> list[RegistryEntry]:
+    subject = _query_subject(query)
+    all_aliases = [alias for aliases in SUBJECT_ALIASES.values() for alias in aliases]
+    ignored = [*QUERY_GENERIC_TERMS, *all_aliases]
+    if subject in SUBJECT_MATCH_TERMS:
+        ignored = [term for term in ignored if term not in SUBJECT_MATCH_TERMS[subject]]
+    labels = _registry_location_labels(entries)
+    ignored.extend(labels)
+    ignored.extend(
+        label.removesuffix(suffix)
+        for label in labels
+        for suffix in ("市", "縣", "區", "鄉", "鎮")
+        if len(label.removesuffix(suffix)) >= 2
+    )
+    terms = query_terms(query, ignored=ignored)
+    if not terms:
+        return []
+    allowed_subjects = BROAD_SUBJECTS.get(subject, (subject,)) if subject else None
+    return search(
+        index,
+        terms,
+        predicate=lambda entry: (
+            _entry_matches_location(query, entry)
+            and (allowed_subjects is None or entry.subject in allowed_subjects)
+            and (subject is None or _entry_matches_subject(subject, entry))
+        ),
+    )
 
 
 def _tianmu_food_matches(query: str, root: Path, entries: list[RegistryEntry]) -> list[RegistryEntry] | None:
@@ -900,6 +937,15 @@ def _query_all(query: str, root: Path) -> dict:
             "sources": [REGISTRY_SOURCE_TITLE],
             "error": None,
             "registry_entries": tuple(neighborhood_matches),
+        }
+    registry_index = build_search_index(registry_entries)
+    indexed_matches = _indexed_registry_matches(query, registry_entries, registry_index)
+    if indexed_matches:
+        return {
+            "answer": _render_registry_answer(indexed_matches),
+            "sources": [REGISTRY_SOURCE_TITLE],
+            "error": None,
+            "registry_entries": tuple(indexed_matches),
         }
     registry_matches = _registry_matches(query, registry_entries)
     if registry_matches is not None:

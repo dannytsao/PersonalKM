@@ -95,6 +95,8 @@ Danny 已確認：**目前 registry 中的有效資料全部可供這 10 位親�
 
 旅遊區或其他可能跨越多個行政區的地名，由 LLM 先判斷查詢意圖；若需要擴大地區範圍，先列出將納入的行政區請使用者確認，確認後才執行 registry 篩選。
 
+查詢先使用 AskDanny 專用的記憶體倒排索引，從 registry 的主題、店名、地址與特色欄位找出候選；索引是唯讀且可重建，不寫回 Lifestyle Vault。LLM 僅處理索引無法安全判斷的語意。
+
 若地區或類型不足以產生可靠結果，可以追問一個最關鍵的澄清問題；Phase 1 只保存短期的查詢分頁狀態，不建立旅遊規劃狀態。
 
 ### FR-04：回答格式
@@ -170,6 +172,7 @@ Registry 命中時，每筆依下列順序使用 LINE 純文字顯示；欄位�
 實作時只允許觸及以下範圍：
 
 - `src/personalkm/query/line_bot.py`：LINE webhook adapter 與 AskDanny 回覆組裝；
+- `src/personalkm/query/search_index.py`：AskDanny 唯讀、可重建的查詢索引；
 - `src/personalkm/query/` 下新增的 AskDanny 專用唯讀查詢模組；
 - `tests/` 下的 AskDanny fixture、unit tests 與 contract tests；
 - 必要時新增 AskDanny 專用設定檔，但不得使用或修改 `config/models.yaml`。
