@@ -415,8 +415,8 @@ def test_location_confirmation_runs_registry_filter_for_confirmed_regions(
     handled = anyio.run(
         line_bot._handle_location_confirmation_event,
         {"access_token": "token", "lifestyle_vault": tmp_path},
-        line_bot.AskDannyEvent("reply-1", "user-1", "1"),
-        "1",
+        line_bot.AskDannyEvent("reply-1", "user-1", "１"),
+        "１",
     )
 
     assert handled is True

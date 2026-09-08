@@ -38,6 +38,7 @@ import os
 import re
 import secrets
 import time
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -714,6 +715,7 @@ async def _handle_location_confirmation_event(
     text: str,
 ) -> bool:
     _prune_location_confirmations()
+    text = unicodedata.normalize("NFKC", text).strip()
     pending = PENDING_LOCATION_CONFIRMATIONS.get(event.user_id)
     if pending is None:
         return False
