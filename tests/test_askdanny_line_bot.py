@@ -287,6 +287,41 @@ def test_regional_location_query_requests_confirmation_before_expanding_scope(
     assert result["location_intent"].locations == ("阿里山鄉", "竹崎鄉", "番路鄉")
 
 
+def test_location_query_asks_for_explicit_label_when_llm_is_unavailable(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _write_registry(
+        tmp_path,
+        [
+            {
+                "city": "嘉義縣",
+                "subject": "住宿",
+                "store": "嘉義阿里山住宿",
+                "address": "嘉義縣竹崎鄉石棹1號",
+                "status": "resolved",
+            },
+            {
+                "city": "嘉義縣",
+                "subject": "住宿",
+                "store": "阿里山番路住宿",
+                "address": "嘉義縣番路鄉隙頂1號",
+                "status": "resolved",
+            },
+        ],
+    )
+
+    def unavailable(*_args, **_kwargs):
+        raise RuntimeError("provider chain exhausted")
+
+    monkeypatch.setattr(line_bot, "route", unavailable)
+
+    result = line_bot._query_all("阿里山住宿", tmp_path)
+
+    assert result["error"] == "needs_location_confirmation"
+    assert result["location_intent"].locations == ("番路鄉", "竹崎鄉")
+    assert result["location_intent"].needs_confirmation is True
+
+
 def test_location_confirmation_runs_registry_filter_for_confirmed_regions(
     tmp_path: Path, monkeypatch
 ) -> None:

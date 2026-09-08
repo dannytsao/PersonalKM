@@ -399,6 +399,42 @@ def _registry_location_labels(entries: list[RegistryEntry]) -> tuple[str, ...]:
     return tuple(sorted({label for entry in entries for label in _entry_location_labels(entry)}))
 
 
+def _conservative_location_intent(
+    query: str,
+    subject: str,
+    labels: tuple[str, ...],
+    entries: list[RegistryEntry],
+) -> LocationIntent | None:
+    candidates = [
+        label
+        for label in labels
+        if label in query or label.removesuffix("市") in query
+        or label.removesuffix("區") in query
+        or label.removesuffix("鄉") in query
+        or label.removesuffix("鎮") in query
+    ]
+    query_term = query
+    for alias in SUBJECT_ALIASES.get(subject, ()):
+        query_term = query_term.replace(alias, "")
+    query_term = re.sub(r"[\s，。？！?！、]+", "", query_term)
+    if len(query_term) >= 2:
+        for entry in entries:
+            if entry.subject != subject or query_term not in f"{entry.store}{entry.address}":
+                continue
+            candidates.extend(_entry_location_labels(entry) - {entry.city})
+    candidates = list(dict.fromkeys(candidates))
+    if len(candidates) != 1:
+        candidates = [label for label in labels if label in candidates]
+    if not candidates:
+        return None
+    return LocationIntent(
+        subject=subject,
+        scope="exact" if len(candidates) == 1 else "regional",
+        locations=tuple(candidates),
+        needs_confirmation=True,
+    )
+
+
 def _registry_matches_for_locations(
     subject: str,
     locations: tuple[str, ...],
@@ -447,27 +483,33 @@ def _query_location_intent(
         raw = route("query_answer", prompt, expect_json=True)
     except Exception:
         logger.exception("Query intent normalization failed")
-        return None, True
+        fallback = _conservative_location_intent(query, subject, labels, entries)
+        return fallback, fallback is None
+
+    def invalid_intent() -> tuple[LocationIntent | None, bool]:
+        fallback = _conservative_location_intent(query, subject, labels, entries)
+        return fallback, fallback is None
+
     if not isinstance(raw, dict) or raw.get("subject") != subject:
-        return None, True
+        return invalid_intent()
     scope = raw.get("scope")
     locations_raw = raw.get("locations")
     if scope not in {"exact", "regional", "unknown"} or not isinstance(locations_raw, list):
-        return None, True
+        return invalid_intent()
     if not all(isinstance(location, str) for location in locations_raw):
-        return None, True
+        return invalid_intent()
     locations = tuple(dict.fromkeys(location.strip() for location in locations_raw if location.strip()))
     if any(location not in labels for location in locations):
-        return None, True
+        return invalid_intent()
     if scope == "unknown" and locations:
-        return None, True
+        return invalid_intent()
     if scope == "exact" and len(locations) != 1:
-        return None, True
+        return invalid_intent()
     if scope == "regional" and not locations:
-        return None, True
+        return invalid_intent()
     needs_confirmation = scope == "regional" or bool(raw.get("needs_confirmation"))
     if needs_confirmation and not locations:
-        return None, True
+        return invalid_intent()
     return (
         LocationIntent(
             subject=subject,
