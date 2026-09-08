@@ -107,6 +107,45 @@ def test_registry_query_filters_location_and_subject_without_llm(tmp_path: Path,
     assert "<think>" not in result["answer"]
 
 
+def test_tianmu_food_query_uses_curated_neighborhood_section_without_llm(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _write_registry(
+        tmp_path,
+        [
+            {
+                "city": "台北市",
+                "subject": "餐廳",
+                "store": "天母餐廳",
+                "address": "台北市士林區天母東路1號",
+                "status": "resolved",
+            },
+            {
+                "city": "台北市",
+                "subject": "餐廳",
+                "store": "其他餐廳",
+                "address": "台北市士林區文林路1號",
+                "status": "resolved",
+            },
+        ],
+    )
+    page = tmp_path / "wiki" / "concepts" / "tianmu-food.md"
+    page.parent.mkdir(parents=True)
+    page.write_text(
+        "## 天母（含芝山、士林北段）\n\n"
+        "| Subject | Store | 地址 |\n|---|---|---|\n"
+        "| 餐廳 | 天母餐廳 | 台北市士林區天母東路1號 |\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(line_bot, "route", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError()))
+
+    result = line_bot._query_all("天母地區美食", tmp_path)
+
+    assert result["error"] is None
+    assert "天母餐廳" in result["answer"]
+    assert "其他餐廳" not in result["answer"]
+
+
 def test_registry_query_filters_beef_noodle_results_to_requested_district(
     tmp_path: Path, monkeypatch
 ) -> None:

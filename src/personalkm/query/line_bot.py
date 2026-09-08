@@ -451,6 +451,31 @@ def _registry_matches_for_locations(
     return sorted(matches, key=lambda entry: (-(entry.rating or 0), entry.store))
 
 
+def _tianmu_food_matches(query: str, root: Path, entries: list[RegistryEntry]) -> list[RegistryEntry] | None:
+    if "天母" not in query or _query_subject(query) != "美食":
+        return None
+    page_path = root / "wiki" / "concepts" / "tianmu-food.md"
+    try:
+        body = page_path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return None
+    section = re.search(r"## 天母[^\n]*\n(.*?)(?=\n## |\Z)", body, re.DOTALL)
+    if section is None:
+        return None
+    stores = {
+        match.group(1).strip().removesuffix(" 👤")
+        for match in re.finditer(r"^\|\s*[^|]+\|\s*([^|]+)\|", section.group(1), re.MULTILINE)
+    }
+    stores -= {"Store", "---"}
+    matches = [
+        entry
+        for entry in entries
+        if entry.store.removesuffix(" 👤") in stores
+        and entry.subject in BROAD_SUBJECTS["美食"]
+    ]
+    return sorted(matches, key=lambda entry: (-(entry.rating or 0), entry.store)) if matches else None
+
+
 def _entry_matches_subject(subject: str, entry: RegistryEntry) -> bool:
     terms = SUBJECT_MATCH_TERMS.get(subject)
     if terms is None:
@@ -863,6 +888,14 @@ def _build_context(pages: list[dict], max_chars: int = 16000) -> str:
 def _query_all(query: str, root: Path) -> dict:
     """Search allowed pages, run ONE LLM synthesis. Returns {answer, sources, error}."""
     registry_entries = _load_registry_entries(root)
+    neighborhood_matches = _tianmu_food_matches(query, root, registry_entries)
+    if neighborhood_matches:
+        return {
+            "answer": _render_registry_answer(neighborhood_matches),
+            "sources": [REGISTRY_SOURCE_TITLE],
+            "error": None,
+            "registry_entries": tuple(neighborhood_matches),
+        }
     registry_matches = _registry_matches(query, registry_entries)
     if registry_matches is not None:
         if registry_matches:
