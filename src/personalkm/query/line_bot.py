@@ -635,23 +635,25 @@ def _render_registry_entry_lines(entry: RegistryEntry) -> list[str]:
         lines.append(f"- Google 星等：⭐ {rating_text}")
     if entry.highlights:
         lines.append(f"- 特色說明：{'；'.join(entry.highlights[:3])}")
-    if entry.gps:
-        lines.append(f"- GPS：{maps_url}")
     return lines
 
 
 def _registry_entry_maps_url(entry: RegistryEntry) -> str:
+    """Return Google Maps search URL by store name (preferred) or fallback.
+
+    Searching by store name returns the actual business listing with
+    reviews, hours, and photos — coordinates only show a bare pin.
+    """
+    if entry.store and entry.store != "未提供":
+        return f"https://www.google.com/maps/search/?api=1&query={quote_plus(entry.store)}"
     if entry.google_maps_url:
         return entry.google_maps_url
-    if entry.gps:
-        latitude, longitude = entry.gps
-        coordinates = ",".join(
-            f"{coordinate:.7f}".rstrip("0").rstrip(".")
-            for coordinate in (latitude, longitude)
-        )
-        return f"https://www.google.com/maps/search/?api=1&query={coordinates}"
     if entry.address:
         return f"https://www.google.com/maps/search/?api=1&query={quote_plus(entry.address)}"
+    if entry.gps:
+        latitude, longitude = entry.gps
+        coords = f"{latitude:.7f}".rstrip("0").rstrip(".") + "," + f"{longitude:.7f}".rstrip("0").rstrip(".")
+        return f"https://www.google.com/maps/search/?api=1&query={coords}"
     return ""
 
 
