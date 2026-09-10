@@ -7,7 +7,7 @@ REPO_ROOT="${PERSONALKM_REPO_ROOT:-$HOME/Documents/GitHub/DannyTsao/PersonalKM}"
 VAULT_ROOT="${PERSONALKM_VAULT_ROOT:-$HOME/Documents/PersonalKM/Personalkm-vault}"
 LOG_DIR="${PERSONALKM_WORKER_LOG_DIR:-$HOME/Library/Logs/PersonalKM}"
 LOCK_DIR="${PERSONALKM_LOCK_DIR:-$HOME/Library/Application Support/PersonalKM/copilot-ingest.lock}"
-PYTHON_BIN="/Users/dannytsao/.hermes/hermes-agent/venv/bin/python3"
+PYTHON_BIN="/Users/dannytsao/Documents/GitHub/DannyTsao/PersonalKM/.venv/bin/python3"
 
 mkdir -p "$LOG_DIR"
 mkdir -p "$(dirname "$LOCK_DIR")"
