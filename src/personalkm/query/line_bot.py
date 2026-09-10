@@ -413,6 +413,15 @@ def _conservative_location_intent(
     labels: tuple[str, ...],
     entries: list[RegistryEntry],
 ) -> LocationIntent | None:
+    # Neighborhood → district alias map. These are non-administrative
+    # toponyms that users commonly ask about but that never appear in
+    # address fields (which only carry 區/鄉/鎮).
+    NEIGHBORHOOD_ALIASES = {
+        "天母": "士林區",
+        "芝山": "士林區",
+        "石牌": "北投區",
+        "陽明山": "北投區",
+    }
     candidates = [
         label
         for label in labels
@@ -421,6 +430,10 @@ def _conservative_location_intent(
         or label.removesuffix("鄉") in query
         or label.removesuffix("鎮") in query
     ]
+    # Resolve neighborhood aliases to their parent district
+    for neighborhood, district in NEIGHBORHOOD_ALIASES.items():
+        if neighborhood in query and district in labels:
+            candidates.append(district)
     query_term = query
     for alias in SUBJECT_ALIASES.get(subject, ()):
         query_term = query_term.replace(alias, "")
@@ -493,12 +506,7 @@ def _indexed_registry_matches(
 
 
 def _tianmu_food_matches(query: str, root: Path, entries: list[RegistryEntry]) -> list[RegistryEntry] | None:
-    if "天母" not in query:
-        return None
-    subject = _query_subject(query)
-    # Accept all food-related subjects (美食, 早午餐, 咖啡廳, 小吃, etc.)
-    all_food_subjects = BROAD_SUBJECTS.get("美食", ()) + ("美食", "早午餐", "咖啡廳", "甜點", "酒吧", "小吃", "餐廳")
-    if subject not in all_food_subjects:
+    if "天母" not in query or _query_subject(query) != "美食":
         return None
     page_path = root / "wiki" / "concepts" / "tianmu-food.md"
     try:
