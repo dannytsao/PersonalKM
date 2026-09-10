@@ -493,7 +493,12 @@ def _indexed_registry_matches(
 
 
 def _tianmu_food_matches(query: str, root: Path, entries: list[RegistryEntry]) -> list[RegistryEntry] | None:
-    if "天母" not in query or _query_subject(query) != "美食":
+    if "天母" not in query:
+        return None
+    subject = _query_subject(query)
+    # Accept all food-related subjects (美食, 早午餐, 咖啡廳, 小吃, etc.)
+    all_food_subjects = BROAD_SUBJECTS.get("美食", ()) + ("美食", "早午餐", "咖啡廳", "甜點", "酒吧", "小吃", "餐廳")
+    if subject not in all_food_subjects:
         return None
     page_path = root / "wiki" / "concepts" / "tianmu-food.md"
     try:
