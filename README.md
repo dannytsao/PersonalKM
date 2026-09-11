@@ -1,9 +1,15 @@
 # PersonalKM — AI-Powered Second Brain
 
 **Status:** ✅ ALL PHASES STABLE — Render webhook + Dual Vaults (Tech & Lifestyle split) + Mac Mini cron (Ollama-only) + Phase A/B auto + git self-recovery guard + YouTube temporal anchor alignment & wikilink stop-word filtering
-**Last Updated:** 2026-09-06 — AskDanny Phase 1 registry-first query with optional address／phone／reservation fields is live at `https://personalkm.onrender.com`.
+**Last Updated:** 2026-09-11 — AskDanny Phase 1 hybrid registry search with DeepSeek cloud fallback is live at `https://personalkm.onrender.com`.
 
 LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每月報告追踪過時的技術知識。 分流至獨立的 Tech 與 Lifestyle 知識庫。
+
+### AskDanny Phase 1
+
+AskDanny 是提供給受邀親友的 Lifestyle Vault 查詢介面。查詢會先使用不寫回 Vault、可重建的混合索引，搜尋 registry 的主題、店名、地址與特色欄位，再由 deterministic renderer 輸出地址、電話、預約連結、Google 地圖與特色說明。跨行政區或旅遊區查詢會先要求確認；全形／半形選項數字皆可使用。
+
+LLM 路由依序為 MiniMax → DeepSeek → 本機 Ollama。Render 服務需要設定 `MINIMAX_API_KEY`，並建議設定 `DEEPSEEK_API_KEY` 作雲端備援；Lifestyle Vault 仍是唯一資料來源，AskDanny 不修改 Vault。
 
 ---
 

@@ -2,6 +2,18 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
+## 2026-09-11
+
+### Added
+
+- **AskDanny hybrid search index** (`src/personalkm/query/search_index.py`): builds a read-only, rebuildable in-memory index over registry subjects, store names, addresses, and highlights so hidden topics can be retrieved without manually maintaining every subject alias.
+- **DeepSeek cloud fallback** (`config/models.yaml`, `render.yaml`): `query_answer` now routes MiniMax → DeepSeek → local Ollama, with a Render environment slot for `DEEPSEEK_API_KEY`.
+
+### Fixed
+
+- **AskDanny neighborhood and confirmation handling** (`src/personalkm/query/line_bot.py`): preserved the curated Tianmu food section, added conservative regional recovery, and normalized full-width confirmation digits.
+- **AskDanny topic recognition** (`src/personalkm/query/line_bot.py`): ramen queries now match restaurant and snack entries when the term appears in a store name or highlight.
+
 ## 2026-09-06
 
 ### Fixed
