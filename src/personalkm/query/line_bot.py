@@ -34,12 +34,13 @@ import asyncio
 from html import escape
 import json
 import logging
+import math
 import os
 import re
 import secrets
 import time
 import unicodedata
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Optional
 from urllib.parse import quote_plus
@@ -71,8 +72,29 @@ DEFAULT_HELP_TEXT = (
     "・「天母有什麼好吃的？」\n"
     "・「三芝海邊咖啡廳推薦」\n"
     "・「陽明山步道」\n\n"
+    "也可以直接分享你的目前位置（LINE 的「分享位置」功能），然後問我：\n"
+    "・「附近有什麼美食」（預設約 1 公里內）\n"
+    "・「附近 5 公里有什麼景點」\n"
+    "・「走路 10 分鐘內有什麼早餐店」\n\n"
     "我會根據 Danny 的筆記回答，並標注來源。"
 )
+
+# ── Nearby (location-based) query tuning ──────────────────────────────────
+# Straight-line radius, not a real routed walking distance — this project
+# deliberately has no live routing/Places API calls (see
+# ASKDANNY-PHASE1-REQUIREMENTS.md §5). "10 分鐘走路" is approximated as a
+# straight-line radius using a casual walking pace, discounted by a road-
+# indirection factor so it doesn't overclaim precision.
+WALK_SPEED_M_PER_MIN = 80.0
+ROAD_INDIRECTION_FACTOR = 1.3
+DEFAULT_NEARBY_RADIUS_KM = 1.0
+MIN_NEARBY_RADIUS_KM = 0.1
+MAX_NEARBY_RADIUS_KM = 20.0
+
+NEARBY_TRIGGER_RE = re.compile(r"附近|走路|步行|公里|公尺|km|分鐘")
+RADIUS_KM_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:公里|km)", re.IGNORECASE)
+RADIUS_M_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:公尺|米|m\b)", re.IGNORECASE)
+WALK_MINUTES_RE = re.compile(r"(?:走路|步行)?\s*(\d+(?:\.\d+)?)\s*分鐘")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -95,12 +117,13 @@ ALLOWED_PAGES = [
 REGISTRY_SOURCE_TITLE = "城市 × 主題 × 店家彙整"
 SUBJECT_ALIASES = {
     "美食": ("美食",),
-    "早午餐": ("早午餐", "brunch"),
+    "早午餐": ("早午餐", "brunch", "早餐", "早餐店"),
     "牛肉麵": ("牛肉麵", "牛肉面"),
     "拉麵": ("拉麵", "拉面", "ramen"),
     "住宿": ("住宿", "旅館", "民宿", "飯店", "酒店", "lodging"),
     "咖啡廳": ("咖啡廳", "咖啡館", "咖啡店", "cafe", "coffee"),
     "餐廳": ("餐廳", "restaurant"),
+    "景點": ("景點",),
 }
 BROAD_SUBJECTS = {
     "美食": ("餐廳", "小吃", "早午餐", "咖啡廳", "甜點", "酒吧"),
@@ -144,6 +167,14 @@ class AskDannyEvent:
 
 
 @dataclass(frozen=True)
+class AskDannyLocationEvent:
+    reply_token: str
+    user_id: str
+    latitude: float
+    longitude: float
+
+
+@dataclass(frozen=True)
 class RegistryEntry:
     city: str
     subject: str
@@ -158,6 +189,9 @@ class RegistryEntry:
     phone: str = ""
     reservation_url: str = ""
     google_maps_url: str = ""
+    # Only ever set transiently by nearby-search matching, never loaded from
+    # the registry — distance from the user's last shared location.
+    distance_km: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -190,21 +224,50 @@ class PendingLocationConfirmation:
     created_at: float
 
 
+@dataclass(frozen=True, slots=True)
+class PendingLocation:
+    user_id: str
+    latitude: float
+    longitude: float
+    created_at: float = field(default_factory=time.monotonic)
+
+
 QUERY_SESSIONS: dict[str, QuerySession] = {}
 PENDING_GOOGLE_EXPORTS: dict[str, PendingGoogleExport] = {}
 PENDING_LOCATION_CONFIRMATIONS: dict[str, PendingLocationConfirmation] = {}
+PENDING_LOCATIONS: dict[str, PendingLocation] = {}
 
 
-def askdanny_events_from_webhook(payload: dict) -> list[AskDannyEvent]:
-    events: list[AskDannyEvent] = []
-    for event in payload.get("events", []):
-        message = event.get("message", {})
-        if event.get("type") == "message" and message.get("type") == "text":
-            reply_token = event.get("replyToken", "")
-            user_id = event.get("source", {}).get("userId", "")
+def askdanny_events_from_webhook(payload: dict) -> list[AskDannyEvent | AskDannyLocationEvent]:
+    events: list[AskDannyEvent | AskDannyLocationEvent] = []
+    for raw_event in payload.get("events", []):
+        if raw_event.get("type") != "message":
+            continue
+        message = raw_event.get("message", {})
+        reply_token = raw_event.get("replyToken", "")
+        user_id = raw_event.get("source", {}).get("userId", "")
+        if not reply_token:
+            continue
+        message_type = message.get("type")
+        if message_type == "text":
             text = message.get("text", "")
-            if reply_token and text:
+            if text:
                 events.append(AskDannyEvent(reply_token=reply_token, user_id=user_id, text=text))
+        elif message_type == "location":
+            latitude = message.get("latitude")
+            longitude = message.get("longitude")
+            if (
+                isinstance(latitude, (int, float)) and not isinstance(latitude, bool)
+                and isinstance(longitude, (int, float)) and not isinstance(longitude, bool)
+            ):
+                events.append(
+                    AskDannyLocationEvent(
+                        reply_token=reply_token,
+                        user_id=user_id,
+                        latitude=float(latitude),
+                        longitude=float(longitude),
+                    )
+                )
     return events
 
 
@@ -616,6 +679,56 @@ def _registry_matches(query: str, entries: list[RegistryEntry]) -> list[Registry
     return sorted(matches, key=lambda entry: (-(entry.rating or 0), entry.store))
 
 
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    earth_radius_km = 6371.0088
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    d_phi = math.radians(lat2 - lat1)
+    d_lambda = math.radians(lon2 - lon1)
+    a = math.sin(d_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
+    return 2 * earth_radius_km * math.asin(min(1.0, math.sqrt(a)))
+
+
+def _parse_nearby_radius_km(text: str) -> float:
+    match = RADIUS_KM_RE.search(text)
+    if match:
+        radius_km = float(match.group(1))
+    else:
+        match = RADIUS_M_RE.search(text)
+        if match:
+            radius_km = float(match.group(1)) / 1000.0
+        else:
+            match = WALK_MINUTES_RE.search(text)
+            if match:
+                minutes = float(match.group(1))
+                radius_km = minutes * WALK_SPEED_M_PER_MIN / ROAD_INDIRECTION_FACTOR / 1000.0
+            else:
+                radius_km = DEFAULT_NEARBY_RADIUS_KM
+    return max(MIN_NEARBY_RADIUS_KM, min(radius_km, MAX_NEARBY_RADIUS_KM))
+
+
+def _nearby_registry_matches(
+    subject: str | None,
+    latitude: float,
+    longitude: float,
+    radius_km: float,
+    entries: list[RegistryEntry],
+) -> list[RegistryEntry]:
+    allowed_subjects = BROAD_SUBJECTS.get(subject, (subject,)) if subject else None
+    matches: list[RegistryEntry] = []
+    for entry in entries:
+        if entry.gps is None:
+            continue
+        if allowed_subjects is not None and entry.subject not in allowed_subjects:
+            continue
+        if subject is not None and not _entry_matches_subject(subject, entry):
+            continue
+        distance_km = _haversine_km(latitude, longitude, entry.gps[0], entry.gps[1])
+        if distance_km <= radius_km:
+            matches.append(replace(entry, distance_km=distance_km))
+    matches.sort(key=lambda entry: entry.distance_km)
+    return matches
+
+
 def _render_registry_answer(entries: list[RegistryEntry]) -> str:
     displayed_entries = entries[:5]
     if len(entries) > len(displayed_entries):
@@ -637,6 +750,11 @@ def _render_registry_entry_lines(entry: RegistryEntry) -> list[str]:
     lines = [f"\n- 主題：{entry.subject}", store_line]
     if entry.address:
         lines.append(f"- 地址：{entry.address}")
+    if entry.distance_km is not None:
+        walk_minutes = entry.distance_km * 1000 * ROAD_INDIRECTION_FACTOR / WALK_SPEED_M_PER_MIN
+        lines.append(
+            f"- 距離：約 {entry.distance_km:.1f} 公里（直線距離估算，步行約 {walk_minutes:.0f} 分鐘，非實際路徑）"
+        )
     if entry.phone:
         lines.append(f"- 電話：{entry.phone}")
     if entry.reservation_url:
@@ -694,7 +812,11 @@ def _render_query_options(has_more: bool) -> str:
 
 
 def _registry_entry_rows(entries: tuple[RegistryEntry, ...]) -> list[list[str]]:
-    rows = [["主題", "店名", "地址", "電話", "預約連結", "Google 星等", "特色說明", "GPS"]]
+    show_distance = any(entry.distance_km is not None for entry in entries)
+    header = ["主題", "店名", "地址", "電話", "預約連結", "Google 星等", "特色說明", "GPS"]
+    if show_distance:
+        header.insert(3, "距離（公里）")
+    rows = [header]
     for entry in entries:
         rating = ""
         if entry.rating is not None:
@@ -704,7 +826,7 @@ def _registry_entry_rows(entries: tuple[RegistryEntry, ...]) -> list[list[str]]:
         gps = ""
         if entry.gps:
             gps = _registry_entry_maps_url(entry)
-        rows.append([
+        row = [
             entry.subject,
             entry.store,
             entry.address,
@@ -713,7 +835,10 @@ def _registry_entry_rows(entries: tuple[RegistryEntry, ...]) -> list[list[str]]:
             rating,
             "；".join(entry.highlights[:3]),
             gps,
-        ])
+        ]
+        if show_distance:
+            row.insert(3, f"{entry.distance_km:.1f}" if entry.distance_km is not None else "")
+        rows.append(row)
     return rows
 
 
@@ -753,6 +878,17 @@ def _prune_location_confirmations() -> None:
     ]
     for user_id in expired:
         PENDING_LOCATION_CONFIRMATIONS.pop(user_id, None)
+
+
+def _prune_pending_locations() -> None:
+    cutoff = time.monotonic() - SESSION_TTL_SECONDS
+    expired = [
+        user_id
+        for user_id, pending in PENDING_LOCATIONS.items()
+        if pending.created_at < cutoff
+    ]
+    for user_id in expired:
+        PENDING_LOCATIONS.pop(user_id, None)
 
 
 def _location_confirmation_text(query: str, intent: LocationIntent) -> str:
@@ -835,6 +971,64 @@ async def _start_google_export(cfg: dict, event: AskDannyEvent, session: QuerySe
         event.reply_token,
         "請點擊以下連結，用你的 Google 帳號授權建立 Sheet；完成後這次輸出會結束：\n" + url,
     )
+
+
+async def handle_location_event(cfg: dict, event: AskDannyLocationEvent) -> None:
+    if not is_allowed(cfg, event.user_id):
+        await reply_message(cfg["access_token"], event.reply_token, GENERIC_DENY_TEXT)
+        return
+    _prune_pending_locations()
+    PENDING_LOCATIONS[event.user_id] = PendingLocation(
+        user_id=event.user_id,
+        latitude=event.latitude,
+        longitude=event.longitude,
+    )
+    minutes = SESSION_TTL_SECONDS // 60
+    await reply_message(
+        cfg["access_token"], event.reply_token,
+        "收到你的位置了！想找什麼可以這樣問我：\n"
+        "・「附近有什麼美食」（預設約 1 公里內）\n"
+        "・「附近 5 公里有什麼景點」\n"
+        "・「走路 10 分鐘內有什麼早餐店」\n"
+        f"（這個位置 {minutes} 分鐘內有效，之後要請你重新分享位置。）",
+    )
+
+
+async def _handle_nearby_event(cfg: dict, event: AskDannyEvent, text: str) -> bool:
+    _prune_pending_locations()
+    pending = PENDING_LOCATIONS.get(event.user_id)
+    if pending is None or not NEARBY_TRIGGER_RE.search(text):
+        return False
+
+    subject = _query_subject(text)
+    radius_km = _parse_nearby_radius_km(text)
+
+    root = vault_root(cfg)
+    if not root:
+        await reply_message(cfg["access_token"], event.reply_token, "知識庫目前沒有設定好，請通知 Danny。")
+        return True
+
+    entries = _load_registry_entries(root)
+    matches = _nearby_registry_matches(subject, pending.latitude, pending.longitude, radius_km, entries)
+
+    if not matches:
+        await reply_message(
+            cfg["access_token"], event.reply_token,
+            f"目前 Danny 的 Lifestyle Vault 在你分享的位置附近（約 {radius_km:.1f} 公里內）"
+            "沒有整理到相關資料，可以試試擴大範圍或換個類型。",
+        )
+        return True
+
+    QUERY_SESSIONS.pop(event.user_id, None)
+    answer = _render_registry_answer(matches)
+    session = QuerySession(entries=tuple(matches), offset=min(5, len(matches)))
+    QUERY_SESSIONS[event.user_id] = session
+    answer += _render_query_options(session.offset < len(session.entries))
+    await reply_message(
+        cfg["access_token"], event.reply_token,
+        answer + "\n📚 來源：" + REGISTRY_SOURCE_TITLE,
+    )
+    return True
 
 
 async def _handle_query_session_event(
@@ -1086,6 +1280,8 @@ async def handle_text_event(cfg: dict, event: AskDannyEvent) -> None:
         return
     if await _handle_query_session_event(cfg, event, text):
         return
+    if await _handle_nearby_event(cfg, event, text):
+        return
 
     if text.lower() in ("/help", "help", "說明", "怎麼用"):
         await reply_message(cfg["access_token"], event.reply_token, cfg["help_text"])
@@ -1190,7 +1386,10 @@ async def line_webhook(
         return {"ok": True, "accepted": 0}
 
     for event in events:
-        background_tasks.add_task(handle_text_event, cfg, event)
+        if isinstance(event, AskDannyLocationEvent):
+            background_tasks.add_task(handle_location_event, cfg, event)
+        else:
+            background_tasks.add_task(handle_text_event, cfg, event)
     logger.info("Accepted %s AskDanny message(s)", len(events))
     return {"ok": True, "accepted": len(events)}
 

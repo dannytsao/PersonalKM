@@ -23,6 +23,7 @@ def _entry(
     phone: str = "02-1234-5678",
     reservation_url: str = "https://example.test/reserve",
     google_maps_url: str = "",
+    gps: tuple[float, float] | None = (25.0, 121.0),
 ) -> line_bot.RegistryEntry:
     return line_bot.RegistryEntry(
         city="新北市",
@@ -30,7 +31,7 @@ def _entry(
         store=store,
         source="wiki/entities/example.md",
         address="新北市板橋區文化路1號",
-        gps=(25.0, 121.0),
+        gps=gps,
         highlights=("特色",),
         rating=4.5,
         rating_count=10,
@@ -812,3 +813,157 @@ def test_llm_query_replaces_reasoning_leak_with_safe_fallback(tmp_path: Path, mo
     assert result["error"] == "unsafe_llm_output"
     assert "<think>" not in result["answer"]
     assert "我先檢視" not in result["answer"]
+
+
+# ── Nearby (location-based) queries ────────────────────────────────────────
+
+def test_webhook_event_parser_accepts_location_messages() -> None:
+    events = line_bot.askdanny_events_from_webhook(
+        {
+            "events": [
+                {
+                    "type": "message",
+                    "replyToken": "reply-1",
+                    "source": {"userId": "user-1"},
+                    "message": {"type": "location", "latitude": 25.0330, "longitude": 121.5654},
+                },
+                {
+                    "type": "message",
+                    "replyToken": "reply-2",
+                    "source": {"userId": "user-2"},
+                    "message": {"type": "location", "latitude": "not-a-number", "longitude": 121.0},
+                },
+                {
+                    "type": "message",
+                    "replyToken": "",
+                    "source": {"userId": "user-3"},
+                    "message": {"type": "location", "latitude": 25.0, "longitude": 121.0},
+                },
+            ]
+        }
+    )
+
+    assert events == [
+        line_bot.AskDannyLocationEvent("reply-1", "user-1", 25.0330, 121.5654)
+    ]
+
+
+def test_haversine_distance_matches_known_one_degree_latitude() -> None:
+    # 1 degree of latitude is ~111.2 km everywhere on Earth — a stable,
+    # easy-to-verify sanity check independent of longitude convergence.
+    distance = line_bot._haversine_km(25.0, 121.0, 26.0, 121.0)
+    assert 111.0 < distance < 111.4
+
+
+def test_haversine_distance_is_zero_for_identical_points() -> None:
+    assert line_bot._haversine_km(25.0, 121.0, 25.0, 121.0) == 0.0
+
+
+def test_parse_nearby_radius_km_prefers_explicit_km_over_minutes() -> None:
+    assert line_bot._parse_nearby_radius_km("附近 5 公里有什麼美食") == 5.0
+    assert line_bot._parse_nearby_radius_km("附近 500 公尺有什麼美食") == 0.5
+
+
+def test_parse_nearby_radius_km_converts_walk_minutes_conservatively() -> None:
+    radius = line_bot._parse_nearby_radius_km("走路 10 分鐘內有什麼早餐店")
+    # 10 min * 80 m/min / 1.3 road-indirection factor / 1000 ≈ 0.615 km.
+    assert 0.5 < radius < 0.7
+
+
+def test_parse_nearby_radius_km_falls_back_to_default_and_clamps() -> None:
+    assert line_bot._parse_nearby_radius_km("附近有什麼美食") == line_bot.DEFAULT_NEARBY_RADIUS_KM
+    assert line_bot._parse_nearby_radius_km("附近 999 公里有什麼美食") == line_bot.MAX_NEARBY_RADIUS_KM
+
+
+def test_nearby_registry_matches_filters_by_radius_subject_and_gps_presence() -> None:
+    near_food = _entry("附近的店", subject="早午餐", gps=(25.001, 121.001))
+    far_food = _entry("很遠的店", subject="早午餐", gps=(25.5, 121.5))
+    no_gps = _entry("沒有座標的店", subject="早午餐", gps=None)
+    wrong_subject = _entry("附近的旅館", subject="住宿", gps=(25.001, 121.001))
+
+    matches = line_bot._nearby_registry_matches(
+        "早午餐", 25.0, 121.0, 5.0, [near_food, far_food, no_gps, wrong_subject]
+    )
+
+    assert [entry.store for entry in matches] == ["附近的店"]
+    assert matches[0].distance_km is not None
+    assert matches[0].distance_km < 1.0
+
+
+def test_nearby_registry_matches_sorts_by_ascending_distance_when_subject_omitted() -> None:
+    closer = _entry("比較近", subject="景點", gps=(25.001, 121.001))
+    farther = _entry("比較遠", subject="早午餐", gps=(25.01, 121.01))
+
+    matches = line_bot._nearby_registry_matches(None, 25.0, 121.0, 5.0, [farther, closer])
+
+    assert [entry.store for entry in matches] == ["比較近", "比較遠"]
+    assert matches[0].distance_km < matches[1].distance_km
+
+
+def test_location_event_then_nearby_text_query_returns_distance_and_pagination(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    entries = [_entry("巷口早餐店", subject="早午餐", gps=(25.001, 121.001))]
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    monkeypatch.setattr(line_bot, "_load_registry_entries", lambda _root: entries)
+    monkeypatch.setattr(line_bot, "vault_root", lambda _cfg: Path("/fake/vault"))
+    line_bot.PENDING_LOCATIONS.clear()
+    line_bot.QUERY_SESSIONS.clear()
+    cfg = {"access_token": "token", "allowed_users": set()}
+
+    anyio.run(
+        line_bot.handle_location_event,
+        cfg,
+        line_bot.AskDannyLocationEvent("reply-1", "user-1", 25.0, 121.0),
+    )
+    assert "收到你的位置了" in sent[-1]
+    assert "user-1" in line_bot.PENDING_LOCATIONS
+
+    handled = anyio.run(
+        line_bot._handle_nearby_event,
+        cfg,
+        line_bot.AskDannyEvent("reply-2", "user-1", "附近有什麼早餐店"),
+        "附近有什麼早餐店",
+    )
+
+    assert handled is True
+    assert "巷口早餐店" in sent[-1]
+    assert "距離：約 0.2 公里" in sent[-1]
+    assert "再看幾筆" in sent[-1] or "已沒有更多資料" in sent[-1]
+    assert "user-1" in line_bot.QUERY_SESSIONS
+
+
+def test_nearby_query_without_pending_location_falls_through(monkeypatch) -> None:
+    line_bot.PENDING_LOCATIONS.clear()
+    handled = anyio.run(
+        line_bot._handle_nearby_event,
+        {"access_token": "token"},
+        line_bot.AskDannyEvent("reply-1", "user-1", "附近有什麼美食"),
+        "附近有什麼美食",
+    )
+    assert handled is False
+
+
+def test_unauthorized_user_location_is_not_stored(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    line_bot.PENDING_LOCATIONS.clear()
+    cfg = {"access_token": "token", "allowed_users": {"someone-else"}}
+
+    anyio.run(
+        line_bot.handle_location_event,
+        cfg,
+        line_bot.AskDannyLocationEvent("reply-1", "intruder", 25.0, 121.0),
+    )
+
+    assert "intruder" not in line_bot.PENDING_LOCATIONS
+    assert sent == [line_bot.GENERIC_DENY_TEXT]
