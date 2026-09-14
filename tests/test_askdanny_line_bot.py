@@ -1,5 +1,6 @@
 import json
 import anyio
+import httpx
 from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import parse_qs, urlparse
@@ -859,20 +860,40 @@ def test_haversine_distance_is_zero_for_identical_points() -> None:
     assert line_bot._haversine_km(25.0, 121.0, 25.0, 121.0) == 0.0
 
 
-def test_parse_nearby_radius_km_prefers_explicit_km_over_minutes() -> None:
-    assert line_bot._parse_nearby_radius_km("附近 5 公里有什麼美食") == 5.0
-    assert line_bot._parse_nearby_radius_km("附近 500 公尺有什麼美食") == 0.5
+def test_parse_nearby_radius_prefers_explicit_km_over_minutes() -> None:
+    assert line_bot._parse_nearby_radius("附近 5 公里有什麼美食") == (5.0, "walk")
+    assert line_bot._parse_nearby_radius("附近 500 公尺有什麼美食") == (0.5, "walk")
 
 
-def test_parse_nearby_radius_km_converts_walk_minutes_conservatively() -> None:
-    radius = line_bot._parse_nearby_radius_km("走路 10 分鐘內有什麼早餐店")
+def test_parse_nearby_radius_converts_walk_minutes_conservatively() -> None:
+    radius, mode = line_bot._parse_nearby_radius("走路 10 分鐘內有什麼早餐店")
     # 10 min * 80 m/min / 1.3 road-indirection factor / 1000 ≈ 0.615 km.
+    assert mode == "walk"
     assert 0.5 < radius < 0.7
 
 
-def test_parse_nearby_radius_km_falls_back_to_default_and_clamps() -> None:
-    assert line_bot._parse_nearby_radius_km("附近有什麼美食") == line_bot.DEFAULT_NEARBY_RADIUS_KM
-    assert line_bot._parse_nearby_radius_km("附近 999 公里有什麼美食") == line_bot.MAX_NEARBY_RADIUS_KM
+def test_parse_nearby_radius_falls_back_to_default_and_clamps() -> None:
+    assert line_bot._parse_nearby_radius("附近有什麼美食") == (line_bot.DEFAULT_NEARBY_RADIUS_KM, "walk")
+    radius, _mode = line_bot._parse_nearby_radius("附近 999 公里有什麼美食")
+    assert radius == line_bot.MAX_NEARBY_RADIUS_KM
+
+
+def test_parse_nearby_radius_detects_drive_mode_from_hours() -> None:
+    radius, mode = line_bot._parse_nearby_radius("開車1小時有什麼美食")
+    assert mode == "drive"
+    # 1 hr * 40 km/h / 1.3 road-indirection factor ≈ 30.8 km.
+    assert 30.0 < radius < 31.5
+
+
+def test_parse_nearby_radius_drive_mode_uses_its_own_default_and_cap() -> None:
+    assert line_bot._parse_nearby_radius("開車有什麼美食") == (line_bot.DEFAULT_DRIVE_RADIUS_KM, "drive")
+    radius, mode = line_bot._parse_nearby_radius("開車 99 小時有什麼美食")
+    assert mode == "drive"
+    assert radius == line_bot.MAX_DRIVE_RADIUS_KM
+
+
+def test_parse_nearby_radius_explicit_km_overrides_drive_mode_default() -> None:
+    assert line_bot._parse_nearby_radius("開車 10 公里有什麼美食") == (10.0, "drive")
 
 
 def test_nearby_registry_matches_filters_by_radius_subject_and_gps_presence() -> None:
@@ -932,7 +953,8 @@ def test_location_event_then_nearby_text_query_returns_distance_and_pagination(m
 
     assert handled is True
     assert "巷口早餐店" in sent[-1]
-    assert "距離：約 0.2 公里" in sent[-1]
+    assert "距離：約 0.2 公里（直線距離估算，非實際路徑）" in sent[-1]
+    assert "搜尋範圍：走路約" in sent[-1]
     assert "再看幾筆" in sent[-1] or "已沒有更多資料" in sent[-1]
     assert "user-1" in line_bot.QUERY_SESSIONS
 
@@ -967,3 +989,208 @@ def test_unauthorized_user_location_is_not_stored(monkeypatch) -> None:
 
     assert "intruder" not in line_bot.PENDING_LOCATIONS
     assert sent == [line_bot.GENERIC_DENY_TEXT]
+
+
+# ── Pasted Google Maps links ────────────────────────────────────────────────
+
+def test_extract_maps_coords_parses_at_sign_query_and_place_pin_formats() -> None:
+    assert line_bot._extract_maps_coords("https://www.google.com/maps/@25.033,121.5654,17z") == (
+        25.033, 121.5654,
+    )
+    assert line_bot._extract_maps_coords(
+        "https://www.google.com/maps?q=25.033,121.5654"
+    ) == (25.033, 121.5654)
+    assert line_bot._extract_maps_coords(
+        "https://www.google.com/maps/place/x/data=!4m2!3m1!1s0x0!3d25.033!4d121.5654"
+    ) == (25.033, 121.5654)
+    assert line_bot._extract_maps_coords("https://maps.app.goo.gl/opaque-id") is None
+
+
+def test_extract_maps_place_name_decodes_url_encoded_segment() -> None:
+    url = "https://www.google.com/maps/place/251%E6%96%B0%E5%8C%97%E5%B8%82%E6%B7%A1%E6%B0%B4%E5%8D%80/data=!4m2"
+    assert line_bot._extract_maps_place_name(url) == "251新北市淡水區"
+    assert line_bot._extract_maps_place_name("https://www.google.com/maps/@25.0,121.0,17z") is None
+
+
+def test_resolve_location_from_text_ignores_non_maps_hosts() -> None:
+    coords = anyio.run(line_bot._resolve_location_from_text, "看這個 https://example.com/foo")
+    assert coords is None
+
+
+def test_resolve_location_from_text_parses_direct_coords_without_any_network_call(monkeypatch) -> None:
+    async def unexpected_get(self, *_args, **_kwargs):
+        raise AssertionError("should not make a network call when coords are already in the URL")
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", unexpected_get)
+
+    coords = anyio.run(
+        line_bot._resolve_location_from_text,
+        "這附近 https://www.google.com/maps/@25.033,121.5654,17z 有什麼美食",
+    )
+
+    assert coords == (25.033, 121.5654)
+
+
+def test_resolve_location_from_text_follows_short_link_redirect_for_pin_links(monkeypatch) -> None:
+    resolved_url = "https://www.google.com/maps/@25.1737,121.4392,17z"
+
+    async def fake_get(self, url, **_kwargs):
+        return httpx.Response(200, request=httpx.Request("GET", resolved_url))
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", fake_get)
+
+    coords = anyio.run(
+        line_bot._resolve_location_from_text, "https://maps.app.goo.gl/nZjE34bdegmKbXND7?g_st=ac"
+    )
+
+    assert coords == (25.1737, 121.4392)
+
+
+def test_resolve_location_from_text_falls_back_to_places_api_for_place_share_links(monkeypatch) -> None:
+    resolved_url = (
+        "https://www.google.com/maps/place/251%E6%96%B0%E5%8C%97%E5%B8%82%E6%B7%A1%E6%B0%B4%E5%8D%80"
+        "/data=!4m2!3m1!1s0x3442afb9f6cca331:0x303a389d8bef900f"
+    )
+    places_requests: list[dict] = []
+
+    async def fake_get(self, url, **_kwargs):
+        return httpx.Response(200, request=httpx.Request("GET", resolved_url))
+
+    async def fake_post(self, url, json, headers):
+        places_requests.append({"url": url, "json": json, "headers": headers})
+        return httpx.Response(
+            200,
+            json={"places": [{"location": {"latitude": 25.17, "longitude": 121.45}}]},
+            request=httpx.Request("POST", url),
+        )
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", fake_get)
+    monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
+    monkeypatch.setenv("GOOGLE_PLACES_API_KEY", "test-key")
+
+    coords = anyio.run(
+        line_bot._resolve_location_from_text, "https://maps.app.goo.gl/nZjE34bdegmKbXND7?g_st=ac"
+    )
+
+    assert coords == (25.17, 121.45)
+    assert places_requests[0]["json"] == {"textQuery": "251新北市淡水區"}
+    assert places_requests[0]["headers"]["X-Goog-Api-Key"] == "test-key"
+
+
+def test_resolve_location_from_text_returns_none_without_places_api_key(monkeypatch) -> None:
+    resolved_url = (
+        "https://www.google.com/maps/place/251%E6%96%B0%E5%8C%97%E5%B8%82%E6%B7%A1%E6%B0%B4%E5%8D%80"
+        "/data=!4m2!3m1!1s0x3442afb9f6cca331:0x303a389d8bef900f"
+    )
+
+    async def fake_get(self, url, **_kwargs):
+        return httpx.Response(200, request=httpx.Request("GET", resolved_url))
+
+    async def unexpected_post(self, *_args, **_kwargs):
+        raise AssertionError("should not call Places API without a configured key")
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", fake_get)
+    monkeypatch.setattr(httpx.AsyncClient, "post", unexpected_post)
+    monkeypatch.delenv("GOOGLE_PLACES_API_KEY", raising=False)
+
+    coords = anyio.run(
+        line_bot._resolve_location_from_text, "https://maps.app.goo.gl/nZjE34bdegmKbXND7?g_st=ac"
+    )
+
+    assert coords is None
+
+
+def test_maps_link_event_with_query_answers_immediately(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    async def fake_resolve(_text: str) -> tuple[float, float]:
+        return (25.001, 121.001)
+
+    entries = [_entry("巷口早餐店", subject="早午餐", gps=(25.001, 121.001))]
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    monkeypatch.setattr(line_bot, "_resolve_location_from_text", fake_resolve)
+    monkeypatch.setattr(line_bot, "_load_registry_entries", lambda _root: entries)
+    monkeypatch.setattr(line_bot, "vault_root", lambda _cfg: Path("/fake/vault"))
+    line_bot.PENDING_LOCATIONS.clear()
+    line_bot.QUERY_SESSIONS.clear()
+    cfg = {"access_token": "token", "allowed_users": set()}
+
+    handled = anyio.run(
+        line_bot._handle_maps_link_event,
+        cfg,
+        line_bot.AskDannyEvent("reply-1", "user-1", "https://maps.app.goo.gl/xyz 附近有什麼早午餐"),
+        "https://maps.app.goo.gl/xyz 附近有什麼早午餐",
+    )
+
+    assert handled is True
+    assert "巷口早餐店" in sent[-1]
+    assert "user-1" in line_bot.PENDING_LOCATIONS
+    assert "user-1" in line_bot.QUERY_SESSIONS
+
+
+def test_maps_link_event_without_query_prompts_for_next_step(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    async def fake_resolve(_text: str) -> tuple[float, float]:
+        return (25.001, 121.001)
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    monkeypatch.setattr(line_bot, "_resolve_location_from_text", fake_resolve)
+    line_bot.PENDING_LOCATIONS.clear()
+    cfg = {"access_token": "token", "allowed_users": set()}
+
+    handled = anyio.run(
+        line_bot._handle_maps_link_event,
+        cfg,
+        line_bot.AskDannyEvent("reply-1", "user-1", "https://maps.app.goo.gl/xyz"),
+        "https://maps.app.goo.gl/xyz",
+    )
+
+    assert handled is True
+    assert "收到你分享的地圖位置了" in sent[-1]
+    assert "user-1" in line_bot.PENDING_LOCATIONS
+
+
+def test_maps_link_event_replies_with_guidance_when_resolution_fails(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    async def fake_resolve(_text: str) -> None:
+        return None
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    monkeypatch.setattr(line_bot, "_resolve_location_from_text", fake_resolve)
+    line_bot.PENDING_LOCATIONS.clear()
+    cfg = {"access_token": "token", "allowed_users": set()}
+
+    handled = anyio.run(
+        line_bot._handle_maps_link_event,
+        cfg,
+        line_bot.AskDannyEvent("reply-1", "user-1", "https://example.com/not-a-maps-link"),
+        "https://example.com/not-a-maps-link",
+    )
+
+    assert handled is True
+    assert "沒辦法從這個地圖連結取得座標" in sent[-1]
+    assert "user-1" not in line_bot.PENDING_LOCATIONS
+
+
+def test_maps_link_event_returns_false_without_any_url() -> None:
+    handled = anyio.run(
+        line_bot._handle_maps_link_event,
+        {"access_token": "token", "allowed_users": set()},
+        line_bot.AskDannyEvent("reply-1", "user-1", "附近有什麼美食"),
+        "附近有什麼美食",
+    )
+    assert handled is False

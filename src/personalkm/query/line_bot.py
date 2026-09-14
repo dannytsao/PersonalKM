@@ -43,7 +43,7 @@ import unicodedata
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Optional
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, unquote, urlparse
 
 import httpx
 from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
@@ -72,10 +72,11 @@ DEFAULT_HELP_TEXT = (
     "・「天母有什麼好吃的？」\n"
     "・「三芝海邊咖啡廳推薦」\n"
     "・「陽明山步道」\n\n"
-    "也可以直接分享你的目前位置（LINE 的「分享位置」功能），然後問我：\n"
+    "也可以分享你的目前位置（LINE 的「分享位置」功能，或直接貼一個 Google 地圖連結），然後問我：\n"
     "・「附近有什麼美食」（預設約 1 公里內）\n"
     "・「附近 5 公里有什麼景點」\n"
-    "・「走路 10 分鐘內有什麼早餐店」\n\n"
+    "・「走路 10 分鐘內有什麼早餐店」\n"
+    "・「開車 1 小時內有什麼美食」\n\n"
     "我會根據 Danny 的筆記回答，並標注來源。"
 )
 
@@ -91,10 +92,36 @@ DEFAULT_NEARBY_RADIUS_KM = 1.0
 MIN_NEARBY_RADIUS_KM = 0.1
 MAX_NEARBY_RADIUS_KM = 20.0
 
-NEARBY_TRIGGER_RE = re.compile(r"附近|走路|步行|公里|公尺|km|分鐘")
+# Driving mode: a much cruder approximation than walking — straight-line
+# radius from an assumed mixed city/highway average speed, discounted by
+# the same road-indirection factor. Still no live routing/traffic API.
+DRIVE_SPEED_KM_PER_HOUR = 40.0
+DRIVE_ROAD_INDIRECTION_FACTOR = 1.3
+DEFAULT_DRIVE_RADIUS_KM = 20.0
+MAX_DRIVE_RADIUS_KM = 100.0
+
+NEARBY_TRIGGER_RE = re.compile(r"附近|走路|步行|開車|車程|自駕|公里|公尺|km|分鐘|小時")
+DRIVE_TRIGGER_RE = re.compile(r"開車|車程|自駕", re.IGNORECASE)
 RADIUS_KM_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:公里|km)", re.IGNORECASE)
 RADIUS_M_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:公尺|米|m\b)", re.IGNORECASE)
-WALK_MINUTES_RE = re.compile(r"(?:走路|步行)?\s*(\d+(?:\.\d+)?)\s*分鐘")
+MINUTES_RE = re.compile(r"(\d+(?:\.\d+)?)\s*分鐘")
+HOURS_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:小時|hr|hour)", re.IGNORECASE)
+
+# ── Location from a pasted Google Maps link ────────────────────────────────
+# A "pin on map" link (@lat,lng) or a query-param link (q=/ll=lat,lng)
+# carries plain coordinates we can parse for free. A "share this place"
+# link (the most common share-sheet format) carries only an opaque place
+# ID + human-readable name — resolving THAT to coordinates needs a live
+# Places API Text Search call (see _geocode_via_places_api). Both paths are
+# a deliberate, narrow exception to this project's "no live external calls"
+# default, scoped only to a pasted Maps link the user explicitly shared.
+MAPS_URL_RE = re.compile(r"https?://\S+")
+ALLOWED_MAPS_HOSTS = {"maps.app.goo.gl", "www.google.com", "google.com", "maps.google.com"}
+MAPS_PLACE_COORD_RE = re.compile(r"!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)")
+MAPS_AT_COORD_RE = re.compile(r"@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)")
+MAPS_QUERY_COORD_RE = re.compile(r"[?&](?:q|query|ll)=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)")
+MAPS_PLACE_NAME_RE = re.compile(r"/maps/place/([^/?]+)")
+PLACES_TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -688,7 +715,12 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * earth_radius_km * math.asin(min(1.0, math.sqrt(a)))
 
 
-def _parse_nearby_radius_km(text: str) -> float:
+def _detect_nearby_mode(text: str) -> str:
+    return "drive" if DRIVE_TRIGGER_RE.search(text) else "walk"
+
+
+def _parse_nearby_radius(text: str) -> tuple[float, str]:
+    mode = _detect_nearby_mode(text)
     match = RADIUS_KM_RE.search(text)
     if match:
         radius_km = float(match.group(1))
@@ -696,14 +728,26 @@ def _parse_nearby_radius_km(text: str) -> float:
         match = RADIUS_M_RE.search(text)
         if match:
             radius_km = float(match.group(1)) / 1000.0
+        elif mode == "drive":
+            hours_match = HOURS_RE.search(text)
+            if hours_match:
+                hours = float(hours_match.group(1))
+            else:
+                minutes_match = MINUTES_RE.search(text)
+                hours = float(minutes_match.group(1)) / 60.0 if minutes_match else None
+            if hours is None:
+                radius_km = DEFAULT_DRIVE_RADIUS_KM
+            else:
+                radius_km = hours * DRIVE_SPEED_KM_PER_HOUR / DRIVE_ROAD_INDIRECTION_FACTOR
         else:
-            match = WALK_MINUTES_RE.search(text)
-            if match:
-                minutes = float(match.group(1))
+            minutes_match = MINUTES_RE.search(text)
+            if minutes_match:
+                minutes = float(minutes_match.group(1))
                 radius_km = minutes * WALK_SPEED_M_PER_MIN / ROAD_INDIRECTION_FACTOR / 1000.0
             else:
                 radius_km = DEFAULT_NEARBY_RADIUS_KM
-    return max(MIN_NEARBY_RADIUS_KM, min(radius_km, MAX_NEARBY_RADIUS_KM))
+    max_radius_km = MAX_DRIVE_RADIUS_KM if mode == "drive" else MAX_NEARBY_RADIUS_KM
+    return max(MIN_NEARBY_RADIUS_KM, min(radius_km, max_radius_km)), mode
 
 
 def _nearby_registry_matches(
@@ -729,6 +773,93 @@ def _nearby_registry_matches(
     return matches
 
 
+def _extract_maps_coords(url: str) -> tuple[float, float] | None:
+    for pattern in (MAPS_PLACE_COORD_RE, MAPS_AT_COORD_RE, MAPS_QUERY_COORD_RE):
+        match = pattern.search(url)
+        if not match:
+            continue
+        try:
+            latitude, longitude = float(match.group(1)), float(match.group(2))
+        except ValueError:
+            continue
+        if -90 <= latitude <= 90 and -180 <= longitude <= 180:
+            return latitude, longitude
+    return None
+
+
+def _extract_maps_place_name(url: str) -> str | None:
+    match = MAPS_PLACE_NAME_RE.search(url)
+    if not match:
+        return None
+    name = unquote(match.group(1)).replace("+", " ").strip()
+    return name or None
+
+
+async def _geocode_via_places_api(query: str) -> tuple[float, float] | None:
+    api_key = os.getenv("GOOGLE_PLACES_API_KEY", "")
+    if not api_key or not query:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=6.0) as client:
+            response = await client.post(
+                PLACES_TEXT_SEARCH_URL,
+                json={"textQuery": query},
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Goog-Api-Key": api_key,
+                    "X-Goog-FieldMask": "places.location",
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+    except httpx.HTTPError:
+        logger.warning("Places API geocode call failed for pasted Maps link")
+        return None
+    places = data.get("places") or []
+    if not places:
+        return None
+    location = places[0].get("location") or {}
+    latitude, longitude = location.get("latitude"), location.get("longitude")
+    if not isinstance(latitude, (int, float)) or not isinstance(longitude, (int, float)):
+        return None
+    return float(latitude), float(longitude)
+
+
+async def _resolve_location_from_text(text: str) -> tuple[float, float] | None:
+    url_match = MAPS_URL_RE.search(text)
+    if not url_match:
+        return None
+    url = url_match.group(0)
+    try:
+        host = urlparse(url).netloc.lower()
+    except ValueError:
+        return None
+    if host not in ALLOWED_MAPS_HOSTS:
+        return None
+
+    coords = _extract_maps_coords(url)
+    if coords is not None:
+        return coords
+
+    resolved_url = url
+    if host == "maps.app.goo.gl":
+        try:
+            async with httpx.AsyncClient(timeout=6.0, follow_redirects=True) as client:
+                response = await client.get(url)
+        except httpx.HTTPError:
+            logger.warning("Failed to resolve Maps short link")
+            return None
+        resolved_url = str(response.url)
+        coords = _extract_maps_coords(resolved_url)
+        if coords is not None:
+            return coords
+
+    place_name = _extract_maps_place_name(resolved_url)
+    if place_name is None:
+        return None
+    return await _geocode_via_places_api(place_name)
+
+
 def _render_registry_answer(entries: list[RegistryEntry]) -> str:
     displayed_entries = entries[:5]
     if len(entries) > len(displayed_entries):
@@ -751,10 +882,7 @@ def _render_registry_entry_lines(entry: RegistryEntry) -> list[str]:
     if entry.address:
         lines.append(f"- 地址：{entry.address}")
     if entry.distance_km is not None:
-        walk_minutes = entry.distance_km * 1000 * ROAD_INDIRECTION_FACTOR / WALK_SPEED_M_PER_MIN
-        lines.append(
-            f"- 距離：約 {entry.distance_km:.1f} 公里（直線距離估算，步行約 {walk_minutes:.0f} 分鐘，非實際路徑）"
-        )
+        lines.append(f"- 距離：約 {entry.distance_km:.1f} 公里（直線距離估算，非實際路徑）")
     if entry.phone:
         lines.append(f"- 電話：{entry.phone}")
     if entry.reservation_url:
@@ -973,6 +1101,15 @@ async def _start_google_export(cfg: dict, event: AskDannyEvent, session: QuerySe
     )
 
 
+NEARBY_PROMPT_TEXT = (
+    "想找什麼可以這樣問我：\n"
+    "・「附近有什麼美食」（預設約 1 公里內）\n"
+    "・「附近 5 公里有什麼景點」\n"
+    "・「走路 10 分鐘內有什麼早餐店」\n"
+    "・「開車 1 小時內有什麼美食」"
+)
+
+
 async def handle_location_event(cfg: dict, event: AskDannyLocationEvent) -> None:
     if not is_allowed(cfg, event.user_id):
         await reply_message(cfg["access_token"], event.reply_token, GENERIC_DENY_TEXT)
@@ -986,11 +1123,51 @@ async def handle_location_event(cfg: dict, event: AskDannyLocationEvent) -> None
     minutes = SESSION_TTL_SECONDS // 60
     await reply_message(
         cfg["access_token"], event.reply_token,
-        "收到你的位置了！想找什麼可以這樣問我：\n"
-        "・「附近有什麼美食」（預設約 1 公里內）\n"
-        "・「附近 5 公里有什麼景點」\n"
-        "・「走路 10 分鐘內有什麼早餐店」\n"
+        f"收到你的位置了！{NEARBY_PROMPT_TEXT}\n"
         f"（這個位置 {minutes} 分鐘內有效，之後要請你重新分享位置。）",
+    )
+
+
+async def _answer_nearby_query(
+    cfg: dict,
+    reply_token: str,
+    user_id: str,
+    latitude: float,
+    longitude: float,
+    text: str,
+) -> None:
+    subject = _query_subject(text)
+    radius_km, mode = _parse_nearby_radius(text)
+    mode_label = "開車" if mode == "drive" else "走路"
+
+    root = vault_root(cfg)
+    if not root:
+        await reply_message(cfg["access_token"], reply_token, "知識庫目前沒有設定好，請通知 Danny。")
+        return
+
+    entries = _load_registry_entries(root)
+    matches = _nearby_registry_matches(subject, latitude, longitude, radius_km, entries)
+
+    if not matches:
+        await reply_message(
+            cfg["access_token"], reply_token,
+            f"目前 Danny 的 Lifestyle Vault 在你分享的位置附近（{mode_label}約 {radius_km:.1f} 公里內）"
+            "沒有整理到相關資料，可以試試擴大範圍或換個類型。",
+        )
+        return
+
+    QUERY_SESSIONS.pop(user_id, None)
+    answer = _render_registry_answer(matches)
+    session = QuerySession(entries=tuple(matches), offset=min(5, len(matches)))
+    QUERY_SESSIONS[user_id] = session
+    answer += _render_query_options(session.offset < len(session.entries))
+    answer += (
+        f"\n📍 搜尋範圍：{mode_label}約 {radius_km:.1f} 公里內"
+        "（直線距離估算，含粗略路網修正，非實際路徑或即時路況）"
+    )
+    await reply_message(
+        cfg["access_token"], reply_token,
+        answer + "\n📚 來源：" + REGISTRY_SOURCE_TITLE,
     )
 
 
@@ -999,35 +1176,44 @@ async def _handle_nearby_event(cfg: dict, event: AskDannyEvent, text: str) -> bo
     pending = PENDING_LOCATIONS.get(event.user_id)
     if pending is None or not NEARBY_TRIGGER_RE.search(text):
         return False
+    await _answer_nearby_query(cfg, event.reply_token, event.user_id, pending.latitude, pending.longitude, text)
+    return True
 
-    subject = _query_subject(text)
-    radius_km = _parse_nearby_radius_km(text)
 
-    root = vault_root(cfg)
-    if not root:
-        await reply_message(cfg["access_token"], event.reply_token, "知識庫目前沒有設定好，請通知 Danny。")
+async def _handle_maps_link_event(cfg: dict, event: AskDannyEvent, text: str) -> bool:
+    if not MAPS_URL_RE.search(text):
+        return False
+    if not is_allowed(cfg, event.user_id):
+        # Allowlist is already enforced earlier in handle_text_event before
+        # this is ever reached — this is a defense-in-depth no-op guard so a
+        # future caller of this function directly can't skip FR-01.
         return True
 
-    entries = _load_registry_entries(root)
-    matches = _nearby_registry_matches(subject, pending.latitude, pending.longitude, radius_km, entries)
-
-    if not matches:
+    location = await _resolve_location_from_text(text)
+    if location is None:
         await reply_message(
             cfg["access_token"], event.reply_token,
-            f"目前 Danny 的 Lifestyle Vault 在你分享的位置附近（約 {radius_km:.1f} 公里內）"
-            "沒有整理到相關資料，可以試試擴大範圍或換個類型。",
+            "抱歉，我沒辦法從這個地圖連結取得座標，可以改用 LINE 的「分享位置」功能，"
+            "或分享一個有標示經緯度的地圖連結。",
         )
         return True
 
-    QUERY_SESSIONS.pop(event.user_id, None)
-    answer = _render_registry_answer(matches)
-    session = QuerySession(entries=tuple(matches), offset=min(5, len(matches)))
-    QUERY_SESSIONS[event.user_id] = session
-    answer += _render_query_options(session.offset < len(session.entries))
-    await reply_message(
-        cfg["access_token"], event.reply_token,
-        answer + "\n📚 來源：" + REGISTRY_SOURCE_TITLE,
+    latitude, longitude = location
+    _prune_pending_locations()
+    PENDING_LOCATIONS[event.user_id] = PendingLocation(
+        user_id=event.user_id, latitude=latitude, longitude=longitude,
     )
+    remaining_text = MAPS_URL_RE.sub("", text).strip()
+    if not NEARBY_TRIGGER_RE.search(remaining_text):
+        minutes = SESSION_TTL_SECONDS // 60
+        await reply_message(
+            cfg["access_token"], event.reply_token,
+            f"收到你分享的地圖位置了！{NEARBY_PROMPT_TEXT}\n"
+            f"（這個位置 {minutes} 分鐘內有效，之後要請你重新分享位置。）",
+        )
+        return True
+
+    await _answer_nearby_query(cfg, event.reply_token, event.user_id, latitude, longitude, remaining_text)
     return True
 
 
@@ -1279,6 +1465,8 @@ async def handle_text_event(cfg: dict, event: AskDannyEvent) -> None:
     if await _handle_location_confirmation_event(cfg, event, text):
         return
     if await _handle_query_session_event(cfg, event, text):
+        return
+    if await _handle_maps_link_event(cfg, event, text):
         return
     if await _handle_nearby_event(cfg, event, text):
         return
