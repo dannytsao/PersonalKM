@@ -189,6 +189,45 @@ def test_taipei_ramen_query_matches_ramen_mentions_across_food_subjects(
     assert "其他餐廳" not in result["answer"]
 
 
+def test_juancun_cuisine_query_excludes_unrelated_attraction_mentioning_juancun(
+    tmp_path: Path, monkeypatch
+) -> None:
+    # Regression test for a real production bug (2026-09-15): "眷村菜"
+    # wasn't a recognized subject, so the query fell back to plain keyword
+    # search with NO category filter at all, pulling in a 景點 (attraction)
+    # that happens to mention 眷村 in its description alongside the actual
+    # restaurants — exactly what happened with "台北地區眷村菜" pulling in
+    # 蟾蜍山煥民新村 (a preserved military-village historic site, not food).
+    _write_registry(
+        tmp_path,
+        [
+            {
+                "city": "台北市",
+                "subject": "餐廳",
+                "store": "陸光小館",
+                "address": "台北市松山區敦化北路165巷4號",
+                "highlights": ["眷村家常餐館，滷味櫃品項豐富"],
+                "status": "resolved",
+            },
+            {
+                "city": "台北市",
+                "subject": "景點",
+                "store": "蟾蜍山煥民新村",
+                "address": "台北市文山區",
+                "highlights": ["台北市少數保留完整的空軍眷村山城聚落"],
+                "status": "resolved",
+            },
+        ],
+    )
+    monkeypatch.setattr(line_bot, "route", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError()))
+
+    result = line_bot._query_all("台北地區眷村菜", tmp_path)
+
+    assert result["error"] is None
+    assert "陸光小館" in result["answer"]
+    assert "蟾蜍山煥民新村" not in result["answer"]
+
+
 def test_hybrid_index_finds_topic_only_present_in_highlights(
     tmp_path: Path, monkeypatch
 ) -> None:

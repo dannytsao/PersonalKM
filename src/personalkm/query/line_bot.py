@@ -207,6 +207,7 @@ SUBJECT_ALIASES = {
     "早午餐": ("早午餐", "brunch", "早餐", "早餐店"),
     "牛肉麵": ("牛肉麵", "牛肉面"),
     "拉麵": ("拉麵", "拉面", "ramen"),
+    "眷村菜": ("眷村菜", "眷村"),
     "住宿": ("住宿", "旅館", "民宿", "飯店", "酒店", "lodging"),
     "咖啡廳": ("咖啡廳", "咖啡館", "咖啡店", "cafe", "coffee"),
     "餐廳": ("餐廳", "restaurant"),
@@ -216,10 +217,18 @@ BROAD_SUBJECTS = {
     "美食": ("餐廳", "小吃", "早午餐", "咖啡廳", "甜點", "酒吧"),
     "牛肉麵": ("小吃", "餐廳"),
     "拉麵": ("小吃", "餐廳"),
+    "眷村菜": ("小吃", "餐廳"),
 }
 SUBJECT_MATCH_TERMS = {
     "牛肉麵": ("牛肉麵", "牛肉面"),
     "拉麵": ("拉麵", "拉面", "ramen"),
+    # Deliberately just "眷村", not "眷村菜" — real registry entries say
+    # "眷村老店"/"眷村味合菜"/"眷村家常餐館" etc., never the bare compound
+    # "眷村菜" itself. Bug found 2026-09-15: without this subject existing
+    # at all, "台北地區眷村菜" matched via plain keyword search with NO
+    # category filter, pulling in 蟾蜍山煥民新村 (subject 景點, a preserved
+    # military-village historic site) alongside the actual restaurants.
+    "眷村菜": ("眷村",),
 }
 QUERY_GENERIC_TERMS = (
     "有什麼", "什麼", "推薦", "好吃", "好吃的", "地區", "附近", "哪裡", "適合", "可以", "想找", "請問",
