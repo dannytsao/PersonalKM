@@ -6,3 +6,4 @@ pydantic-settings==2.7.0
 pytest==8.3.4
 uvicorn[standard]==0.34.0
 pyyaml==6.0.2
+opencc-python-reimplemented==0.1.7

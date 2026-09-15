@@ -27,10 +27,29 @@ from pathlib import Path
 
 import httpx
 import yaml
+from opencc import OpenCC
 
 from .base import LLMError
 
 log = logging.getLogger(__name__)
+
+# Whisper-family models transcribe Chinese speech into Simplified script by
+# default (confirmed empirically 2026-09-15 — synthetic Traditional-Chinese
+# test audio speaking "咖啡廳" came back transcribed as "咖啡厅"), while
+# every registry lookup in personalkm.query.line_bot (SUBJECT_ALIASES,
+# entry.city, district regexes) is Traditional-only — an unconverted
+# transcript silently fails to match and degrades to the much weaker LLM
+# fallback path. `s2t` handles the general case; OpenCC's own dictionaries
+# additionally "correct" 台→臺 (a separate, real ambiguity — 台 is valid in
+# both scripts and is what this project's registry always uses for city
+# names, e.g. "台北市", never "臺北市"), which would break exactly the most
+# common city queries if left uncorrected — so that one substitution is
+# reverted back afterward.
+_S2T = OpenCC("s2t")
+
+
+def _normalize_transcript_script(text: str) -> str:
+    return _S2T.convert(text).replace("臺", "台")
 
 CONFIG_PATH = Path(
     os.environ.get(
@@ -89,7 +108,7 @@ async def transcribe(audio_bytes: bytes, *, filename: str = "audio.m4a", timeout
 
         text = data.get("text") if isinstance(data, dict) else None
         if isinstance(text, str) and text.strip():
-            return text.strip()
+            return _normalize_transcript_script(text.strip())
         errors.append(f"{candidate}: empty or invalid transcription response")
 
     error = LLMError(f"All transcription candidates exhausted: {errors}")

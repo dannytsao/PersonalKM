@@ -103,3 +103,33 @@ def test_transcribe_raises_on_empty_transcription_text(fake_env, monkeypatch) ->
 
     with pytest.raises(LLMError):
         anyio.run(transcribe_mod.transcribe, b"fake-audio-bytes")
+
+
+def test_transcribe_converts_simplified_chinese_to_traditional(fake_env, monkeypatch) -> None:
+    # Whisper-family models default to Simplified for Chinese speech, but
+    # the registry's subject aliases / city names are Traditional-only —
+    # an unconverted transcript would silently fail to match.
+    async def fake_post(self, url, headers, data, files):
+        return httpx.Response(200, json={"text": "附近有什么咖啡厅"}, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
+
+    text = anyio.run(transcribe_mod.transcribe, b"fake-audio-bytes")
+
+    assert text == "附近有什麼咖啡廳"
+
+
+def test_transcribe_keeps_registry_convention_for_tai_character(fake_env, monkeypatch) -> None:
+    # OpenCC's own S2T dictionary also "corrects" 台->臺, but this project's
+    # registry always writes city names with 台 (e.g. "台北市", never
+    # "臺北市") — that one substitution must be reverted, or Taipei/Taichung/
+    # Tainan/Taitung queries would silently stop matching after conversion.
+    async def fake_post(self, url, headers, data, files):
+        return httpx.Response(200, json={"text": "台北市附近有什么美食"}, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
+
+    text = anyio.run(transcribe_mod.transcribe, b"fake-audio-bytes")
+
+    assert text == "台北市附近有什麼美食"
+    assert "臺" not in text
