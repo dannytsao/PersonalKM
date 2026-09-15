@@ -110,6 +110,63 @@ RADIUS_M_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:公尺|米|m\b)", re.IGNORECASE)
 MINUTES_RE = re.compile(r"(\d+(?:\.\d+)?)\s*分鐘")
 HOURS_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:小時|hr|hour)", re.IGNORECASE)
 
+# Voice queries naturally produce Chinese numerals ("兩公里", "十公里"), not
+# Arabic digits — confirmed as a real bug 2026-09-15 via live testing
+# (Render logs showed every voice "附近十公里之內..." silently falling back
+# to the 1km default because RADIUS_KM_RE only matches \d+). Normalize
+# Chinese numerals into Arabic digits, immediately before a known unit
+# word, before any of the regexes above ever run.
+_CN_DIGITS = {"零": 0, "一": 1, "二": 2, "兩": 2, "倆": 2, "三": 3, "四": 4,
+              "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+_CN_NUMBER_BEFORE_UNIT_RE = re.compile(
+    r"([零〇一二三四五六七八九十兩倆半點]+)(?=\s*(?:公里|km|公尺|米|分鐘|小時|hr|hour))",
+    re.IGNORECASE,
+)
+
+
+def _cn_integer_to_value(cn: str) -> int | None:
+    if not cn:
+        return None
+    if cn == "十":
+        return 10
+    if len(cn) == 1:
+        return _CN_DIGITS.get(cn)
+    if "十" in cn:
+        tens_part, _, ones_part = cn.partition("十")
+        tens = _CN_DIGITS.get(tens_part, 1) if tens_part else 1
+        ones = _CN_DIGITS.get(ones_part, 0) if ones_part else 0
+        if tens_part and tens_part not in _CN_DIGITS:
+            return None
+        if ones_part and ones_part not in _CN_DIGITS:
+            return None
+        return tens * 10 + ones
+    return None
+
+
+def _cn_number_to_value(cn: str) -> float | None:
+    if cn in ("半",):
+        return 0.5
+    if "點" in cn:
+        int_part, _, frac_part = cn.partition("點")
+        int_value = _cn_integer_to_value(int_part) if int_part else 0
+        if int_value is None:
+            return None
+        frac_digits = "".join(str(_CN_DIGITS[ch]) for ch in frac_part if ch in _CN_DIGITS)
+        if not frac_digits:
+            return None
+        return float(f"{int_value}.{frac_digits}")
+    return _cn_integer_to_value(cn)
+
+
+def _normalize_chinese_numerals(text: str) -> str:
+    def _replace(match: re.Match) -> str:
+        value = _cn_number_to_value(match.group(1))
+        if value is None:
+            return match.group(0)
+        return str(int(value)) if value == int(value) else str(value)
+
+    return _CN_NUMBER_BEFORE_UNIT_RE.sub(_replace, text)
+
 # ── Location from a pasted Google Maps link ────────────────────────────────
 # A "pin on map" link (@lat,lng) or a query-param link (q=/ll=lat,lng)
 # carries plain coordinates we can parse for free. A "share this place"
@@ -754,6 +811,7 @@ def _detect_nearby_mode(text: str) -> str:
 
 
 def _parse_nearby_radius(text: str) -> tuple[float, str]:
+    text = _normalize_chinese_numerals(text)
     mode = _detect_nearby_mode(text)
     match = RADIUS_KM_RE.search(text)
     if match:

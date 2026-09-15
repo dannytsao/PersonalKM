@@ -897,6 +897,27 @@ def test_parse_nearby_radius_explicit_km_overrides_drive_mode_default() -> None:
     assert line_bot._parse_nearby_radius("開車 10 公里有什麼美食") == (10.0, "drive")
 
 
+def test_parse_nearby_radius_handles_chinese_numerals_from_voice_transcripts() -> None:
+    # Regression test for a real production bug (2026-09-15): voice queries
+    # transcribe numbers as Chinese numerals, not Arabic digits, and the
+    # radius silently fell back to the 1km default every time as a result.
+    assert line_bot._parse_nearby_radius("附近兩公里之內有什麼餐廳") == (2.0, "walk")
+    assert line_bot._parse_nearby_radius("附近十公里之內有什麼餐廳") == (10.0, "walk")
+    assert line_bot._parse_nearby_radius("開車一小時內有什麼美食")[1] == "drive"
+    radius, _mode = line_bot._parse_nearby_radius("開車一小時內有什麼美食")
+    assert 30.0 < radius < 31.5  # same 1hr drive-mode math as the digit form
+
+
+def test_parse_nearby_radius_handles_chinese_tens_and_half() -> None:
+    assert line_bot._parse_nearby_radius("附近十五公里有什麼景點") == (15.0, "walk")
+    assert line_bot._parse_nearby_radius("附近半公里有什麼咖啡廳") == (0.5, "walk")
+
+
+def test_normalize_chinese_numerals_only_touches_numbers_immediately_before_a_unit() -> None:
+    # "十字路口" has no unit word after "十" — must not be mangled.
+    assert line_bot._normalize_chinese_numerals("十字路口附近有什麼美食") == "十字路口附近有什麼美食"
+
+
 def test_nearby_registry_matches_filters_by_radius_subject_and_gps_presence() -> None:
     near_food = _entry("附近的店", subject="早午餐", gps=(25.001, 121.001))
     far_food = _entry("很遠的店", subject="早午餐", gps=(25.5, 121.5))
