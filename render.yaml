@@ -29,6 +29,10 @@ services:
         sync: false
       - key: DEEPSEEK_API_KEY
         sync: false
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
   - type: web
     name: personal-km-line-bot
     runtime: python

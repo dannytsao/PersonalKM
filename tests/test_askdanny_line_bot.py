@@ -5,6 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import parse_qs, urlparse
 
+from personalkm.llm.base import LLMError
 from personalkm.query import line_bot
 from personalkm.query.google_sheets import GoogleOAuthConfig, google_authorization_url
 
@@ -1194,3 +1195,189 @@ def test_maps_link_event_returns_false_without_any_url() -> None:
         "附近有什麼美食",
     )
     assert handled is False
+
+
+# ── Voice queries ────────────────────────────────────────────────────────
+
+def test_webhook_event_parser_accepts_audio_messages() -> None:
+    events = line_bot.askdanny_events_from_webhook(
+        {
+            "events": [
+                {
+                    "type": "message",
+                    "replyToken": "reply-1",
+                    "source": {"userId": "user-1"},
+                    "message": {"type": "audio", "id": "msg-abc", "duration": 4200},
+                },
+                {
+                    "type": "message",
+                    "replyToken": "reply-2",
+                    "source": {"userId": "user-2"},
+                    "message": {"type": "audio", "duration": 1000},
+                },
+            ]
+        }
+    )
+
+    assert events == [line_bot.AskDannyAudioEvent("reply-1", "user-1", "msg-abc")]
+
+
+def test_download_line_audio_content_returns_bytes_on_success(monkeypatch) -> None:
+    async def fake_get(self, url, headers):
+        assert url == "https://api-data.line.me/v2/bot/message/msg-abc/content"
+        assert headers == {"Authorization": "Bearer token"}
+        return httpx.Response(200, content=b"raw-audio-bytes", request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", fake_get)
+
+    content = anyio.run(line_bot._download_line_audio_content, "token", "msg-abc")
+
+    assert content == b"raw-audio-bytes"
+
+
+def test_download_line_audio_content_returns_none_on_failure(monkeypatch) -> None:
+    async def fake_get(self, url, headers):
+        return httpx.Response(404, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", fake_get)
+
+    content = anyio.run(line_bot._download_line_audio_content, "token", "msg-abc")
+
+    assert content is None
+
+
+def test_handle_audio_event_transcribes_and_reuses_text_pipeline(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    async def fake_download(_access_token: str, _message_id: str) -> bytes:
+        return b"raw-audio-bytes"
+
+    async def fake_transcribe(_audio_bytes: bytes, **_kwargs) -> str:
+        return "北投有什麼早午餐"
+
+    def fake_query_all(query, _root):
+        assert query == "北投有什麼早午餐"
+        return {
+            "answer": "\n- 主題：早午餐\n- 店名：COFFEE FIRST",
+            "sources": ["城市 × 主題 × 店家彙整"],
+            "error": None,
+        }
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    monkeypatch.setattr(line_bot, "_download_line_audio_content", fake_download)
+    monkeypatch.setattr(line_bot, "transcribe", fake_transcribe)
+    monkeypatch.setattr(line_bot, "vault_root", lambda _cfg: Path("/fake/vault"))
+    monkeypatch.setattr(line_bot, "_query_all", fake_query_all)
+    line_bot.QUERY_SESSIONS.clear()
+    line_bot.PENDING_LOCATIONS.clear()
+    cfg = {"access_token": "token", "allowed_users": set()}
+
+    anyio.run(
+        line_bot.handle_audio_event, cfg, line_bot.AskDannyAudioEvent("reply-1", "user-1", "msg-abc")
+    )
+
+    assert "COFFEE FIRST" in sent[-1]
+
+
+def test_handle_audio_event_replies_with_guidance_when_download_fails(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    async def fake_download(_access_token: str, _message_id: str) -> None:
+        return None
+
+    async def unexpected_transcribe(*_args, **_kwargs):
+        raise AssertionError("should not transcribe when download failed")
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    monkeypatch.setattr(line_bot, "_download_line_audio_content", fake_download)
+    monkeypatch.setattr(line_bot, "transcribe", unexpected_transcribe)
+    cfg = {"access_token": "token", "allowed_users": set()}
+
+    anyio.run(
+        line_bot.handle_audio_event, cfg, line_bot.AskDannyAudioEvent("reply-1", "user-1", "msg-abc")
+    )
+
+    assert "沒辦法下載這段語音" in sent[-1]
+
+
+def test_handle_audio_event_replies_with_guidance_when_transcription_fails(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    async def fake_download(_access_token: str, _message_id: str) -> bytes:
+        return b"raw-audio-bytes"
+
+    async def fake_transcribe(*_args, **_kwargs):
+        raise LLMError("all candidates exhausted")
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    monkeypatch.setattr(line_bot, "_download_line_audio_content", fake_download)
+    monkeypatch.setattr(line_bot, "transcribe", fake_transcribe)
+    cfg = {"access_token": "token", "allowed_users": set()}
+
+    anyio.run(
+        line_bot.handle_audio_event, cfg, line_bot.AskDannyAudioEvent("reply-1", "user-1", "msg-abc")
+    )
+
+    assert "暫時沒辦法辨識這段語音" in sent[-1]
+
+
+def test_handle_audio_event_replies_with_guidance_for_empty_transcript(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    async def fake_download(_access_token: str, _message_id: str) -> bytes:
+        return b"raw-audio-bytes"
+
+    async def fake_transcribe(*_args, **_kwargs) -> str:
+        return ""
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    monkeypatch.setattr(line_bot, "_download_line_audio_content", fake_download)
+    monkeypatch.setattr(line_bot, "transcribe", fake_transcribe)
+    cfg = {"access_token": "token", "allowed_users": set()}
+
+    anyio.run(
+        line_bot.handle_audio_event, cfg, line_bot.AskDannyAudioEvent("reply-1", "user-1", "msg-abc")
+    )
+
+    assert "聽不清楚這段語音內容" in sent[-1]
+
+
+def test_unauthorized_user_audio_is_not_downloaded_or_transcribed(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    async def unexpected_download(*_args, **_kwargs):
+        raise AssertionError("should not download audio for an unauthorized user")
+
+    async def unexpected_transcribe(*_args, **_kwargs):
+        raise AssertionError("should not transcribe for an unauthorized user")
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    monkeypatch.setattr(line_bot, "_download_line_audio_content", unexpected_download)
+    monkeypatch.setattr(line_bot, "transcribe", unexpected_transcribe)
+    cfg = {"access_token": "token", "allowed_users": {"someone-else"}}
+
+    anyio.run(
+        line_bot.handle_audio_event, cfg, line_bot.AskDannyAudioEvent("reply-1", "intruder", "msg-abc")
+    )
+
+    assert sent == [line_bot.GENERIC_DENY_TEXT]

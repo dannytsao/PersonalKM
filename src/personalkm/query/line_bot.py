@@ -50,7 +50,9 @@ from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from personalkm.capture.line import verify_line_signature
+from personalkm.llm.base import LLMError
 from personalkm.llm.router import route
+from personalkm.llm.transcribe import transcribe
 from personalkm.query.google_sheets import (
     export_to_google_sheet,
     google_authorization_url,
@@ -77,6 +79,7 @@ DEFAULT_HELP_TEXT = (
     "・「附近 5 公里有什麼景點」\n"
     "・「走路 10 分鐘內有什麼早餐店」\n"
     "・「開車 1 小時內有什麼美食」\n\n"
+    "也可以直接傳語音訊息問我，效果跟打字一樣。\n\n"
     "我會根據 Danny 的筆記回答，並標注來源。"
 )
 
@@ -194,6 +197,13 @@ class AskDannyEvent:
 
 
 @dataclass(frozen=True)
+class AskDannyAudioEvent:
+    reply_token: str
+    user_id: str
+    message_id: str
+
+
+@dataclass(frozen=True)
 class AskDannyLocationEvent:
     reply_token: str
     user_id: str
@@ -265,8 +275,10 @@ PENDING_LOCATION_CONFIRMATIONS: dict[str, PendingLocationConfirmation] = {}
 PENDING_LOCATIONS: dict[str, PendingLocation] = {}
 
 
-def askdanny_events_from_webhook(payload: dict) -> list[AskDannyEvent | AskDannyLocationEvent]:
-    events: list[AskDannyEvent | AskDannyLocationEvent] = []
+def askdanny_events_from_webhook(
+    payload: dict,
+) -> list[AskDannyEvent | AskDannyLocationEvent | AskDannyAudioEvent]:
+    events: list[AskDannyEvent | AskDannyLocationEvent | AskDannyAudioEvent] = []
     for raw_event in payload.get("events", []):
         if raw_event.get("type") != "message":
             continue
@@ -294,6 +306,12 @@ def askdanny_events_from_webhook(payload: dict) -> list[AskDannyEvent | AskDanny
                         latitude=float(latitude),
                         longitude=float(longitude),
                     )
+                )
+        elif message_type == "audio":
+            message_id = message.get("id")
+            if isinstance(message_id, str) and message_id:
+                events.append(
+                    AskDannyAudioEvent(reply_token=reply_token, user_id=user_id, message_id=message_id)
                 )
     return events
 
@@ -373,6 +391,22 @@ async def push_message(access_token: str, user_id: str, text: str) -> bool:
     except Exception:
         logger.exception("LINE push request failed")
         return False
+
+
+async def _download_line_audio_content(access_token: str, message_id: str) -> bytes | None:
+    if not access_token or not message_id:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(
+                f"https://api-data.line.me/v2/bot/message/{message_id}/content",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            response.raise_for_status()
+            return response.content
+    except httpx.HTTPError:
+        logger.warning("Failed to download LINE audio content for message %s", message_id)
+        return None
 
 
 # ── Read + search the 2 allowed pages ─────────────────────────────────────
@@ -1128,6 +1162,44 @@ async def handle_location_event(cfg: dict, event: AskDannyLocationEvent) -> None
     )
 
 
+async def handle_audio_event(cfg: dict, event: AskDannyAudioEvent) -> None:
+    if not is_allowed(cfg, event.user_id):
+        await reply_message(cfg["access_token"], event.reply_token, GENERIC_DENY_TEXT)
+        return
+
+    audio_bytes = await _download_line_audio_content(cfg["access_token"], event.message_id)
+    if audio_bytes is None:
+        await reply_message(
+            cfg["access_token"], event.reply_token,
+            "抱歉，我沒辦法下載這段語音，請再傳一次，或直接打字問我。",
+        )
+        return
+
+    try:
+        text = await transcribe(audio_bytes, filename="voice.m4a")
+    except LLMError:
+        logger.exception("Voice transcription failed for user %s", event.user_id[:8] or "?")
+        await reply_message(
+            cfg["access_token"], event.reply_token,
+            "抱歉，我暫時沒辦法辨識這段語音，可以直接打字問我，或稍後再試一次語音。",
+        )
+        return
+
+    if not text:
+        await reply_message(
+            cfg["access_token"], event.reply_token,
+            "抱歉，我聽不清楚這段語音內容，可以再說一次，或直接打字問我。",
+        )
+        return
+
+    logger.info("AskDanny voice query from %s transcribed: %r", event.user_id[:8] or "?", text[:80])
+    # Reuse the exact same pipeline a typed message goes through — allowlist
+    # was already checked above, but handle_text_event checks it again
+    # (harmless) and this keeps voice from ever bypassing any of the
+    # nearby/maps-link/session/output-gating logic built for text.
+    await handle_text_event(cfg, AskDannyEvent(reply_token=event.reply_token, user_id=event.user_id, text=text))
+
+
 async def _answer_nearby_query(
     cfg: dict,
     reply_token: str,
@@ -1576,6 +1648,8 @@ async def line_webhook(
     for event in events:
         if isinstance(event, AskDannyLocationEvent):
             background_tasks.add_task(handle_location_event, cfg, event)
+        elif isinstance(event, AskDannyAudioEvent):
+            background_tasks.add_task(handle_audio_event, cfg, event)
         else:
             background_tasks.add_task(handle_text_event, cfg, event)
     logger.info("Accepted %s AskDanny message(s)", len(events))

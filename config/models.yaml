@@ -24,6 +24,10 @@ providers:
     kind: openai_compat
     base_url: https://api.deepseek.com
     api_key_env: DEEPSEEK_API_KEY
+  groq:
+    kind: openai_compat            # transcription only for now — see below
+    base_url: https://api.groq.com/openai/v1
+    api_key_env: GROQ_API_KEY
 
 # Daily token budgets (input+output). TODO: adjust to your real plan quotas.
 budgets:
@@ -102,3 +106,20 @@ stages:
     # headroom for reasoning + a full Traditional-Chinese JSON summary.
     max_output_tokens: 4000
     json_only: true
+
+# Speech-to-text for AskDanny voice queries (LINE 語音訊息). Separate from
+# `stages:` above because transcription is a different API shape — a
+# multipart audio file upload to an OpenAI-compatible /audio/transcriptions
+# endpoint, not a JSON chat-completion prompt — handled by
+# src/personalkm/llm/transcribe.py rather than router.route(). Same
+# primary/fallback resolution convention as a stage, just no
+# max_output_tokens/json_only (not applicable to transcription).
+#
+# Groq primary: Whisper Large v3 Turbo — ~9x cheaper and dramatically
+# faster (228x real-time on Groq's LPU hardware) than OpenAI's whisper-1
+# (which is also the older large-v2 model generation), which matters for
+# staying inside LINE's short reply-token window. Researched 2026-09-15;
+# see project memory for sources if pricing/quality needs re-checking.
+transcription:
+  primary: groq/whisper-large-v3-turbo
+  fallback: []
