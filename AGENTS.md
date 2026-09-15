@@ -80,9 +80,12 @@ After completing code or configuration changes in this repository:
 2. Commit the finished changes on your current working branch.
 3. Push to `origin <current-branch>`.
 4. When ready to ship, merge the branch into `main` — if it's a clean fast-forward (no divergence), `git push origin <branch>:main` does this as a single server-side ref update without needing to check out `main` locally. Otherwise do a real merge on `main` and push that.
-5. Confirm the Render service is live by checking:
+5. Confirm the relevant Render service is live by checking its `/health` endpoint — there are two separate services (see `render.yaml`), and they're at different URLs than their `render.yaml` service names suggest:
 
-   `https://personal-km-line-bot.onrender.com/health`
+   - AskDanny (query bot, `src/personalkm/query/line_bot.py`): `https://personalkm.onrender.com/health` → `{"status":"ok","bot":"askdanny"}`
+   - Capture bot (raw-note ingestion, `bot/app.py` shim → `src/personalkm/capture/app.py`): `https://personal-km-line-bot.onrender.com/health` → `{"status":"ok"}` (no `"bot"` key)
+
+   These two return near-identical bodies, so when checking a deploy, confirm you're hitting the one that matches the code you actually changed — a green health check on the wrong service tells you nothing (confirmed the hard way 2026-09-15: every AskDanny deploy that session was "verified" against the capture bot's URL instead, which stayed green regardless of whether the AskDanny deploy itself succeeded).
 
 The Render web service is configured with `autoDeploy: true`, so pushing to `main` triggers deployment automatically — this happens at step 4, not at every branch commit.
 
