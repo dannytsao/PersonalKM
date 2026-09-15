@@ -692,6 +692,91 @@ def test_query_session_accepts_bare_numeric_count_after_prompt(monkeypatch) -> N
     assert line_bot.QUERY_SESSIONS["user-1"].offset == 3
 
 
+def test_query_session_option_1_sets_awaiting_count_flag(monkeypatch) -> None:
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        return True
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    line_bot.QUERY_SESSIONS.clear()
+    line_bot.QUERY_SESSIONS["user-1"] = line_bot.QuerySession(
+        entries=tuple(_entry(f"第{i}家") for i in range(7)),
+        offset=1,
+    )
+
+    anyio.run(
+        line_bot._handle_query_session_event,
+        {"access_token": "token"},
+        line_bot.AskDannyEvent("reply-1", "user-1", "1"),
+        "1",
+    )
+
+    assert line_bot.QUERY_SESSIONS["user-1"].awaiting_count is True
+
+
+def test_query_session_count_of_1_to_3_after_prompt_does_not_collide_with_menu(monkeypatch) -> None:
+    # Regression test for a real bug reported after live use (2026-09-15):
+    # answering "how many more?" with exactly 1, 2, or 3 was silently
+    # swallowed by the fixed menu options (1=再看幾筆, 2=終止輸出,
+    # 3=匯出...) instead of being treated as the requested count.
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+
+    for answer, expected_offset in (("1", 2), ("2", 3), ("3", 4)):
+        sent.clear()
+        line_bot.QUERY_SESSIONS.clear()
+        line_bot.QUERY_SESSIONS["user-1"] = line_bot.QuerySession(
+            entries=tuple(_entry(f"第{i}家") for i in range(7)),
+            offset=1,
+            awaiting_count=True,
+        )
+
+        handled = anyio.run(
+            line_bot._handle_query_session_event,
+            {"access_token": "token"},
+            line_bot.AskDannyEvent("reply-1", "user-1", answer),
+            answer,
+        )
+
+        assert handled is True
+        assert sent != ["已終止這次輸出。"], f"answer={answer!r} was treated as terminate"
+        assert sent[-1].startswith("目前顯示第"), f"answer={answer!r} did not render as a result page"
+        # If export had incorrectly triggered, _start_google_export pops the
+        # session — this line would KeyError instead of just failing.
+        assert line_bot.QUERY_SESSIONS["user-1"].offset == expected_offset
+        assert line_bot.QUERY_SESSIONS["user-1"].awaiting_count is False
+
+
+def test_query_session_awaiting_count_falls_through_to_terminate_on_non_numeric_reply(monkeypatch) -> None:
+    sent: list[str] = []
+
+    async def fake_reply(_access_token: str, _reply_token: str, text: str) -> bool:
+        sent.append(text)
+        return True
+
+    monkeypatch.setattr(line_bot, "reply_message", fake_reply)
+    line_bot.QUERY_SESSIONS.clear()
+    line_bot.QUERY_SESSIONS["user-1"] = line_bot.QuerySession(
+        entries=tuple(_entry(f"第{i}家") for i in range(7)),
+        offset=1,
+        awaiting_count=True,
+    )
+
+    anyio.run(
+        line_bot._handle_query_session_event,
+        {"access_token": "token"},
+        line_bot.AskDannyEvent("reply-1", "user-1", "終止"),
+        "終止",
+    )
+
+    assert sent == ["已終止這次輸出。"]
+    assert "user-1" not in line_bot.QUERY_SESSIONS
+
+
 def test_google_export_option_is_fail_closed_without_oauth_config(monkeypatch) -> None:
     sent: list[str] = []
 

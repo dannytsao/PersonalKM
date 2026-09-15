@@ -293,6 +293,13 @@ class QuerySession:
     entries: tuple[RegistryEntry, ...]
     offset: int
     created_at: float = field(default_factory=time.monotonic)
+    # Set only right after prompting "請輸入想再看的筆數" (option "1") — while
+    # true, the next message is treated as a raw count even if it's "1"/"2"/
+    # "3", which would otherwise collide with the fixed menu option numbers
+    # (再看幾筆/終止輸出/匯出). Bug found via real usage 2026-09-15: asking
+    # for exactly 1-3 more results after that prompt silently hit the wrong
+    # branch (terminate/export) instead.
+    awaiting_count: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -1356,6 +1363,14 @@ async def _handle_query_session_event(
     session = QUERY_SESSIONS.get(event.user_id)
     if session is None:
         return False
+
+    if session.awaiting_count:
+        count = _parse_more_count(text)
+        if count is not None:
+            return await _show_more_query_entries(cfg, event, session, count)
+        # Not parseable as a count — fall through to the normal menu
+        # handling below (e.g. the user typed "終止" instead of a number).
+
     if text in TERMINATE_COMMANDS:
         QUERY_SESSIONS.pop(event.user_id, None)
         await reply_message(cfg["access_token"], event.reply_token, "已終止這次輸出。")
@@ -1364,6 +1379,7 @@ async def _handle_query_session_event(
         if session.offset >= len(session.entries):
             await reply_message(cfg["access_token"], event.reply_token, "已沒有更多資料。")
             return True
+        QUERY_SESSIONS[event.user_id] = replace(session, awaiting_count=True)
         await reply_message(
             cfg["access_token"], event.reply_token, "請輸入想再看的筆數，例如：再看 10 筆。"
         )
@@ -1375,6 +1391,15 @@ async def _handle_query_session_event(
     count = _parse_more_count(text)
     if count is None:
         return False
+    return await _show_more_query_entries(cfg, event, session, count)
+
+
+async def _show_more_query_entries(
+    cfg: dict,
+    event: AskDannyEvent,
+    session: QuerySession,
+    count: int,
+) -> bool:
     if count < 1:
         await reply_message(cfg["access_token"], event.reply_token, "筆數請輸入 1 以上。")
         return True
