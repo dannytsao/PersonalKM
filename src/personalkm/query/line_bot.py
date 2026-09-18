@@ -81,7 +81,8 @@ DEFAULT_HELP_TEXT = (
     "・「走路 10 分鐘內有什麼早餐店」\n"
     "・「開車 1 小時內有什麼美食」\n\n"
     "也可以直接傳語音訊息問我，效果跟打字一樣。\n\n"
-    "我會根據 Danny 的筆記回答，並標注來源。"
+    "我會根據 Danny 的筆記回答，並標注來源。\n\n"
+    "輸入 /health 可以查看我目前載入的知識庫版本。"
 )
 
 # ── Nearby (location-based) query tuning ──────────────────────────────────
@@ -1640,6 +1641,10 @@ async def handle_text_event(cfg: dict, event: AskDannyEvent) -> None:
         await reply_message(cfg["access_token"], event.reply_token, cfg["help_text"])
         return
 
+    if text.lower() in ("/health", "/status"):
+        await reply_message(cfg["access_token"], event.reply_token, _vault_status_text(cfg))
+        return
+
     root = vault_root(cfg)
     if not root:
         await reply_message(cfg["access_token"], event.reply_token, "知識庫目前沒有設定好，請通知 Danny。")
@@ -1782,3 +1787,17 @@ def _vault_diagnostics(cfg: dict) -> dict:
 @app.get("/health")
 async def health() -> dict:
     return {"status": "ok", "bot": "askdanny", **_vault_diagnostics(askdanny_settings())}
+
+
+def _vault_status_text(cfg: dict) -> str:
+    diag = _vault_diagnostics(cfg)
+    if not diag.get("vault_found"):
+        return "⚠️ 知識庫目前沒有載入，請通知 Danny。"
+    commit = diag.get("vault_git_commit") or "未知"
+    commit_date = diag.get("vault_git_commit_date") or "未知"
+    return (
+        "📊 AskDanny 知識庫狀態\n"
+        f"筆數：{diag.get('registry_entry_count')} 筆\n"
+        f"版本：{commit}\n"
+        f"更新時間：{commit_date}"
+    )
