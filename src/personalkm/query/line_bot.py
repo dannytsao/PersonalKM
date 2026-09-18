@@ -38,6 +38,7 @@ import math
 import os
 import re
 import secrets
+import subprocess
 import time
 import unicodedata
 from dataclasses import dataclass, field, replace
@@ -1748,6 +1749,36 @@ async def line_webhook(
     return {"ok": True, "accepted": len(events)}
 
 
+def _vault_diagnostics(cfg: dict) -> dict:
+    """Report what data this running process actually has loaded, so a stale
+    vault clone (only pulled at process startup — see
+    scripts/start_askdanny_render.sh) is visible from the outside instead of
+    silently producing under-counted query results."""
+    root = vault_root(cfg)
+    if root is None:
+        return {"vault_found": False}
+    entry_count = len(_load_registry_entries(root))
+    commit, commit_date = None, None
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "log", "-1", "--format=%h %cI"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            commit, commit_date = result.stdout.strip().split(" ", 1)
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return {
+        "vault_found": True,
+        "vault_path": str(root),
+        "registry_entry_count": entry_count,
+        "vault_git_commit": commit,
+        "vault_git_commit_date": commit_date,
+    }
+
+
 @app.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok", "bot": "askdanny"}
+async def health() -> dict:
+    return {"status": "ok", "bot": "askdanny", **_vault_diagnostics(askdanny_settings())}
