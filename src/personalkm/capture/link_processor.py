@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -13,6 +14,8 @@ from openai import AsyncOpenAI
 
 from personalkm.capture.config import Settings
 from personalkm.capture.notes import LinkNote
+
+logger = logging.getLogger(__name__)
 
 
 CATEGORY_VALUES = {"photography", "food", "tech", "general"}
@@ -1662,3 +1665,80 @@ async def process_url(settings: Settings, url: str, context_text: str = "") -> L
 
     summary, category = await summarize_with_llm(settings, content.title, url, content.text)
     return to_note(content, url, summary, category)
+
+
+# ── Vision: image message → text → LinkNote ──────────────────────────────
+
+IMAGE_EXTRACT_SYSTEM_PROMPT = (
+    "你是圖片內容擷取助理。請分析這張圖片並以繁體中文輸出 JSON，欄位為：\n"
+    "- text: 圖片中的完整文字內容（逐字辨識，保留原始格式）\n"
+    "- platform: 發布平台（threads / instagram / facebook / line / unknown）\n"
+    "- author: 作者帳號或名稱（如有）\n"
+    "- summary: 2-3 句內容摘要\n"
+    "- category: 分類（photography / food / tech / general）\n"
+    "如果圖片是社群媒體貼文截圖，platform 填該平台名稱。"
+)
+
+
+async def process_line_image(settings: Settings, image_bytes: bytes) -> LinkNote:
+    """Process a LINE image message through the Vision LLM pipeline.
+
+    1. Calls the ``image_extract`` stage with the image bytes.
+    2. Parses the JSON response (text, platform, summary, category).
+    3. Builds a ``LinkNote`` from the extracted text — the note then
+       flows into the normal ingest pipeline as if it were pasted text.
+
+    Falls back to a stub note if the Vision LLM fails or is unavailable
+    (no API key) — the image is still acknowledged as a capture, just
+    with an empty body that flags needs_review.
+    """
+    from personalkm.llm.router import route
+
+    title = "LINE image message"
+    source_url = "line://image"
+
+    try:
+        result = route(
+            "image_extract",
+            "請擷取這張圖片的文字內容並分類。",
+            system=IMAGE_EXTRACT_SYSTEM_PROMPT,
+            expect_json=True,
+            images=[image_bytes],
+        )
+    except Exception as exc:
+        logger.warning("Vision LLM failed for LINE image: %s", exc)
+        content = ExtractedContent(
+            title=title,
+            text="（Vision LLM 擷取失敗，圖片內容未能轉為文字）",
+            platform="line-image",
+            extraction_status="vision_failed",
+            needs_review=True,
+        )
+        return to_note(content, source_url, "Vision LLM 擷取失敗，需人工確認。", "general")
+
+    text = str(result.get("text") or "").strip()
+    platform = str(result.get("platform") or "line-image").strip().lower()
+    summary = str(result.get("summary") or "").strip()
+    category = str(result.get("category") or "general").strip()
+    if category not in CATEGORY_VALUES:
+        category = "general"
+
+    # Second chance: if the LLM said general but the extracted text has
+    # obvious lifestyle keywords, upgrade — same pattern as text captures.
+    category = upgrade_general_category(title, text, category)
+
+    if not summary:
+        summary = text[:200] if text else "（圖片內容已擷取）"
+    if not text:
+        text = summary
+        extraction_status = "partial"
+    else:
+        extraction_status = "ok"
+
+    content = ExtractedContent(
+        title=title,
+        text=f"使用者傳到 LINE 的圖片內容（Vision LLM 擷取）：\n{text}",
+        platform=platform,
+        extraction_status=extraction_status,
+    )
+    return to_note(content, source_url, summary, category)

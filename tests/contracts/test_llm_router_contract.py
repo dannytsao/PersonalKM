@@ -21,10 +21,13 @@ class FakeProvider(Provider):
         self.name = name
         self.behavior = behavior     # "ok" | "bad_json" | "boom"
         self.calls = 0
+        self.last_images = None      # track images passed through
 
     def complete(self, model, prompt, *, system=None,
+                 images=None,
                  max_output_tokens=1000, timeout_s=120, json_mode=False):
         self.calls += 1
+        self.last_images = images
         if self.behavior == "boom":
             raise ConnectionError("provider down")
         text = '{"ok": true}' if self.behavior != "bad_json" else "not json at all"
@@ -104,3 +107,21 @@ def test_all_exhausted_sends_llm_alert(fake_env, monkeypatch):
 
     assert len(alerts) == 1
     assert alerts[0][0] == "test_stage"
+
+
+def test_images_pass_through_to_provider(fake_env, monkeypatch):
+    """route() must forward the images kwarg to provider.complete()."""
+    a = FakeProvider("a", "ok")
+    _patch_providers(monkeypatch, {"a": a, "b": FakeProvider("b", "ok")})
+    fake_png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 16
+    router_mod.route("test_stage", "describe this image", images=[fake_png])
+    assert a.last_images is not None
+    assert a.last_images == [fake_png]
+
+
+def test_images_none_by_default(fake_env, monkeypatch):
+    """Without images=, providers must receive None (not crash)."""
+    a = FakeProvider("a", "ok")
+    _patch_providers(monkeypatch, {"a": a, "b": FakeProvider("b", "ok")})
+    router_mod.route("test_stage", "plain text prompt")
+    assert a.last_images is None

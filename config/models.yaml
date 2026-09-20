@@ -92,6 +92,17 @@ stages:
     max_output_tokens: 600
     json_only: true
 
+  # Vision: image → text extraction. Used when a LINE image message is
+  # received (Threads "Copy as Image", Instagram screenshots, etc.).
+  # Ollama qwen2.5-vl:7b is free (Mac Mini); OpenAI gpt-4o-mini is the
+  # cloud fallback (~$0.003/image).  The extracted text flows into the
+  # normal ingest_synthesis pipeline as if it were pasted text.
+  image_extract:
+    primary:  ollama/qwen2.5vl:7b
+    fallback: [openai/gpt-4o-mini]
+    max_output_tokens: 2000
+    json_only: true
+
   # Entity Distillation Loop (SPEC.md, IMPROVEMENT-BACKLOG.md P5) — dry-run
   # only for now. Cloud-first per 2026-07-19 decision: this is a low-volume,
   # high-stakes (lossy, hard to notice if wrong) task, unlike entity_extraction

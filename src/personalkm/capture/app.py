@@ -12,8 +12,8 @@ from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
 
 from personalkm.capture.config import get_settings
 from personalkm.capture.git_store import VaultConfig, _get_vault_config, commit_and_push, ensure_vault
-from personalkm.capture.line import LineTextEvent, extract_urls, mark_message_as_read, text_message_events_from_webhook, verify_line_signature
-from personalkm.capture.link_processor import fallback_category, parse_line_message_part, process_line_message_context, process_url, should_capture_line_message_context
+from personalkm.capture.line import LineImageEvent, LineTextEvent, download_line_image, extract_urls, image_message_events_from_webhook, mark_message_as_read, text_message_events_from_webhook, verify_line_signature
+from personalkm.capture.link_processor import fallback_category, parse_line_message_part, process_line_image, process_line_message_context, process_url, should_capture_line_message_context
 from personalkm.capture.notes import write_note
 from personalkm.capture.notification import notify as send_notification
 
@@ -375,6 +375,63 @@ async def capture_line_messages(events: list[LineTextEvent], background_tasks: B
     # processed asynchronously by the Mac Mini every hour.
 
 
+@log_background_task
+async def capture_line_images(events: list[LineImageEvent], background_tasks: BackgroundTasks) -> None:
+    """Process LINE image messages through the Vision LLM pipeline.
+
+    Each image is:
+    1. Downloaded via the LINE Content API (api-data.line.me).
+    2. Fed to the ``image_extract`` LLM stage (Vision LLM).
+    3. The extracted text + category become a ``LinkNote`` saved to
+       the appropriate vault (same routing as text/URL captures).
+    """
+    settings = get_settings()
+    logger.info("Processing %s LINE image message(s)", len(events))
+
+    for event in events:
+        user_id = event.user_id
+        category = _session_category.get(user_id) or "general"
+        vault_config = _get_vault_config(settings, category)
+        try:
+            vault_path = await asyncio.to_thread(ensure_vault, settings, vault_config)
+        except Exception:
+            logger.exception("Failed to prepare vault repo for image capture")
+            continue
+
+        log_id = generate_line_log_id(vault_path)
+
+        try:
+            image_bytes = await download_line_image(
+                settings.line_channel_access_token, event.message_id
+            )
+        except Exception:
+            logger.exception("Failed to download LINE image %s", event.message_id)
+            continue
+
+        try:
+            note = await process_line_image(settings, image_bytes)
+            # Re-route if the Vision LLM's category is lifestyle but the
+            # session default was tech — same pattern as text/URL captures.
+            if note.category in ("food", "photography") and vault_config.repo_url == settings.vault_repo_url:
+                lifestyle_cfg = _get_vault_config(settings, note.category)
+                if lifestyle_cfg.repo_url != settings.vault_repo_url:
+                    logger.info(
+                        "Re-routing image note to lifestyle vault (category=%s)",
+                        note.category,
+                    )
+                    try:
+                        lifestyle_path = await asyncio.to_thread(ensure_vault, settings, lifestyle_cfg)
+                        await save_note(settings, lifestyle_path, note, log_id, lifestyle_cfg)
+                        logger.info("✅ Captured LINE image → lifestyle vault")
+                        continue
+                    except Exception:
+                        logger.exception("Lifestyle re-route failed; saving image note to tech vault")
+            await save_note(settings, vault_path, note, log_id, vault_config)
+            logger.info("✅ Captured LINE image → tech vault")
+        except Exception:
+            logger.exception("Failed to process LINE image %s", event.message_id)
+
+
 async def capture_urls(urls: list[tuple[str, str]]) -> None:
     settings = get_settings()
     logger.info("Processing %s LINE URL(s)", len(urls))
@@ -409,16 +466,22 @@ async def line_webhook(
 
     payload = await request.json()
     events = text_message_events_from_webhook(payload)
+    image_events = image_message_events_from_webhook(payload)
     urls = [(url, event.text) for event in events for url in extract_urls(event.text)]
     has_capturable_text = any(
         parse_line_message_part(event.text) or should_capture_line_message_context(event.text, settings.max_page_chars)
         for event in events
     )
 
-    if not urls and not has_capturable_text:
-        logger.info("LINE webhook received no capturable text or URLs")
+    if not urls and not has_capturable_text and not image_events:
+        logger.info("LINE webhook received no capturable text, URLs, or images")
         return {"ok": True, "accepted": 0}
 
-    background_tasks.add_task(capture_line_messages, events, background_tasks)
-    logger.info("Accepted %s LINE message(s) for background processing", len(events))
-    return {"ok": True, "accepted": len(events)}
+    if events:
+        background_tasks.add_task(capture_line_messages, events, background_tasks)
+    if image_events:
+        background_tasks.add_task(capture_line_images, image_events, background_tasks)
+
+    total = len(events) + len(image_events)
+    logger.info("Accepted %s LINE message(s) for background processing (%s text, %s image)", total, len(events), len(image_events))
+    return {"ok": True, "accepted": total}

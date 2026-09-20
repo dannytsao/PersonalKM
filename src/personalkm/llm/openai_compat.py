@@ -35,15 +35,39 @@ class OpenAICompatProvider(Provider):
         prompt: str,
         *,
         system: str | None = None,
+        images: list[bytes] | None = None,
         max_output_tokens: int = 1000,
         timeout_s: int = 120,
         json_mode: bool = False,
     ) -> Completion:
         client = self._get_client()
-        messages = []
-        if system:
-            messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
+        if images:
+            # Vision format: text + image_url parts in the user message.
+            # OpenAI Chat Completions API expects base64 data URIs.
+            import base64 as _b64
+            content: list[dict] = [{"type": "text", "text": prompt}]
+            for img in images:
+                b64 = _b64.b64encode(img).decode("ascii")
+                # Sniff the image type from magic bytes; default to JPEG.
+                if img[:8] == b"\x89PNG\r\n\x1a\n":
+                    mime = "image/png"
+                elif img[:3] == b"\xff\xd8\xff":
+                    mime = "image/jpeg"
+                else:
+                    mime = "image/jpeg"
+                content.append({
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{mime};base64,{b64}"},
+                })
+            messages = []
+            if system:
+                messages.append({"role": "system", "content": system})
+            messages.append({"role": "user", "content": content})
+        else:
+            messages = []
+            if system:
+                messages.append({"role": "system", "content": system})
+            messages.append({"role": "user", "content": prompt})
         resp = client.chat.completions.create(
             model=model,
             messages=messages,
