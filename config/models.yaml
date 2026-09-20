@@ -98,7 +98,7 @@ stages:
   # cloud fallback (~$0.003/image).  The extracted text flows into the
   # normal ingest_synthesis pipeline as if it were pasted text.
   image_extract:
-    primary:  ollama/qwen2.5-vl:7b
+    primary:  ollama/qwen2.5vl:7b
     fallback: [openai/gpt-4o-mini]
     max_output_tokens: 2000
     json_only: true
