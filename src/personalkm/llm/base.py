@@ -40,11 +40,17 @@ class Provider(ABC):
         prompt: str,
         *,
         system: str | None = None,
+        images: list[bytes] | None = None,
         max_output_tokens: int = 1000,
         timeout_s: int = 120,
         json_mode: bool = False,
     ) -> Completion:
-        """Return a completion or raise (any exception => router falls back)."""
+        """Return a completion or raise (any exception => router falls back).
+
+        When ``images`` is provided, the model is expected to have vision
+        capability. Each entry is raw image bytes (PNG/JPEG). Providers
+        convert to their API's required format (base64 data URI, etc.).
+        """
 
 
 def parse_json_strict(text: str) -> dict | list:

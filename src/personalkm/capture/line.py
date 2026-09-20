@@ -59,6 +59,14 @@ class LineTextEvent:
     mark_as_read_token: str = ""
 
 
+@dataclass(frozen=True)
+class LineImageEvent:
+    """A LINE image message — no text, just a messageId to download from."""
+    message_id: str
+    user_id: str = ""
+    mark_as_read_token: str = ""
+
+
 def verify_line_signature(body: bytes, channel_secret: str, signature: Optional[str]) -> bool:
     if not channel_secret or not signature:
         return False
@@ -136,6 +144,27 @@ def text_message_events_from_webhook(payload: dict) -> list[LineTextEvent]:
     return messages
 
 
+def image_message_events_from_webhook(payload: dict) -> list[LineImageEvent]:
+    """Extract image messages from a LINE webhook payload.
+
+    LINE image messages carry a ``messageId`` (not the image itself).
+    The image bytes must be downloaded separately via the Content API
+    (``api-data.line.me``) using ``download_line_image()``.
+    """
+    messages: list[LineImageEvent] = []
+    for event in payload.get("events", []):
+        message = event.get("message", {})
+        if event.get("type") == "message" and message.get("type") == "image":
+            messages.append(
+                LineImageEvent(
+                    message_id=message.get("id", ""),
+                    user_id=event.get("source", {}).get("userId", ""),
+                    mark_as_read_token=message.get("markAsReadToken", ""),
+                )
+            )
+    return messages
+
+
 async def mark_message_as_read(channel_access_token: str, mark_as_read_token: str) -> bool:
     if not channel_access_token or not mark_as_read_token:
         return False
@@ -152,3 +181,24 @@ async def mark_message_as_read(channel_access_token: str, mark_as_read_token: st
         )
         response.raise_for_status()
     return True
+
+
+async def download_line_image(channel_access_token: str, message_id: str) -> bytes:
+    """Download an image message's binary content via the LINE Content API.
+
+    LINE image messages do NOT contain the image itself — only a ``messageId``.
+    The image must be fetched separately from ``api-data.line.me`` (a different
+    domain from the regular Messaging API at ``api.line.me``).
+
+    Returns the raw image bytes (typically JPEG or PNG). Raises
+    ``httpx.HTTPStatusError`` on failure (404 = expired or invalid messageId).
+    """
+    if not channel_access_token or not message_id:
+        raise ValueError("channel_access_token and message_id are both required")
+
+    url = f"https://api-data.line.me/v2/bot/message/{message_id}/content"
+    headers = {"Authorization": f"Bearer {channel_access_token}"}
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(url, headers=headers)
+        response.raise_for_status()
+        return response.content

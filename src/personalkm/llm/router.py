@@ -74,12 +74,18 @@ def route(
     *,
     system: str | None = None,
     expect_json: bool = False,
+    images: list[bytes] | None = None,
 ):
     """Run `prompt` through the model chain configured for `stage`.
 
     Returns Completion, or parsed dict/list when expect_json=True.
     Raises LLMError when every candidate is exhausted — callers must let
     it propagate (AGENTS.md rule 3: no silent fallbacks).
+
+    When ``images`` is provided, each provider that has vision capability
+    will receive the raw image bytes alongside the text prompt. Providers
+    without vision support will receive no images (the call still goes
+    through — it may fail if the model can't handle the payload shape).
     """
     cfg = _config()
     stage_cfg = cfg["stages"][stage]
@@ -102,7 +108,7 @@ def route(
         for attempt in range(1, max_retries + 1):
             try:
                 comp: Completion = provider.complete(
-                    model, prompt, system=system,
+                    model, prompt, system=system, images=images,
                     max_output_tokens=max_out, timeout_s=timeout_s,
                     json_mode=bool(expect_json or stage_cfg.get("json_only")),
                 )

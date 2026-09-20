@@ -26,6 +26,7 @@ class OllamaProvider(Provider):
         prompt: str,
         *,
         system: str | None = None,
+        images: list[bytes] | None = None,
         max_output_tokens: int = 1000,
         timeout_s: int = 120,
         json_mode: bool = False,
@@ -35,11 +36,16 @@ class OllamaProvider(Provider):
             "prompt": prompt,
             "stream": False,
             # qwen3.5+ are thinking models: without this they burn the whole
-            # num_predict budget on a <think> pass and return an empty string
+            # num_predict budget on a 🤔 pass and return an empty string
             # (eval_count == num_predict, done_reason == "length").
             "think": False,
             "options": {"num_predict": max_output_tokens},
         }
+        if images:
+            # Ollama vision: base64-encoded images in the "images" field.
+            # Works with llava, qwen2.5-vl, minicpm-v, etc.
+            import base64 as _b64
+            payload["images"] = [_b64.b64encode(img).decode("ascii") for img in images]
         if json_mode:
             # Structured-output constraint: forces valid JSON (quoted keys AND
             # quoted array elements). qwen3.5:9b free-form output sometimes

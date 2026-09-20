@@ -27,17 +27,45 @@ class ClaudeProvider(Provider):
         prompt: str,
         *,
         system: str | None = None,
+        images: list[bytes] | None = None,
         max_output_tokens: int = 1000,
         timeout_s: int = 120,
         json_mode: bool = False,
     ) -> Completion:
         client = self._get_client()
-        kwargs: dict = dict(
-            model=model,
-            max_tokens=max_output_tokens,
-            messages=[{"role": "user", "content": prompt}],
-            timeout=timeout_s,
-        )
+        if images:
+            # Anthropic vision: content blocks with type "image" + base64.
+            import base64 as _b64
+            content: list[dict] = [{"type": "text", "text": prompt}]
+            for img in images:
+                b64 = _b64.b64encode(img).decode("ascii")
+                if img[:8] == b"\x89PNG\r\n\x1a\n":
+                    mime = "image/png"
+                elif img[:3] == b"\xff\xd8\xff":
+                    mime = "image/jpeg"
+                else:
+                    mime = "image/jpeg"
+                content.append({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": mime,
+                        "data": b64,
+                    },
+                })
+            kwargs: dict = dict(
+                model=model,
+                max_tokens=max_output_tokens,
+                messages=[{"role": "user", "content": content}],
+                timeout=timeout_s,
+            )
+        else:
+            kwargs: dict = dict(
+                model=model,
+                max_tokens=max_output_tokens,
+                messages=[{"role": "user", "content": prompt}],
+                timeout=timeout_s,
+            )
         if system:
             kwargs["system"] = system
         msg = client.messages.create(**kwargs)
