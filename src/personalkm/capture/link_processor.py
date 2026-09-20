@@ -1567,7 +1567,86 @@ async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, 
     return ensure_food_summary_details(title, transcript_text, summary, category), category, body_markdown
 
 
+GOOGLE_MAPS_SHARE_HOSTS = {
+    "maps.app.goo.gl",
+    "www.maps.app.goo.gl",
+}
+
+
+def is_google_maps_share(url: str) -> bool:
+    """True for Google Maps short links (maps.app.goo.gl/...).
+
+    These are JS-rendered share links that redirect to a full Google Maps
+    place page. fetch_page() gets an empty HTML shell from them — the
+    actual content (place name, address, reviews) is loaded by JavaScript.
+    """
+    parsed = urlparse(url)
+    return parsed.netloc.lower() in GOOGLE_MAPS_SHARE_HOSTS
+
+
+async def fetch_google_maps_content(
+    url: str,
+    context_text: str,
+    timeout_seconds: float,
+    max_chars: int,
+    settings: Optional[Settings] = None,
+) -> ExtractedContent:
+    """Fetch a Google Maps share link via Jina Reader (renders JS).
+
+    Falls back to the user's pasted context text when Jina fails.
+    Google Maps pages are JS-rendered — a direct httpx GET returns an
+    empty HTML shell with no text content. Jina Reader renders the JS
+    and extracts the place name, address, hours, and reviews.
+    """
+    # Try Jina Reader first — it renders the JS and gets real content
+    jina_content = await fetch_social_via_jina(url, timeout_seconds, max_chars, settings)
+    if jina_content is not None and len(jina_content.text.strip()) > 20:
+        jina_content = ExtractedContent(
+            title=jina_content.title,
+            text=jina_content.text,
+            platform="google-maps",
+        )
+        return jina_content
+
+    # Fall back to the user's pasted context text
+    if context_text and len(context_text.strip()) > 12:
+        caption = social_caption_text(url, context_text, max_chars)
+        if caption and len(caption) >= 12:
+            return ExtractedContent(
+                title="Google Maps pasted content",
+                text=f"使用者貼上的 Google Maps 內容：{caption}",
+                platform="google-maps",
+            )
+
+    # Last resort: stub with instructions
+    return ExtractedContent(
+        title="Google Maps share link",
+        text=(
+            "這是一個 Google Maps 分享連結。maps.app.goo.gl 頁面需要 JavaScript 渲染才能顯示"
+            "內容，自動擷取可能無法取得完整資訊。請在瀏覽器開啟連結後，複製店家名稱和地址"
+            "貼到 LINE；系統即可整理真正的內容。"
+        ),
+        platform="google-maps",
+        extraction_status="blocked",
+        needs_review=True,
+    )
+
+
 async def process_url(settings: Settings, url: str, context_text: str = "") -> LinkNote:
+
+    # ── Google Maps short links (maps.app.goo.gl) ──────────────────────
+    # These are JS-rendered — fetch_page() gets an empty HTML shell.
+    # Jina Reader renders the JS and extracts the place name, address,
+    # hours, reviews. When Jina fails, fall back to the pasted caption.
+    if is_google_maps_share(url):
+        content = await fetch_google_maps_content(
+            url, context_text, settings.request_timeout_seconds, settings.max_page_chars, settings
+        )
+        summary, category = await summarize_with_llm(settings, content.title, url, content.text)
+        if category == "general":
+            category = "food"
+        return to_note(content, url, summary, category)
+
     if is_google_ai_mode_share(url):
         content = google_ai_mode_share_content(url, context_text, settings.max_page_chars)
         summary, category = await summarize_with_llm(settings, content.title, url, content.text)
