@@ -675,12 +675,21 @@ Vault 修復（`scripts/fix_wiki_frontmatter_damage.py`，6 測試含 fixture gi
 
 **2026-09-21 根因判定（見 #36）**：對照 Mac Mini `~/Library/Logs/PersonalKM/phase-a.out.log`，造成 `2f444afc` 損毀的 Phase A 執行時間戳（18:45:53–18:49:30）精確對上該 vault commit（18:49:26）。而 `scripts/run_mac_mini_phase_a.sh` 從未對 CODE repo 執行過 `git pull`——只 pull vault repo——代表當時執行的很可能是修復 commit `a63ac62`（11:28 push 到 GitHub `main`）**還沒被人工 pull 進 Mac Mini checkout之前**的舊版程式碼。這不是「修復本身有漏洞」，而是「修復從未真正部署到跑這段程式碼的機器上」。#36 已補上自動同步機制防止同一件事再發生，但這**不會**回溯修好 `claude-code.md` 現有的損毀——那是分開的資料修復問題。
 
+**2026-09-21 程式碼查證結果（待做清單第 1、2 點已查完）**：
+
+1. **✅ 用現有 `split_frontmatter()`/`join_frontmatter()` 重跑 `claude-code.md` 救回當下（commit `5af5f20`）的真實內容，模擬 `ingestion_v2.py` canonical merge 分支的完整邏輯（tags/sources 合併 + `join_frontmatter`）**——title/canonical 正確保留，完全不會重現損毀。確認 `a63ac62` 的修復本身沒有問題；#36 的部署缺口才是 2026-07-22 那次規壞的真正成因。
+2. **🔴 確認 `distill.py::apply_distillation()` 是一個獨立、現在仍在犯的 bug**——它從未套用 P7#27 的修復，仍是原始的 `content.startswith("---")` + `content.split("---", 2)`（root cause B 的寫法）。用 claude-code.md 現在的真實結構驗證：這支函式會把最外層孤兒 `wikilink_processed` wrapper 誤判成「the」frontmatter，把底下真正的 `title`/`canonical` 當成 body 文字吞掉——精確對上現在看到的兩層孤兒 wrapper 疊加，且 `distill_count: 3` 代表這個 bug 已經在這個檔案上發作過至少 3 次。
+
+**已修復（2026-09-21）**：
+- `distill.py::apply_distillation()` 與 `_parse_frontmatter()` 都改用 `personalkm.frontmatter.split_frontmatter()`/`join_frontmatter()`，不再自己土法練鋼切 `---`。
+- 順帶發現並修掉 `split_frontmatter()` 本身還沒涵蓋的**第三種根因（根因 C）**：乾淨地疊在一起的多層孤兒 wrapper 區塊（每層都有自己完整的 `---...---`）——舊版 `split_frontmatter()` 只抓「第一個」符合的區塊，遇到疊層一樣會抓到最外層的空殼 wrapper。新增邏輯：逐層剝開「僅含 `wikilink_processed` 一個欄位」的空殼區塊，直到找到有實質內容的區塊為止。新增 `split_single_frontmatter_block()` 作為底層單層版本，供 `scripts/fix_wiki_frontmatter_damage.py::peel_wrapper_blocks()` 這種需要逐層檢視（而非直接跳到最終結果）的既有工具使用，避免新的自動剝層行為讓它讀不到中間層的 `wikilink_processed` 時間戳。
+- 測試：`tests/test_distill.py` 新增 1 案例（乾淨疊層 wrapper 下的 title 不再遺失），既有 `tests/test_fix_wiki_frontmatter_damage.py` 兩個多層案例改跑 `split_single_frontmatter_block()` 後維持原本通過。全套測試 387 通過（既有 7 個失敗跟這次改動無關，前後一致，屬日期相關 test flakiness）。
+- **範圍限定**：`claude-code.md` 現在的實際損毀結構比「乾淨疊層」更亂——第二層的 `wikilink_processed`/`last_distilled`/... 這組欄位缺少自己的開頭 `---`，只靠一個孤立的結尾 `---` 收尾。這種「殘缺不成對」的形狀，`split_frontmatter()` 刻意不猜測性地硬解（避免誤判一般 body 文字），這正是既有 `fix_wiki_frontmatter_damage.py` pass 1（走 git 歷史救回，不猜測 inline 結構）該負責的資料修復範圍，不是即時 pipeline 函式該做的事。
+
 真正尚待做的：
 
-1. **確認現在（#36 上線後）再跑一次 Phase A 合併 `claude-code.md` 是否還會重現同樣的損毀**——如果現在用最新程式碼手動跑一次能重現，才能證明問題也存在於程式碼本身，不是純粹的部署缺口；如果不會重現，代表 `a63ac62` 的修復其實有效，先前只是沒被部署到。
-2. **確認 Distillation Loop（`distill.py::apply_distillation()`）的寫回路徑**是否也用了同一套 round-trip 函式——`claude-code.md` 現有 `distill_count: 3`，這兩個月內至少被 distill 過 3 次，需要排除是這條路徑在破壞 frontmatter（獨立於 #36 解決的部署缺口）。
-3. 確認以上兩點都排除後，**才能**安全地再跑一次 `fix_wiki_frontmatter_damage.py`（或等效工具）做資料修復——否則就是這次同一件事的重演。
-4. 修復前，`pixelrag`/`obsidian-with-ollama` 兩個較輕微案例可以當作低風險的驗證樣本（title 都還在，只是 wrapper 污染），不用等 `claude-code.md` 這個最複雜的案例先解掉。
+1. 確認上述兩項程式碼修復都合併進 `main` 且 Mac Mini 已經（透過 #36 的自動同步）跑到新程式碼後，**才能**安全地再跑一次 `fix_wiki_frontmatter_damage.py` 做 `claude-code.md` 的資料修復——現在程式碼面已經不會再繼續往下疊加新的損毀，資料修復不會再被同一個 bug 立刻打回原狀。
+2. 修復前，`pixelrag`/`obsidian-with-ollama` 兩個較輕微案例可以當作低風險的驗證樣本（title 都還在，只是 wrapper 污染），不用等 `claude-code.md` 這個最複雜的案例先解掉。
 
 ### 28. `kimi-k3.md` body 混入另一頁完整 frontmatter 🔴
 

@@ -336,3 +336,33 @@ def test_apply_distillation_does_not_touch_other_frontmatter_fields(tmp_path: Pa
     assert '- "[[a]]"' in new_content
     assert '- "[[b]]"' in new_content
     assert "tags: [foo, bar]" in new_content
+
+
+def test_apply_distillation_does_not_lose_title_behind_orphan_wrapper_block(tmp_path: Path):
+    # IMPROVEMENT-BACKLOG.md #27 regression: a page can accumulate a stray
+    # leading "wikilink_processed"-only wrapper block on top of its real,
+    # cleanly-delimited frontmatter block (Phase B's own failure mode,
+    # independent of distill.py). The old naive `content.split("---", 2)`
+    # grabbed that wrapper as "the" frontmatter and folded the real
+    # title/canonical/sources into the body as literal text.
+    page = tmp_path / "claude-code.md"
+    captures = "\n".join(f"### Capture {i} (2026-07-0{i})" for i in range(1, 6))
+    page.write_text(
+        "---\nwikilink_processed: 2026-09-20T00:10:42\n---\n\n"
+        "---\ntitle: Claude Code\ncanonical: true\ncreated: 2026-06-28\n---\n\n"
+        f"{captures}\n",
+        encoding="utf-8",
+    )
+    preview = DistillationPreview(
+        path=page, title="Claude Code", triggered=True, reason="captures_count 5 >= 5",
+        captures_count=5, proposed_summary="summary", proposed_key_facts=[],
+    )
+
+    assert apply_distillation(page, preview) is True
+    new_content = page.read_text(encoding="utf-8")
+
+    assert "title: Claude Code" in new_content
+    assert "canonical: true" in new_content
+    fm, _ = distill_mod._parse_frontmatter(new_content)
+    assert fm.get("title") == "Claude Code"
+    assert fm.get("canonical") == "true"

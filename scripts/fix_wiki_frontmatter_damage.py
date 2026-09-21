@@ -34,7 +34,11 @@ import re
 import subprocess
 from pathlib import Path
 
-from personalkm.frontmatter import join_frontmatter, split_frontmatter
+from personalkm.frontmatter import (
+    join_frontmatter,
+    split_frontmatter,
+    split_single_frontmatter_block,
+)
 
 _FM_KEYS = (
     "title", "created", "updated", "topic", "tags", "type",
@@ -53,10 +57,18 @@ def first_block_has_title(content: str) -> bool:
 
 def peel_wrapper_blocks(content: str) -> tuple[list[str], str]:
     """Remove leading orphan wrapper blocks (frontmatter-shaped blocks
-    without a `title:`), returning (their inner texts, remaining body)."""
+    without a `title:`), returning (their inner texts, remaining body).
+
+    Uses split_single_frontmatter_block(), not split_frontmatter(): this
+    function's whole job is inspecting each stacked block one at a time to
+    harvest its wikilink_processed timestamp before discarding it — the
+    auto-peeling split_frontmatter() (added for root cause C) would jump
+    straight past all of them in one call and give this loop nothing to
+    iterate over.
+    """
     wrappers: list[str] = []
     while True:
-        fm, body = split_frontmatter(content)
+        fm, body = split_single_frontmatter_block(content)
         if fm is None or "title:" in fm:
             return wrappers, content
         wrappers.append(fm)

@@ -54,6 +54,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 
+from personalkm.frontmatter import join_frontmatter, split_frontmatter
 from personalkm.llm.router import route
 
 CAPTURES_THRESHOLD = 5
@@ -129,18 +130,22 @@ def _parse_frontmatter(content: str) -> tuple[dict, str]:
     personalkm.query.query_engine._parse_frontmatter avoids a real YAML parse
     too. Every field distill.py reads (title/created/last_distilled) is a
     scalar, so this is sufficient — no need for real YAML semantics here.
+
+    Block location uses split_frontmatter() (#27), not a bare
+    `content.startswith("---")` + `content.split("---", 2)`: a page with a
+    stray leading orphan wrapper block still starts with "---", and the
+    naive split would silently read that wrapper's fields instead of the
+    page's real frontmatter — same bug class as apply_distillation() had.
     """
-    if not content.startswith("---"):
-        return {}, content
-    parts = content.split("---", 2)
-    if len(parts) < 3:
+    fm_text, body = split_frontmatter(content)
+    if fm_text is None:
         return {}, content
     fm: dict = {}
-    for line in parts[1].strip().split("\n"):
+    for line in fm_text.strip().split("\n"):
         if ":" in line:
             key, _, val = line.partition(":")
             fm[key.strip()] = val.strip()
-    return fm, parts[2]
+    return fm, body
 
 
 def count_captures(body: str) -> int:
@@ -285,12 +290,21 @@ def apply_distillation(path: Path, preview: DistillationPreview) -> bool:
         return False
 
     content = path.read_text(encoding="utf-8")
-    if not content.startswith("---"):
+    # IMPROVEMENT-BACKLOG.md #27: this used to be a bare
+    # `content.startswith("---")` + `content.split("---", 2)` — the exact
+    # "root cause B" asymmetric strip pattern the P7#27 fix (a63ac62)
+    # eliminated everywhere else, but never reached here. A page with a
+    # stray leading orphan `wikilink_processed`-only wrapper block (Phase
+    # B's own failure mode) still `startswith("---")`, so the naive split
+    # silently grabbed that wrapper as "the" frontmatter and folded the
+    # page's real title/canonical/sources into the body as literal text —
+    # confirmed 2026-09-21 as the mechanism still actively re-corrupting
+    # wiki/entities/claude-code.md across its 3 recorded distill_count
+    # cycles. split_frontmatter() tolerates that leading junk instead of
+    # being fooled by it.
+    fm_text, body = split_frontmatter(content)
+    if fm_text is None:
         return False
-    parts = content.split("---", 2)
-    if len(parts) < 3:
-        return False
-    fm_text, body = parts[1], parts[2]
 
     today = date.today().isoformat()
     distill_count = _get_int_field(fm_text, "distill_count") + 1
@@ -315,6 +329,6 @@ def apply_distillation(path: Path, preview: DistillationPreview) -> bool:
         f"</details>\n"
     )
 
-    new_content = f"---{fm_text}---\n\n{summary_section}\n{folded}"
+    new_content = join_frontmatter(fm_text, f"{summary_section}\n{folded}")
     path.write_text(new_content, encoding="utf-8")
     return True
