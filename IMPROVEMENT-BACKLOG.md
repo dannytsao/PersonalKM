@@ -265,6 +265,25 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 - raw/resolved 搜尋結果會帶出來源 URL 與 `log_id`（若存在）。
 - CLI / FastAPI `/query` 共用同一個 query engine；CLI 修正為傳入 vault root。
 
+### 35. AskDanny 關鍵字搜尋 → embedding 向量搜尋 / LLM 查詢改寫 🔵
+
+**優先：待排（P4，Search/Retrieval 延伸項）**
+
+狀態：🔲 待開始。2026-09-21 發現並排入。
+
+背景：`line_bot.py` 的 `_indexed_registry_matches()`（`search_index.py` 的 n-gram 倒排索引）本質是純字面子字串比對，沒有語意層。實測案例：查「萬里海鮮」時，`討海人食堂` 的 highlight 寫的是「現撈活**海產**」而非「海鮮」，因為兩個詞字面不同，完全沒被索引到，5 筆該有的結果只回了 3-4 筆。已用同義詞展開（`SYNONYM_GROUPS`，`search_index.py`）+ `line_bot.py` 補一組 `海鮮`/`海產` subject 對照先止血，但這只能覆蓋「已知、手動列出」的同義詞組，遇到完全沒共同字的近義詞（例如「熱炒」vs「快炒」、「泡湯」vs「溫泉」）依然會漏。
+
+目標：讓 AskDanny 的檢索具備真正的語意彈性，不再依賴人工維護的同義詞清單。
+
+候選方向（尚未評估難度/成本，需要另開一輪討論再動工）：
+- **Embedding 向量搜尋**：為 registry 每筆條目（store/highlights/address 等欄位）建立向量索引，查詢時做向量相似度檢索，取代或輔助現有 n-gram 倒排索引。需要決定向量模型（本機 embedding model vs. 雲端 API）、索引儲存位置與重建時機（每次 registry 變動都要重新 embed）。
+- **LLM 查詢改寫/分類**：查詢進來時先讓 LLM 做同義詞擴展或 subject 分類（類似現有 `_query_location_intent()` 已經在用 LLM 做地區意圖解析的模式），再交給既有關鍵字索引比對。好處是不用動索引架構，壞處是每次查詢多一次 LLM 呼叫，會動到 `config/models.yaml` 的成本模型與 `personalkm.llm.router` 呼叫次數，且要處理 LLM 呼叫失敗時的 fallback（不能讓查詢完全依賴 LLM 可用性）。
+
+風險/待決事項：
+- 兩個方向都會改變 AskDanny 查詢管線的核心架構，不是像本次同義詞展開這種局部修補，需要先討論再動工。
+- 向量搜尋方案要決定索引重建的觸發時機（避免 registry 更新後查詢用到過期索引）。
+- LLM 改寫方案要決定失敗時是否 fallback 回純關鍵字搜尋，以及如何避免像 P0#3 那樣的靜默失敗。
+
 ## P5 — Karpathy LLM-Wiki 差距收斂（第一輪）
 
 背景：對照 SPEC.md 五層 pipeline 與 CHECKLIST.md 29 項驗收，發現「查詢優先度」「entity 合併正確性」「1 source → N pages」「query 結果寫回 wiki」是四個具體、可執行的落差，逐項評估後排入本輪。
