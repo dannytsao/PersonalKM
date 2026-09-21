@@ -686,10 +686,18 @@ Vault 修復（`scripts/fix_wiki_frontmatter_damage.py`，6 測試含 fixture gi
 - 測試：`tests/test_distill.py` 新增 1 案例（乾淨疊層 wrapper 下的 title 不再遺失），既有 `tests/test_fix_wiki_frontmatter_damage.py` 兩個多層案例改跑 `split_single_frontmatter_block()` 後維持原本通過。全套測試 387 通過（既有 7 個失敗跟這次改動無關，前後一致，屬日期相關 test flakiness）。
 - **範圍限定**：`claude-code.md` 現在的實際損毀結構比「乾淨疊層」更亂——第二層的 `wikilink_processed`/`last_distilled`/... 這組欄位缺少自己的開頭 `---`，只靠一個孤立的結尾 `---` 收尾。這種「殘缺不成對」的形狀，`split_frontmatter()` 刻意不猜測性地硬解（避免誤判一般 body 文字），這正是既有 `fix_wiki_frontmatter_damage.py` pass 1（走 git 歷史救回，不猜測 inline 結構）該負責的資料修復範圍，不是即時 pipeline 函式該做的事。
 
+**2026-09-21 查到第三個、也是最活躍的同款 bug**：評估要不要跑資料救回之前，先確認鏈路上還有沒有其他寫入路徑沒套用修復——查到 `scripts/post_link_ollama.py::set_frontmatter_value()`（Phase B，**每小時**跑一次，遠比 distill 的觸發頻率高）也還是原始的 `content.startswith("---")` + `content.split("---", 2)` 寫法。時間線對得上：`claude-code.md` 最外層的孤兒 wrapper（`wikilink_processed: 2026-09-20T00:10:42`）正是 Phase B 在 2026-09-20 08:11 那次 commit（vault `e8ca51e2`）寫入的，跟這支函式「找不到乾淨的 `---` 開頭就直接在最上面新蓋一層」的行為完全吻合——這很可能是兩個月來最主要、最頻繁的持續破壞來源，比 distill.py 的版本更值得優先修。
+
+**已修復（2026-09-21，第二輪）**：
+- `set_frontmatter_value()` 改用 `split_frontmatter()`/`join_frontmatter()`，不再自己土法練鋼判斷 `startswith("---")`。
+- 測試：`tests/test_post_link_ollama.py` 新增 1 案例（重現「找不到乾淨開頭就疊新 wrapper」的情境，驗證改用共用函式後會正確更新既有區塊而不是疊新層），既有 3 案例維持通過。全套測試 388 通過（同樣 7 個既有失敗不變）。ruff 乾淨。
+- 至此，三條已知會寫入 wiki 頁面 frontmatter 的路徑（`ingestion_v2.py`/`entity_dedup.py` 的 merge 分支、`distill.py::apply_distillation()`、`post_link_ollama.py::set_frontmatter_value()`）全部統一改用 `personalkm.frontmatter` 模組，不再各自維護一份 `startswith("---")`/`split("---", 2)` 的土砲邏輯。
+
 真正尚待做的：
 
-1. 確認上述兩項程式碼修復都合併進 `main` 且 Mac Mini 已經（透過 #36 的自動同步）跑到新程式碼後，**才能**安全地再跑一次 `fix_wiki_frontmatter_damage.py` 做 `claude-code.md` 的資料修復——現在程式碼面已經不會再繼續往下疊加新的損毀，資料修復不會再被同一個 bug 立刻打回原狀。
+1. 確認以上三項程式碼修復都合併進 `main` 且 Mac Mini 已經（透過 #36 的自動同步）跑到新程式碼後，**才能**安全地再跑一次 `fix_wiki_frontmatter_damage.py` 做 `claude-code.md` 的資料修復——現在三條寫入路徑都不會再繼續往下疊加新的損毀，資料修復不會再被同一類 bug 立刻打回原狀。
 2. 修復前，`pixelrag`/`obsidian-with-ollama` 兩個較輕微案例可以當作低風險的驗證樣本（title 都還在，只是 wrapper 污染），不用等 `claude-code.md` 這個最複雜的案例先解掉。
+3. `scripts/fix_wiki_frontmatter_damage.py` 是 AGENTS.md hard rule 1（agent 不得直接碰 vault）的既定例外處理方式——只能由使用者自己在有 vault 存取權限的環境執行 `--apply`，agent 不會自己動手跑這一步。
 
 ### 28. `kimi-k3.md` body 混入另一頁完整 frontmatter 🔴
 

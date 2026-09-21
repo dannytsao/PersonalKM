@@ -34,6 +34,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from personalkm.frontmatter import join_frontmatter, split_frontmatter
+
 # ─────────────────────────────────────────────────────────────
 # Setup
 # ─────────────────────────────────────────────────────────────
@@ -124,21 +126,24 @@ def set_frontmatter_value(content: str, key: str, value: str) -> str:
     """
     Set or update a frontmatter key=value pair.
     Creates frontmatter if missing.
+
+    Uses personalkm.frontmatter.split_frontmatter()/join_frontmatter()
+    (IMPROVEMENT-BACKLOG.md #27) instead of a bare `content.startswith("---")`
+    + `content.split("---", 2)` — the exact root-cause-B pattern that let any
+    leading junk fool this function into treating a page as having no
+    frontmatter at all and prepending a brand-new wrapper block on top,
+    permanently orphaning the real title/canonical/sources underneath.
+    Confirmed 2026-09-21 as the most active source of wiki/entities/
+    claude-code.md's ongoing corruption: this function runs hourly (Phase B
+    processes every eligible page each cycle), far more often than
+    distill.py's equivalent bug (which fires per-page on a 5-capture/30-day
+    trigger) — this was very likely what stacked the newest orphan wrapper
+    (`wikilink_processed: 2026-09-20T00:10:42`) on top of the page's
+    already-damaged frontmatter.
     """
-    if not content.startswith("---"):
-        # Prepend frontmatter
-        return f"""---
-{key}: {value}
----
-
-{content}"""
-
-    parts = content.split("---", 2)
-    if len(parts) < 3:
-        return content
-
-    fm_text = parts[1]
-    body = parts[2]
+    fm_text, body = split_frontmatter(content)
+    if fm_text is None:
+        return join_frontmatter(f"{key}: {value}", content)
 
     # Check if key already exists
     # NOTE: this pattern must match the WHOLE old value (to end of line), not
@@ -155,12 +160,7 @@ def set_frontmatter_value(content: str, key: str, value: str) -> str:
         # Append to frontmatter
         fm_text = fm_text.rstrip() + f"\n{key}: {value}"
 
-    # strip('\n') both sides before rewrapping: fm_text (parts[1]) begins
-    # and ends with newlines from the original delimiters, and body
-    # (parts[2]) begins with them too — rewrapping either as-is grew the
-    # page by one blank line per boundary on EVERY hourly run. github.md
-    # had accumulated ~63 of them inside its frontmatter alone.
-    return f"---\n{fm_text.strip(chr(10))}\n---\n\n{body.lstrip(chr(10))}"
+    return join_frontmatter(fm_text, body)
 
 
 def strip_frontmatter(content: str) -> str:
