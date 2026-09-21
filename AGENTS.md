@@ -50,6 +50,14 @@ updates entity pages. Philosophy: 我存，AI 整理，我問.
    P10 Sprint 1-4 block were fully implemented and merged weeks earlier, but
    their subsections still said 🔲 待開始 / read as an open plan, because
    only the top-level table — or nothing at all — had been updated.)
+8. **New project doc → ask about end-of-day inclusion.** Whenever you create
+   a new project-level markdown doc (repo root or `docs/`, e.g. a new
+   `*-PLAN.md`, `*-REQUIREMENTS.md`, `*-SPEC.md`) — not scratch files under
+   `.agent/`, not test fixtures — proactively ask the user whether it should
+   be added to the End-of-Day mandatory doc-update list below. Don't just
+   add it silently, and don't silently skip asking either: a doc left off
+   this list is exactly how `IMPROVEMENT-BACKLOG.md` went stale for two
+   months (see hard rule 7's incident note).
 
 ## Definition of done (every change, every agent)
 
@@ -104,6 +112,8 @@ If step 4's push to `main` is rejected because remote `main` contains new bot-ge
 ## End-of-Day Trigger
 
 When the user says `call it a day` (or similar), run the end-of-day wrap-up workflow **before closing**. **Updating all project-related documents is a mandatory part of day-end closing — do not skip it.**
+
+> This list only grows when someone remembers to add to it — see hard rule 8. If this session created a new project doc that isn't in step 2 below, ask the user about adding it before wrapping up, not after.
 
 > Hard rule 6 overrides the branch target below: end-of-day docs get committed and pushed to your **current working branch**, never directly to `main`. Merging that branch into `main` (see Deployment step 4) is a separate, deliberate action — not a routine part of closing out a day.
 
