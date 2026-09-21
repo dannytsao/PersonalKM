@@ -1,8 +1,8 @@
 # PersonalKM Improvement Backlog
 
-更新日期：2026-07-29
+更新日期：2026-09-21
 
-這份文件整理目前 LINE Bot + Obsidian 個人知識系統的後續改善事項，按執行優先順序排列。2026-07-28 P8 Lifestyle Vault 拆庫全部完成（#29-33），2026-07-29 雙 vault 路由 + capture 測試完成，系統穩定運行中。
+這份文件整理目前 LINE Bot + Obsidian 個人知識系統的後續改善事項，按執行優先順序排列。2026-07-28 P8 Lifestyle Vault 拆庫全部完成（#29-33），2026-07-29 雙 vault 路由 + capture 測試完成，系統穩定運行中。2026-09-21 對照 git log 逐項核實並同步 #30-34、P10 Sprint 1-4 的狀態欄位（原本長期停留在「待開始/計畫」，實際早已完成，見各節內「已核實」字樣）。
 
 已完成的 LLM-Wiki v2 已移至 `docs/llm-wiki-v2-plan.md`。
 
@@ -732,109 +732,99 @@ Vault 修復（`scripts/fix_wiki_frontmatter_damage.py`，6 測試含 fixture gi
 
 **優先：第 29 順位**
 
-狀態：🔲 待開始。
+狀態：✅ 已完成 — **決定不做**，2026-08-06 前後。
 
-目標：在拆庫之前（P6 #22-25 收完前），先用 Obsidian 原生功能達到視覺分離，零程式碼、零風險。
+目標：原計畫是在真正拆庫之前，先用 Obsidian 原生功能（Bookmarks/Workspace filter）做視覺分離當過渡。
 
-計畫：
-- 在 Obsidian 用 Bookmarks 或 Workspace 外掛建立兩個視圖：「Tech」和「Lifestyle」。
-- Lifestyle 視圖用搜尋 filter（`path:wiki/entities/` + 美食/旅遊關鍵字、或 `tag:#food`/`tag:#travel`）隔離。
-- 這不是真正拆庫，只是看的方式分開。pipeline 照舊。
+實際結果：#31-#34 的真正拆庫直接完成（見下），視覺分離的暫行方案失去存在必要，故不實作。此項純粹是被下游工作取代，不是被遺漏。
 
 ### 31. `fallback_category()` 分類品質改善 🥇
 
 **優先：第 30 順位**
 
-狀態：🔲 待開始。
+狀態：✅ 已完成並測試，2026-07-28。Commit `c89f94e`（`feat: expand fallback_category() keywords (P8#31)`）。
 
-目標：2026-07-27 dry-run 發現整體準確率只有 73.6%，最大問題是 tech→general 誤判（38 件，主要原因是缺 hot word：`claude-code`、`chatgpt`、`gemini`、`codex`、`notebooklm`、`obsidian` 等都未列入關鍵字清單）。改善後目標 ≥ 90%。
+目標：2026-07-27 dry-run 發現整體準確率只有 73.6%，最大問題是 tech→general 誤判（38 件，主要原因是缺 hot word）。
 
-計畫：
-- 擴充 `link_processor.py::fallback_category()` 的 tech 關鍵字清單：加入 entities.yaml 已登記的 34 個 canonical entity slug（claude-code、chatgpt、cursor、deepseek、kimi 等），以及 hot AI 工具詞（notebooklm、obsidian、copilot、mcp、prompt 等）。
-- 擴充 food 關鍵字：加入 `吃到飽`、`牛排`、`海鮮`、`私房菜`、`合菜`、`燒鵝`、`吊橋`（旅遊）等 dry-run 誤判的實例詞。
-- 對同一份 276 檔重跑 dry-run 驗證改善幅度。
-- 不改 architecture，純關鍵字清單擴充。
+完成內容：
+- `link_processor.py::fallback_category()` 的關鍵字清單從 18 個擴充到 100+，涵蓋 entities.yaml 已登記的 canonical entity slug（claude-code、chatgpt、cursor、deepseek、kimi 等）與 hot AI 工具詞（notebooklm、obsidian、copilot、mcp、prompt 等），food 端也補上 `吃到飽`、`牛排`、`海鮮`、`私房菜`、`合菜`、`燒鵝`、`吊橋`（旅遊）等 dry-run 誤判實例詞。
+- 純關鍵字清單擴充，未動 architecture。
 
 ### 32. Capture 層多 repo 路由 🥈
 
-**優先：第 31 順位（前置：#31）**
+**優先：第 31 順位（前置：#31，已完成）**
 
-狀態：🔲 待開始。
+狀態：✅ 已完成並測試，2026-07-28。Commit `59e46ef`（`feat: P8#32 multi-repo capture routing + LINE category override`）。
 
-目標：LINE Bot 收到訊息後，依 `fallback_category()` 結果決定 push 到 tech vault 還是 lifestyle vault。webhook 保持 dumb——分類邏輯已存在，只是多一個路由分支。
+目標：LINE Bot 收到訊息後，依 `fallback_category()` 結果決定 push 到 tech vault 還是 lifestyle vault，webhook 維持 dumb。
 
-計畫：
-- `config/settings.yaml` 新增多 vault 設定：`vault.tech.path` / `vault.lifestyle.path`，各含獨立 `repo_url` 與 `VAULT_REPO_URL`（PAT embedded）。
-- `git_store.py` 新增 category → repo URL 映射：`if category in ("food", "travel", "photography"): target = lifestyle_vault; else: target = tech_vault`。
-- 加入混合模式的 LINE 指令覆蓋：使用者可發 `/food`、`/tech`、`/travel` 強制切換 session 狀態，之後的訊息進指定 vault 直到下次切換。Session 狀態存記憶體 dict 即可（Render 無持久化需求，重啟就回全自動）。
-- Capture 層仍只做 receive → classify（既有）→ write raw → push，不引入 LLM，不違反 AGENTS.md hard rule。
+完成內容：
+- 依 category 路由到對應 vault repo（tech vs lifestyle）。
+- 含混合模式的 LINE 指令覆蓋（`/food`、`/tech`、`/travel`），可強制切換後續訊息的目標 vault。
+- Capture 層仍只做 receive → classify → write raw → push，未引入 LLM，符合 AGENTS.md hard rule 2。
+- 後續 `d35aafa`/`f55e4ce`/`c7dee6d`/`baa6df6`/`1ab3b37` 等多筆修正 commit 持續調整旅遊/飯店/IG-Threads 關鍵字與 misroute 邊界情況（2026-07-28 起陸續發現真實流量誤判後修的）。
 
 ### 33. Lifestyle vault 建立 + 一次性 migration 🥈
 
-**優先：第 32 順位（前置：#32）**
+**優先：第 32 順位（前置：#32，已完成）**
 
-狀態：🔲 待開始。
+狀態：✅ 已完成，2026-08 前後。Lifestyle vault repo `Personalkm-lifestyle-vault` 已建立並在跑。
 
-目標：建立 `Personalkm-lifestyle-vault` repo，把美食/旅遊頁面從 tech vault 搬過去。
-
-計畫：
-- 建立 `Personalkm-lifestyle-vault` private GitHub repo。
-- 寫 `scripts/split_vault.py`（遷移腳本，tests/fixtures 測試，AGENTS.md hard rule 1：真實套用需使用者確認）：
-  - 掃描 `wiki/entities/` 中日期前綴頁面，用改善後的 `fallback_category()` + 手動審核清單判斷哪些是 lifestyle。
-  - 搬移符合的 entity 頁面 + 對應的 `Archive/raw/Food/`、`Archive/raw/General/`（旅遊類）檔案到新 vault。
-  - 兩邊都保留 git history（用 `git filter-repo` 或手動搬移 + 新 commit）。
-- tech vault 移除搬走的頁面後，重建 knowledge-graph.md / log.md。
-- lifestyle vault 用自己的 canonical 結構（店名/景點/地區），不沿用 entities.yaml。
+完成內容（依 lifestyle vault git history 核實，2026-09-21 查證）：
+- `init: lifestyle vault structure`（`0e29375`）建立新 repo。
+- `migrate: 49 entities + 20 concepts + 50 archive files from tech vault`（`d1b59f6`）— 合計 119 個檔案，與總覽表宣稱的「119 files → lifestyle vault」一致。
+- `bootstrap: Karpathy wiki infrastructure for lifestyle vault`（`8e15a19`）、`cleanup: remove tech entities from lifestyle vault`（`9a902ce`）完成後續整理。
+- lifestyle vault 用自己的 canonical 結構（店名/景點/地區），未沿用 tech vault 的 `entities.yaml`。
+- 2026-09-21 現況查證：lifestyle vault 現有 409 個 entity 頁 + 213 個 concept 頁（含之後持續新增的 capture，非僅 migration 當下的 119 筆）。
 
 ### 34. 雙 vault cron + health check 🥉
 
-**優先：第 33 順位（前置：#33）**
+**優先：第 33 順位（前置：#33，已完成）**
 
-狀態：🔲 待開始。
+狀態：✅ 已完成，2026-08-06。Commit `a917eec`（`chore: add lifestyle vault plists + vault_log, align schedules`）。
 
-目標：Mac Mini hourly cron 同時跑兩個 vault 的 Phase A/B，health check 同時監控兩個 repo。
-
-計畫：
-- 新增 `com.dannytsao.personalkm.phase-a-lifestyle.plist` + `run_mac_mini_phase_a_lifestyle.sh`，比照現有 Phase A 的 lock 機制 + 斷電韌性。
-- Phase B 同理（`...phase-b-lifestyle`）。
-- 現有 health check cron（Hermes `personalkm-health-check`）增加 lifestyle vault 的檢查項目：Render webhook / vault last capture / pipeline status / stale raw。
-- `pipeline_status.sh` 改為報告兩個 vault 的狀態。
+完成內容：
+- 新增 `launchd/com.dannytsao.personalkm.phase-a-lifestyle.plist`、`phase-b-lifestyle.plist`，另外多做了一個原計畫沒列的 `phase-c-lifestyle.plist`（對應 lifestyle vault 自己的 Phase C，若後續有 distillation 需求可用）。
+- health check / pipeline status 腳本已擴充涵蓋雙 vault（後續 `4eb404b` 進一步做成 YAML-based cron job 管理工具，統一管理排程設定）。
 
 ---
 
 ## P10 — 多模態補完與知識圖譜純淨化 (2026-08-28 規劃)
 
 本階段優化聚焦於解決：YouTube 時間戳幻覺、Ollama 圖譜專有名詞過度關聯（Stop-words）、以及 Meta CDN 破圖。
-以下是已拆分、單次開發時數控制在 4 小時內的 P0 階段 (Stage 1) 敏捷 Sprint 計畫：
+以下是已拆分、單次開發時數控制在 4 小時內的 P0 階段 (Stage 1) 敏捷 Sprint 計畫。
+
+**狀態更新（2026-09-21 查證）**：規劃文件當時寫入後從未回填執行結果，4 個 Sprint 皆已於 **2026-08-31 同日**完成並 commit，僅此段落文字一直維持「計畫」措辭。已核對 commit 存在、對應檔案（`config/stop_words.txt`、`scripts/clean_legacy_graph.py`）確實在 repo 中，逐項狀態如下。
 
 ### 🎯 Stage 1 Sprints (P0 最優先項目)
 
 #### 🏃‍♂️ Sprint 1: 保留 VTT 時間錨點 & 原生 Chapters 擷取 (Est. 3h)
+
+狀態：✅ 已完成，2026-08-31。Commit `0b6fffe`（`sprint1: retain VTT coarse [MM:SS] anchors + native yt-dlp chapters`）。
+
 *   **目標**：徹底解決無時間對齊基準導致 LLM 產生幻覺時間點的問題。
-*   **計畫**：
-    - 修改 `YouTubeAdapter._get_metadata()` 以擷取 `yt-dlp` 原生 `chapters` 資訊，並在 raw 頂部寫入章節對照表。
-    - 改寫 `YouTubeAdapter._parse_vtt()`：不再完全剔除時間戳，改為每 90 秒在逐字稿中插入一個 `[MM:SS]` 粗粒度錨點。
-    - 更新 `tests/` 補齊單元測試與 contract tests。
+*   **完成內容**：`YouTubeAdapter._get_metadata()` 擷取 `yt-dlp` 原生 `chapters`；`_parse_vtt()` 改為每 90 秒插入 `[MM:SS]` 粗粒度錨點，不再完全剔除時間戳。
 
 #### 🏃‍♂️ Sprint 2: 時間軸保真 Ingest 與 LLM 深度整合 (Est. 3h)
-*   **目標**：讓 DeepSeek 提煉重點時能夠精準引用我們在 Sprint 1 中保留的真實時間錨點。
-*   **計畫**：
-    - 更新 `summarize_youtube_deep_note` 階段的 System Prompt，要求 LLM 生成 Highlights 時，必須完全對齊並引用逐字稿中隨附的 `[MM:SS]` 真實錨點與 Chapters，禁止編造。
-    - 驗證並測試 YouTube Ingest 端到端流程，驗收 synthesized note 的亮點時間軸。
+
+狀態：✅ 已完成，2026-08-31。Commit `b6e2ccc`（`sprint2: enforce temporal anchor alignment in YouTube deep-note LLM prompt`）。
+
+*   **目標**：讓 DeepSeek 提煉重點時能夠精準引用 Sprint 1 保留的真實時間錨點。
+*   **完成內容**：`summarize_youtube_deep_note` 階段 System Prompt 已要求 Highlights 對齊並引用逐字稿隨附的 `[MM:SS]` 真實錨點與 Chapters，禁止編造。
 
 #### 🏃‍♂️ Sprint 3: 雙向語意連結消歧義 (Wikilinks Stop-words Filter) (Est. 4h)
+
+狀態：✅ 已完成，2026-08-31。Commit `1fec171`（`sprint3: wikilink stop-words filter to suppress generic knowledge-graph pollution`）。
+
 *   **目標**：阻止 Ollama (Qwen) 自動關聯 `[[測試]]`、`[[環境]]`、`[[問題]]`、`[[照片]]` 等日常無意義通用詞，維持圖譜純度。
-*   **計畫**：
-    - 建立 `config/stop_words.txt`，收錄常見的中文/英文圖譜停止詞。
-    - 在 `post_link_ollama.py` (Phase B) 的處理路徑中，對 Ollama 產出的 XML 標籤進行後處理過濾：比對停止詞，直接剝除括號（例如 `[[測試]]` ──► `測試`）。
-    - 引入已存在的 concept 標題與 `_registry/entities.yaml` 的「白名單優先機制」。
-    - 撰寫單元測試驗收過濾效果。
+*   **完成內容**：新增 `config/stop_words.txt`（已核實存在於 repo）；Phase B 處理路徑對 Ollama 產出的 XML 標籤做後處理過濾，比對停止詞後剝除括號。
 
 #### 🏃‍♂️ Sprint 4: 歷史圖譜資料庫大淨化 (Graph Cleansing Script) (Est. 2h)
+
+狀態：✅ 已完成，2026-08-31。Commit `60e176b`（`sprint4: historical graph cleansing script + stop-word wikilink cleanup`）。
+
 *   **目標**：對現有的兩個知識庫 (Tech & Lifestyle) 進行回溯性清理，洗去過往累積的垃圾 wikilinks。
-*   **計畫**：
-    - 撰寫一次性指令碼 `scripts/clean_legacy_graph.py`：掃描兩個 vault 的所有 `.md` 檔案，比對 `stop_words.txt`，自動將垃圾括號剝除。
-    - 執行清理，重算 `knowledge-graph.md`，並將乾淨的兩個庫 commit 及 push。
+*   **完成內容**：新增 `scripts/clean_legacy_graph.py`（已核實存在於 repo），對兩個 vault 執行過清理並重算 `knowledge-graph.md`。
 
 ---
 
