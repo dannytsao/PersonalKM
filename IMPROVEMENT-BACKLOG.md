@@ -919,3 +919,34 @@ LINE FB 連結
 - 方案 D 可歸入原 **P1「失敗佇列 (DLQ) 重試上限與通知」** 範圍內
 - 方案 B 獨立於現有 9 項改善方案之外，需新開工作項目
 - 實作時機：DLQ 跳過可隨 P1 DLQ 項目一起做，Cookie 注入留待 backlog
+
+---
+
+## 🔴 Google Maps 分享連結擷取改善（2026-09-21）
+
+### 37. Google Maps 短連結解析 — HTTP redirect 取代 JS 渲染 🔴
+
+**優先：緊急（使用者質疑先前宣稱已修復的 capture 仍缺失店家資訊後查出）**
+
+狀態：✅ 已完成並測試，2026-09-21。Branch: `fix/google-maps-jina-timeout`。
+
+背景：2026-09-20 commit `811eb65` 加了 `maps.app.goo.gl` 短連結的 Jina Reader 擷取路徑，但使用者測試的真實 capture（log `202609201706_00001`，在修復上線後才送出）仍然全部欄位「未提供」。查證發現這是 `fetch_google_maps_content()` 自己設計好的三層 fallback 正確走到最後一層——不是舊 bug 復發，是 Jina Reader 對這則 capture 真的失敗了。追出兩個問題：
+
+1. `request_timeout_seconds`（12 秒，為靜態 IG/Threads 頁面調校）對需要完整渲染 JS 的 Google Maps 頁面明顯太短。→ 已修：新增 `GOOGLE_MAPS_TIMEOUT_SECONDS`（預設 30 秒），Google Maps 路徑改用獨立逾時常數，不影響其他 Jina 呼叫點。
+2. 使用者已在 Render 設定 `JINA_API_KEY`，但再次測試（連結 `d24qMcNijvXy6rKv8`）Jina Reader 這次沒有逾時失敗，卻回傳一個**俄文語系、沒有店家資訊的通用 Google Maps 頁面殼**（`Google Карты`）——研判是 Jina 的無頭瀏覽器在短連結多層轉址+JS 渲染流程走到一半就截斷，不是逾時問題。
+
+**根本解法（查可行性後確認高度可行，直接實作）**：`maps.app.goo.gl` 短連結本身就是一個**單純的 HTTP 302 redirect**（不需要任何 JS），直接轉址到帶有店名與精確經緯度的 canonical URL：
+- 有名稱的地點分享 → `.../maps/place/<店名>/@<lat>,<lng>,<zoom>z/...`
+- 純座標釘選分享 → `.../maps/search/<lat>,+<lng>`
+
+完成內容：
+- 新增 `resolve_google_maps_short_link(url, timeout_seconds)`：純 `httpx.get(url, follow_redirects=True)` 跟隨 redirect，從最終 URL 解析店名（`/maps/place/<name>/@`）與經緯度（兩種 URL 形狀都支援），組出精確的座標版 `google_maps_url`。完全不呼叫 Jina、不需要渲染，幾乎不會失敗。
+- 這個解析結果現在是**新的第一層**，排在 Jina Reader 之前：`fetch_google_maps_content()` 把解析出的店名/座標折進 `content.text` 開頭當作明確提示區塊，讓既有的「店名：X」文字抽取邏輯自然吃到，Jina/貼上文字/stub 三層 fallback 邏輯本身不變，只是每一層都會帶著這個提示。
+- 新增 `extract_geo_hint_food_place()`：既有的 `extract_labeled_food_places()` 要求「店名」與「地址」成對出現才會建立 `FoodPlace`，但 Google Maps 解析結果通常只有店名+座標、沒有地址——新增這個抽取規則，讓只有座標沒有地址時，`google_maps_url` 欄位還是能正確填入精確座標連結，而不是因為地址「未提供」就整個留空。
+- `food_places_markdown()`/`food_address_line()` 改成優先用 `FoodPlace.google_maps_url` 欄位本身（而不是每次都從地址文字重新算一次）——這是個安全的純重構，對所有既有 food capture 行為完全等價（原本兩者永遠算出同一個值），只是讓我的新座標覆寫在 markdown 渲染時也生效。
+- 因為 Google Maps 解析結果的提示文字本身沒有美食關鍵字，`fallback_category()` 的關鍵字啟發式常誤判成 `tech`（看起來像純網址片段）——原本的 `if category == "general": category = "food"` 只接住 general，沒接住這個新的誤判態樣，已擴大成 `if category in ("general", "tech"): category = "food"`。
+- 測試：`tests/test_process_url.py` 新增 7 案例（resolver 對兩種 URL 形狀的解析、網路失敗回 None、未知形狀的容錯、逾時常數正確傳遞、Jina 完全失敗時解析結果仍能撐住 capture 不落到全空 stub）。全套測試 395 通過（既有 7 個失敗與此改動無關，前後一致）。ruff 乾淨。
+
+尚未做：
+- 反向地理編碼（座標 → 門牌地址）——目前仍然拿不到街道地址，只有店名+座標；這是可行但獨立的下一步，需要決定用哪個免費/付費地理編碼服務，故意不在這輪一起做。
+- 沒有回溯修復 log `202609201706_00001`/`202609211747_00001` 這兩則已經寫入的舊 capture——只影響**之後**新進來的 Google Maps 分享連結。

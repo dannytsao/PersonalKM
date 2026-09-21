@@ -4,7 +4,7 @@ import re
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Optional
-from urllib.parse import parse_qs, quote_plus, urlparse
+from urllib.parse import parse_qs, quote_plus, unquote, urlparse
 from xml.etree import ElementTree
 from zoneinfo import ZoneInfo
 
@@ -1164,12 +1164,41 @@ def extract_pin_food_places(text: str) -> list[FoodPlace]:
     return places
 
 
+GOOGLE_MAPS_HINT_RE = re.compile(r"Google Maps 連結[：:]\s*(\S+)")
+
+
+def extract_geo_hint_food_place(text: str) -> Optional[FoodPlace]:
+    """Pick up the "[Google Maps 位置解析]" hint block that
+    resolve_google_maps_short_link()'s result gets folded into content
+    text (fetch_google_maps_content). Unlike extract_labeled_food_places,
+    this doesn't require a labeled 地址 — a Google Maps share link often
+    resolves to a name + coordinates but never a street address, and
+    without this the place would fall through to the generic
+    name-only/address-"未提供" branch below, silently dropping the precise
+    coords-based google_maps_url in favor of an empty one (google_maps_url()
+    returns "" for a "未提供" address).
+    """
+    maps_url_match = GOOGLE_MAPS_HINT_RE.search(text)
+    if not maps_url_match:
+        return None
+    name_match = re.search(r"店名[：:]\s*([^，,；;。\n]{2,60})", text)
+    name = clean_food_value(name_match.group(1)) if name_match else "未提供"
+    return FoodPlace(
+        name=name or "未提供", address="未提供", city="未提供",
+        google_maps_url=maps_url_match.group(1),
+    )
+
+
 def extract_food_places(title: str, page_text: str, summary: str) -> list[FoodPlace]:
     corpus = f"{summary} {title} {page_text}"
     places = extract_labeled_food_places(corpus) + extract_pin_food_places(corpus)
     places = dedupe_food_places(places)
     if places:
         return places
+
+    geo_hint_place = extract_geo_hint_food_place(corpus)
+    if geo_hint_place is not None:
+        return [geo_hint_place]
 
     name = extract_food_name(title, corpus)
     address = extract_food_address(corpus)
@@ -1216,8 +1245,14 @@ def google_maps_url(address: str) -> str:
     return f"https://www.google.com/maps/search/?api=1&query={quote_plus(address)}"
 
 
-def food_address_line(address: str) -> str:
-    maps_url = google_maps_url(address)
+def food_address_line(address: str, maps_url: str = "") -> str:
+    # maps_url defaults to deriving from the address text (existing
+    # behavior for every non-Maps-link capture), but a caller that already
+    # has a more precise URL (e.g. coordinates resolved straight from a
+    # Google Maps share link, when no street address was ever found) can
+    # pass it directly instead of losing it to a fresh, address-only
+    # recomputation here.
+    maps_url = maps_url or google_maps_url(address)
     return address if not maps_url else f"{address} ([Google Maps]({maps_url}))"
 
 
@@ -1228,7 +1263,7 @@ def food_places_markdown(places: list[FoodPlace]) -> str:
             "## 店家資訊\n"
             f"- 店名：{place.name}\n"
             f"- 縣市：{place.city}\n"
-            f"- 地址：{food_address_line(place.address)}"
+            f"- 地址：{food_address_line(place.address, place.google_maps_url)}"
         )
 
     lines = ["## 店家資訊"]
@@ -1238,7 +1273,7 @@ def food_places_markdown(places: list[FoodPlace]) -> str:
                 f"### {index}. {place.name}",
                 f"- 店名：{place.name}",
                 f"- 縣市：{place.city}",
-                f"- 地址：{food_address_line(place.address)}",
+                f"- 地址：{food_address_line(place.address, place.google_maps_url)}",
                 "",
             ]
         )
@@ -1584,29 +1619,108 @@ def is_google_maps_share(url: str) -> bool:
     return parsed.netloc.lower() in GOOGLE_MAPS_SHARE_HOSTS
 
 
+GOOGLE_MAPS_PLACE_RE = re.compile(r"/maps/place/([^/]+)/@(-?\d+\.\d+),(-?\d+\.\d+)")
+GOOGLE_MAPS_SEARCH_COORDS_RE = re.compile(r"/maps/search/(-?\d+\.\d+),\+?(-?\d+\.\d+)")
+GOOGLE_MAPS_AT_COORDS_RE = re.compile(r"@(-?\d+\.\d+),(-?\d+\.\d+)")
+
+
+@dataclass(frozen=True)
+class GoogleMapsResolution:
+    name: Optional[str]
+    lat: float
+    lng: float
+    maps_url: str
+
+
+async def resolve_google_maps_short_link(
+    url: str, timeout_seconds: float
+) -> Optional[GoogleMapsResolution]:
+    """Resolve a maps.app.goo.gl short link to a place name + coordinates
+    via a single plain HTTP redirect — no JS rendering, no Jina Reader.
+
+    2026-09-21: found that maps.app.goo.gl short links redirect (a normal
+    302, not a JS-driven navigation) straight to a canonical
+    google.com/maps/place/<name>/@<lat>,<lng>,<zoom>z/... or
+    google.com/maps/search/<lat>,+<lng> URL — the place name (when the
+    link was shared as a distinct place, not a bare pin) and exact
+    coordinates are sitting in the URL path/query, no rendering required.
+    This is the new first layer, ahead of Jina: cheap, fast, and doesn't
+    depend on Jina's rate limits/timeouts/render fidelity. It never
+    provides a street address (not present in the redirect URL) — that
+    still comes from Jina/the pasted caption when available.
+
+    Returns None (never raises) when the redirect doesn't resolve or
+    doesn't match either known shape — callers fall through to the
+    existing Jina-based flow unchanged.
+    """
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=timeout_seconds) as client:
+            response = await client.get(url)
+    except httpx.HTTPError:
+        return None
+
+    final_url = str(response.url)
+
+    place_match = GOOGLE_MAPS_PLACE_RE.search(final_url)
+    if place_match:
+        name = unquote(place_match.group(1)).replace("+", " ").strip()
+        lat, lng = float(place_match.group(2)), float(place_match.group(3))
+        return GoogleMapsResolution(
+            name=name or None, lat=lat, lng=lng,
+            maps_url=f"https://www.google.com/maps/search/?api=1&query={lat},{lng}",
+        )
+
+    search_match = GOOGLE_MAPS_SEARCH_COORDS_RE.search(final_url) or GOOGLE_MAPS_AT_COORDS_RE.search(final_url)
+    if search_match:
+        lat, lng = float(search_match.group(1)), float(search_match.group(2))
+        return GoogleMapsResolution(
+            name=None, lat=lat, lng=lng,
+            maps_url=f"https://www.google.com/maps/search/?api=1&query={lat},{lng}",
+        )
+
+    return None
+
+
 async def fetch_google_maps_content(
     url: str,
     context_text: str,
     timeout_seconds: float,
     max_chars: int,
     settings: Optional[Settings] = None,
+    resolution: Optional[GoogleMapsResolution] = None,
 ) -> ExtractedContent:
-    """Fetch a Google Maps share link via Jina Reader (renders JS).
+    """Fetch a Google Maps share link.
 
-    Falls back to the user's pasted context text when Jina fails.
-    Google Maps pages are JS-rendered — a direct httpx GET returns an
-    empty HTML shell with no text content. Jina Reader renders the JS
-    and extracts the place name, address, hours, and reviews.
+    First layer (new, 2026-09-21): *resolution*, if provided, came from a
+    plain redirect resolve (resolve_google_maps_short_link) — no rendering,
+    almost never fails, gives at least coordinates and often a place name.
+    Folded into the content text as an explicit hint so the existing
+    店名/地址-label-based place extraction picks it up like any other
+    labeled capture.
+
+    Falls through to Jina Reader (renders JS, can recover a street address
+    resolution alone can't provide), then the user's pasted context text,
+    then a stub — same three-layer fallback as before, just with the
+    resolved hint prepended to whichever layer succeeds so a name/coords
+    are never lost even when Jina/the caption add nothing.
     """
-    # Try Jina Reader first — it renders the JS and gets real content
+    geo_hint = ""
+    if resolution is not None:
+        name_line = f"店名：{resolution.name}\n" if resolution.name else ""
+        geo_hint = (
+            f"[Google Maps 位置解析]\n{name_line}"
+            f"座標：{resolution.lat}, {resolution.lng}\n"
+            f"Google Maps 連結：{resolution.maps_url}\n\n"
+        )
+
+    # Try Jina Reader — it renders the JS and can recover a street address
     jina_content = await fetch_social_via_jina(url, timeout_seconds, max_chars, settings)
     if jina_content is not None and len(jina_content.text.strip()) > 20:
-        jina_content = ExtractedContent(
+        return ExtractedContent(
             title=jina_content.title,
-            text=jina_content.text,
+            text=(geo_hint + jina_content.text)[:max_chars],
             platform="google-maps",
         )
-        return jina_content
 
     # Fall back to the user's pasted context text
     if context_text and len(context_text.strip()) > 12:
@@ -1614,9 +1728,18 @@ async def fetch_google_maps_content(
         if caption and len(caption) >= 12:
             return ExtractedContent(
                 title="Google Maps pasted content",
-                text=f"使用者貼上的 Google Maps 內容：{caption}",
+                text=(geo_hint + f"使用者貼上的 Google Maps 內容：{caption}")[:max_chars],
                 platform="google-maps",
             )
+
+    # Resolution alone (name/coords, no address) is still real content —
+    # only fall to the fully-empty stub when even that came back empty.
+    if geo_hint:
+        return ExtractedContent(
+            title=resolution.name or "Google Maps share link",
+            text=geo_hint,
+            platform="google-maps",
+        )
 
     # Last resort: stub with instructions
     return ExtractedContent(
@@ -1635,15 +1758,25 @@ async def fetch_google_maps_content(
 async def process_url(settings: Settings, url: str, context_text: str = "") -> LinkNote:
 
     # ── Google Maps short links (maps.app.goo.gl) ──────────────────────
-    # These are JS-rendered — fetch_page() gets an empty HTML shell.
-    # Jina Reader renders the JS and extracts the place name, address,
-    # hours, reviews. When Jina fails, fall back to the pasted caption.
+    # First: resolve the plain HTTP redirect for a name/coordinates (no
+    # rendering, rarely fails). Then Jina Reader renders the JS for a
+    # street address, falling back to the pasted caption.
     if is_google_maps_share(url):
+        resolution = await resolve_google_maps_short_link(url, settings.google_maps_timeout_seconds)
         content = await fetch_google_maps_content(
-            url, context_text, settings.google_maps_timeout_seconds, settings.max_page_chars, settings
+            url, context_text, settings.google_maps_timeout_seconds, settings.max_page_chars,
+            settings, resolution,
         )
         summary, category = await summarize_with_llm(settings, content.title, url, content.text)
-        if category == "general":
+        # The content text is often just the resolved geo-hint block (name
+        # + coordinates + a "Google Maps 連結：https://..." line) with no
+        # food-ish vocabulary at all — fallback_category's keyword
+        # heuristic reliably misreads that as "tech" (it looks like a bare
+        # link/URL artifact), not just "general". Category only matters for
+        # vault routing here, and per this branch's whole premise (Google
+        # Maps shares are mostly restaurants/places), "photography" is the
+        # one classification worth trusting over this default.
+        if category in ("general", "tech"):
             category = "food"
         return to_note(content, url, summary, category)
 

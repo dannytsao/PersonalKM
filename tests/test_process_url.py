@@ -2,7 +2,7 @@ import httpx
 import pytest
 
 from bot.config import Settings
-from bot.link_processor import process_url
+from bot.link_processor import process_url, resolve_google_maps_short_link
 
 
 @pytest.mark.anyio
@@ -137,6 +137,100 @@ async def test_process_url_facebook_jina_failure_yields_blocked_stub(monkeypatch
 GOOGLE_MAPS_SHARE_URL = "https://maps.app.goo.gl/UPEyo91mh8ztNetp9"
 
 
+class _FakeRedirectResponse:
+    def __init__(self, final_url: str):
+        self.url = final_url
+
+
+@pytest.mark.anyio
+async def test_resolve_google_maps_short_link_extracts_place_name_and_coords(monkeypatch):
+    # 2026-09-21: maps.app.goo.gl short links redirect (a plain HTTP 302,
+    # no JS) straight to a canonical .../maps/place/<name>/@<lat>,<lng>,<z>z
+    # URL when the link was shared as a distinct named place.
+    async def fake_get(self, url, *args, **kwargs):
+        return _FakeRedirectResponse(
+            "https://www.google.com/maps/place/%E9%8F%A1%E6%B9%96/@25.174659,121.655503,17z/"
+            "data=!3m1!4b1!4m6!3m5!1s0x345d4ce1e0f2861d:0x68f069c30e74f9f!8m2!3d25.174659!4d121.655503"
+        )
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", fake_get)
+
+    resolution = await resolve_google_maps_short_link(
+        "https://maps.app.goo.gl/d24qMcNijvXy6rKv8", 30.0
+    )
+
+    assert resolution is not None
+    assert resolution.name == "鏡湖"
+    assert resolution.lat == pytest.approx(25.174659)
+    assert resolution.lng == pytest.approx(121.655503)
+    assert resolution.maps_url == (
+        "https://www.google.com/maps/search/?api=1&query=25.174659,121.655503"
+    )
+
+
+@pytest.mark.anyio
+async def test_resolve_google_maps_short_link_handles_coords_only_pin_shares(monkeypatch):
+    # A bare pin-drop share (no associated named place) redirects to
+    # .../maps/search/<lat>,+<lng> instead — coordinates only, no name.
+    async def fake_get(self, url, *args, **kwargs):
+        return _FakeRedirectResponse(
+            "https://www.google.com/maps/search/25.165030,+121.409595?entry=tts"
+        )
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", fake_get)
+
+    resolution = await resolve_google_maps_short_link(
+        "https://maps.app.goo.gl/UPEyo91mh8ztNetp9", 30.0
+    )
+
+    assert resolution is not None
+    assert resolution.name is None
+    assert resolution.lat == pytest.approx(25.165030)
+    assert resolution.lng == pytest.approx(121.409595)
+
+
+@pytest.mark.anyio
+async def test_resolve_google_maps_short_link_returns_none_on_network_failure(monkeypatch):
+    async def fake_get(self, url, *args, **kwargs):
+        raise httpx.ConnectTimeout("boom", request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", fake_get)
+
+    resolution = await resolve_google_maps_short_link("https://maps.app.goo.gl/x", 30.0)
+
+    assert resolution is None
+
+
+@pytest.mark.anyio
+async def test_resolve_google_maps_short_link_returns_none_when_shape_unrecognized(monkeypatch):
+    async def fake_get(self, url, *args, **kwargs):
+        return _FakeRedirectResponse("https://www.google.com/maps/@25.0,121.0,10z")
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", fake_get)
+
+    # No /place/ or /search/ segment — falls back to the generic @lat,lng
+    # sniff, which this DOES match (still useful — coordinates only).
+    resolution = await resolve_google_maps_short_link("https://maps.app.goo.gl/x", 30.0)
+
+    assert resolution is not None
+    assert resolution.name is None
+    assert resolution.lat == pytest.approx(25.0)
+
+
+def _mock_no_resolution(monkeypatch):
+    """No test here should hit the real network — resolve_google_maps_short_link()
+    does a real httpx redirect follow, so every test mocks it explicitly.
+    This variant simulates the redirect not resolving (offline, unknown
+    shape, etc.), matching pre-#36 behavior for tests that don't care about
+    the resolver."""
+    async def fake_resolve(url, timeout_seconds):
+        return None
+
+    monkeypatch.setattr(
+        "personalkm.capture.link_processor.resolve_google_maps_short_link", fake_resolve
+    )
+
+
 @pytest.mark.anyio
 async def test_process_url_google_maps_uses_the_longer_timeout(monkeypatch):
     # 2026-09-21 regression: a real capture (log 202609201706_00001, sent
@@ -146,6 +240,7 @@ async def test_process_url_google_maps_uses_the_longer_timeout(monkeypatch):
     # a static IG/Threads fetch, so the general-purpose
     # request_timeout_seconds (12s) plausibly wasn't enough. Google Maps
     # now gets its own, longer budget (google_maps_timeout_seconds).
+    _mock_no_resolution(monkeypatch)
     seen_timeout = None
 
     async def fake_fetch_social_via_jina(url, timeout_seconds, max_chars, settings=None):
@@ -174,6 +269,10 @@ async def test_process_url_google_maps_uses_the_longer_timeout(monkeypatch):
 
 @pytest.mark.anyio
 async def test_process_url_google_maps_jina_failure_yields_blocked_stub(monkeypatch):
+    # Worst case: the redirect resolve AND Jina both come back empty —
+    # only then should this still fall all the way to the fully-empty stub.
+    _mock_no_resolution(monkeypatch)
+
     async def fake_fetch_social_via_jina(url, timeout_seconds, max_chars, settings=None):
         return None  # Jina timed out / failed to render
 
@@ -185,3 +284,37 @@ async def test_process_url_google_maps_jina_failure_yields_blocked_stub(monkeypa
 
     assert note.platform == "google-maps"
     assert note.extraction_status == "blocked"
+
+
+@pytest.mark.anyio
+async def test_process_url_google_maps_resolution_survives_jina_failure(monkeypatch):
+    # 2026-09-21 fix: even when Jina Reader fails entirely, a successful
+    # redirect resolve (name + coordinates, no rendering needed) should
+    # still produce a usable place with a precise, coordinates-based
+    # google_maps_url — not the fully-empty "please paste manually" stub.
+    from personalkm.capture.link_processor import GoogleMapsResolution
+
+    async def fake_resolve(url, timeout_seconds):
+        return GoogleMapsResolution(
+            name="鏡湖", lat=25.174659, lng=121.655503,
+            maps_url="https://www.google.com/maps/search/?api=1&query=25.174659,121.655503",
+        )
+
+    async def fake_fetch_social_via_jina(url, timeout_seconds, max_chars, settings=None):
+        return None  # Jina still fails — resolution alone must carry the capture
+
+    monkeypatch.setattr(
+        "personalkm.capture.link_processor.resolve_google_maps_short_link", fake_resolve
+    )
+    monkeypatch.setattr(
+        "personalkm.capture.link_processor.fetch_social_via_jina", fake_fetch_social_via_jina
+    )
+
+    note = await process_url(Settings(), GOOGLE_MAPS_SHARE_URL)
+
+    assert note.platform == "google-maps"
+    assert note.extraction_status != "blocked"
+    assert len(note.places) == 1
+    place = note.places[0]
+    assert place["name"] == "鏡湖"
+    assert place["google_maps_url"] == "https://www.google.com/maps/search/?api=1&query=25.174659,121.655503"
