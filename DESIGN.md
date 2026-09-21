@@ -1,6 +1,6 @@
 # PersonalKM — 知識管理系統設計文檔
 
-> 最後更新：2026-09-06 — AskDanny Phase 1 改為 registry-first 查詢並以獨立 Render service 執行，結果可帶回地址／電話／預約連結；核心 Capture／Resolve／Ingest／Propagate 架構不變。
+> 最後更新：2026-09-21 — 修復一個存在於三條獨立寫入路徑的 frontmatter round-trip bug（此前只修過其中一條），統一改用共用的 `personalkm.frontmatter` 模組，並對 vault 執行一次完整資料修復（94 頁，含 `claude-code.md`）；Mac Mini 的 Phase A/B/C 執行前新增 CODE repo 自動同步步驟（`scripts/sync_code_repo.py`），確保未來的 pipeline 修復不會再卡在沒被拉進實際跑程式碼的機器上才發生。核心 Capture／Resolve／Ingest／Propagate 架構不變，這些都是可靠性層級的補強，不是流程改動。
 
 ---
 

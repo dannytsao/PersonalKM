@@ -1,7 +1,7 @@
 # PersonalKM — AI-Powered Second Brain
 
 **Status:** ✅ ALL PHASES STABLE — Render webhook + Dual Vaults (Tech & Lifestyle split) + Mac Mini cron (Ollama-only) + Phase A/B auto + git self-recovery guard + YouTube temporal anchor alignment & wikilink stop-word filtering
-**Last Updated:** 2026-09-11 — AskDanny Phase 1 hybrid registry search with DeepSeek cloud fallback is live at `https://personalkm.onrender.com`.
+**Last Updated:** 2026-09-21 — Fixed a frontmatter round-trip bug present in three separate write paths (only one of which had previously been patched), unified them on `personalkm.frontmatter`, ran a full vault repair (94 pages, incl. `claude-code.md`), and added a Mac Mini code-checkout auto-sync so future pipeline fixes actually reach the machine that runs them. Also: AskDanny synonym-aware keyword search, and Google Maps share links now resolve via a plain HTTP redirect (no JS rendering) for a reliable store name + coordinates.
 
 LINE 群組連結整理到 Obsidian 的個人知識管理系統。LINE Bot 自動抓取 URL、生成 AI 摘要、提取重點、檢測知識衰退，每月報告追踪過時的技術知識。 分流至獨立的 Tech 與 Lifestyle 知識庫。
 

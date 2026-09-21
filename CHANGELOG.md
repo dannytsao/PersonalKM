@@ -2,6 +2,24 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
+## 2026-09-21
+
+### Fixed
+
+- **AskDanny keyword search synonym gap** (`src/personalkm/query/search_index.py`, `src/personalkm/query/line_bot.py`): added a general `SYNONYM_GROUPS` expansion (starting with 海鮮/海產/漁產) and a matching `海鮮` subject group so keyword search doesn't silently drop entries phrased with a synonym.
+- **Mac Mini code checkout never synced with `origin/main`** (`src/personalkm/gitstate.py::sync_code_repo()`, `scripts/sync_code_repo.py`, wired into all four `run_mac_mini_*.sh` launchers): unlike the Render web bots, nothing kept the Mac Mini's code checkout current — a pipeline bugfix merged on GitHub only took effect once someone manually pulled. Root cause of the P7#27 regression below. Best-effort `git pull --ff-only` before every cron run, never blocks the pipeline on failure.
+- **Frontmatter round-trip bug present in three separate write paths, only one of which had been fixed** (`src/personalkm/propagate/distill.py`, `scripts/post_link_ollama.py::set_frontmatter_value()`, `src/personalkm/frontmatter.py`): P7#27's original fix (`a63ac62`) only touched `ingestion_v2.py`/`entity_dedup.py`. `distill.py::apply_distillation()` and Phase B's hourly `set_frontmatter_value()` still used the original `content.startswith("---")` + `content.split("---", 2)` pattern, actively re-corrupting `wiki/entities/claude-code.md` for two months (confirmed via `distill_count: 3` and a timestamp match to a Phase B commit). Also found and fixed a third frontmatter-parsing gap (`split_frontmatter()` didn't peel past a second, cleanly-stacked orphan wrapper block) while reproducing the bug. All three write paths now share one implementation.
+- **Google Maps share links (`maps.app.goo.gl`) returning empty place data** (`src/personalkm/capture/link_processor.py`): added `resolve_google_maps_short_link()` — a plain HTTP redirect follow (no JS rendering) that reads the place name and exact coordinates straight out of the short link's canonical redirect target, as a new first layer ahead of Jina Reader. Also gave the Google Maps path its own, longer Jina timeout (`GOOGLE_MAPS_TIMEOUT_SECONDS`, 30s vs the general 12s) and widened the food-category fallback to catch a "tech" misclassification the new geo-hint text was triggering.
+
+### Data
+
+- **Vault frontmatter repair applied** (`Personalkm-vault` commit `243d0c15`): ran `scripts/fix_wiki_frontmatter_damage.py --apply` after the three code fixes above landed — 15 pages recovered from git history (including `claude-code.md`), 4 pages had another page's pasted frontmatter stripped out of the body, 75 pages had accumulated blank-line padding normalized, 0 unrecoverable.
+
+### Changed
+
+- **`IMPROVEMENT-BACKLOG.md` status accuracy**: synced #30-34 (P8 vault split) and the P10 sprint block, whose subsections had said "🔲 待開始"/read as an open plan for weeks after the underlying work actually shipped — only the top-level summary table (or nothing) had been updated. Added hard rule 7 (`AGENTS.md`): backlog status updates now travel with the completing commit, in both the table and the item's own subsection. Added hard rule 8: proactively ask before adding a newly-created project doc to the End-of-Day mandatory list.
+- **`fix_wiki_frontmatter_damage.py::peel_wrapper_blocks()`**: repointed at the new `split_single_frontmatter_block()` primitive so its per-layer timestamp harvesting still works now that `split_frontmatter()` auto-peels multiple stacked wrapper blocks in one call.
+
 ## 2026-09-11
 
 ### Added
