@@ -619,7 +619,19 @@ SPEC.md 已更新：`decay_score_threshold` 註解為「刻意省略」並附上
 
 **優先：第 26 順位**
 
-狀態：✅ 根因已修 + 3 檔全部從 git 歷史救回，2026-07-22。Branch: `fix/frontmatter-roundtrip-corruption`。
+狀態：🔴 **未結案 — 2026-07-22 的救回已再次失效，claude-code.md 目前仍在損毀狀態。2026-09-21 查證發現並改正先前誤標的 ✅。**
+
+**2026-09-21 查證（Danny 質疑「27 還沒結案怎麼列入已完成」後直接對 vault 現況查核）**：對 3 個檔案目前的真實內容逐一核對：
+
+| 檔案 | 現況（2026-09-21 直接讀取 vault） |
+|---|---|
+| `wiki/entities/claude-code.md` | 🔴 **仍損毀**——`title:`/`canonical:`/`sources:` 全部缺失，開頭是兩個孤兒 `wikilink_processed`-only 區塊疊在一起，body 直接從 `## 濃縮摘要` 開始。跟 P7#26 描述的症狀一模一樣，且比 2026-07-22 救回當下更糟（當時是有 title 的）。 |
+| `wiki/entities/2026-07-12-...pixelrag...md` | 🟡 **title 還在，但重新累積損毀**——目前有 8 個 `---` 分隔線（應該只有 2 個），即 5 層孤兒 `wikilink_processed` wrapper 疊在正常 frontmatter 上方，跟根因 A「填充增生」症狀相同。 |
+| `wiki/concepts/2026-06-28-obsidian-with-ollama.md` | 🟡 **title 還在，但第一個 `---` 後面混入約 10 行空白**——同屬根因 A 的輕微復發。 |
+
+**根因判定**：用 `git log`/`git show` 對 `claude-code.md` 逐 commit 掃描，找到救回後 title 再次消失的確切 commit：**`2f444afc`（vault repo，2026-07-22 18:49，Phase A `🤖 Auto: ingest raw → wiki entities`）——就在救回 commit `5af5f20` 之後幾小時內、同一天**。這個 commit 的 diff 把整個 frontmatter 區塊（`title`/`canonical`/`sources`/`confidence` 全部）直接砍光換成兩個空行，同時合併進一則新 capture。
+
+更關鍵的是：程式碼修復 commit `a63ac62`（`Fix two frontmatter round-trip corruption mechanisms`）發生在 2026-07-22 **11:28**，早於這次真正造成損毀的 `2f444afc`（18:49）——換句話說，**這次規壞是在修復程式碼已經部署之後才發生的**，代表 `a63ac62` 宣稱修掉的 `split_frontmatter()`/`join_frontmatter()` 並沒有真正涵蓋到造成這次損毀的那條路徑。目前小節內文寫的「根因 A/B」修復對 `claude-code.md` 這個實際案例並未生效，需要重新確認是哪個函式呼叫路徑繞過了新的 `frontmatter.py`（懷疑對象：合併高流量 canonical 頁面時走的分支，或 `_propagate_to_entity_pages()`/Distillation Loop 相關路徑——`claude-code.md` 現有 `distill_count: 3`，代表這兩個月內有被 Distillation Loop 處理過，需要確認 `distill.py::apply_distillation()` 的寫回是否也走過新的 frontmatter round-trip function）。
 
 **2026-07-22 根因調查結論（使用者要求檢查 claude-code.md/github.md 格式問題後追出）**：
 
@@ -640,17 +652,14 @@ Vault 修復（`scripts/fix_wiki_frontmatter_damage.py`，6 測試含 fixture gi
 
 未修（明知而留）：重複的 `## Summary`/`## Key Facts` 區段是 merge 追加設計的既定結果，屬於 Distillation Loop（P6#24）的處理範圍，不算損毀。
 
-目標：以下 3 個檔案在修復 #26 時被順帶掃到，但情況比另外 6 個更嚴重——`title:` 完全不存在於檔案的任何區塊（不是被孤立區塊擋住，是真的整段遺失），`scripts/fix_duplicate_frontmatter.py` 正確判斷「找不到含 title: 的區塊」而選擇不動它們，沒有造成進一步損害：
+**2026-07-22 曾經做過的事（供參考，已知不足以解決問題）**：`scripts/fix_wiki_frontmatter_damage.py` 曾對這 3 個檔案做過一次性 git 歷史救回，當下驗證 0 個無法復原、全 vault missing-title 掃描為 0。但這只是**一次性的資料修復**，沒有解決底層還在持續產生新損毀的 pipeline bug——救回後幾小時內 `claude-code.md` 就被同一類 Phase A merge 又弄壞一次，之後兩個月沒人回頭確認，狀態被誤標為已完成。
 
-- `wiki/entities/claude-code.md`
-- `wiki/entities/2026-07-12-柏克萊推出-pixelrag讓-ai-用看的讀網頁超越純文字-rag-準確率-18-電腦王阿達.md`
-- `wiki/concepts/2026-06-28-obsidian-with-ollama.md`
+真正尚待做的：
 
-背景：`claude-code.md` 是 backlog 先前 Distillation Loop dry-run 測試時反覆操作過的頁面（11 筆累積 capture），且經歷過 Phase 6 canonical entity backfill、`sanity_check.py` 等多次歷史處理，根因可能跟 P7#26 不同，需要另外用 `git log`/`git show` 回溯查證，可能需要從更早的 commit 手動救回 frontmatter，而不是像 #26 一樣能自動重建。
-
-計畫：
-- 對這 3 個檔案分別跑 `git log --oneline -- <file>`，二分搜尋找出 title 欄位消失的確切 commit 與根因（可能是 Phase 6 backfill 或 `sanity_check.py` 的問題，不一定是 `_append_capture()`）。
-- 找到根因後評估：是否能從某個歷史 commit 找回完整 frontmatter 手動合併回目前版本（保留之後累積的所有 capture 內容），或是否需要重新用 raw 內容跑一次 ingest 重建。
+1. **找出 `2f444afc` 真正呼叫到的合併函式**，確認它是否真的有走新的 `src/personalkm/frontmatter.py::split_frontmatter()`/`join_frontmatter()`，或是繞過了它（例如走了 `a63ac62` 沒有覆蓋到的另一條分支）。
+2. **確認 Distillation Loop（`distill.py::apply_distillation()`）的寫回路徑**是否也用了同一套 round-trip 函式——`claude-code.md` 現有 `distill_count: 3`，這兩個月內至少被 distill 過 3 次，需要排除是這條路徑在破壞 frontmatter。
+3. 找到真正根因並修掉之後，**才能**安全地再跑一次 `fix_wiki_frontmatter_damage.py`（或等效工具）做資料修復——否則就是這次同一件事的重演。
+4. 修復前，`pixelrag`/`obsidian-with-ollama` 兩個較輕微案例可以當作低風險的驗證樣本（title 都還在，只是 wrapper 污染），不用等 `claude-code.md` 這個最複雜的案例先解掉。
 
 ### 28. `kimi-k3.md` body 混入另一頁完整 frontmatter 🔴
 
