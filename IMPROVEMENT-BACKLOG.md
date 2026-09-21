@@ -638,7 +638,7 @@ SPEC.md 已更新：`decay_score_threshold` 註解為「刻意省略」並附上
 
 **優先：第 26 順位**
 
-狀態：🔴 **未結案 — 2026-07-22 的救回已再次失效，claude-code.md 目前仍在損毀狀態。2026-09-21 查證發現並改正先前誤標的 ✅。**
+狀態：✅ **已結案，2026-09-21。** 三條寫入路徑的 code bug 全數修復後，對真實 vault 執行 `fix_wiki_frontmatter_damage.py --apply`（Danny 直接授權執行），`claude-code.md`/pixelrag/obsidian-with-ollama 連同另外 91 個受波及頁面一次修復，0 個無法復原。vault commit `243d0c15`。
 
 **2026-09-21 查證（Danny 質疑「27 還沒結案怎麼列入已完成」後直接對 vault 現況查核）**：對 3 個檔案目前的真實內容逐一核對：
 
@@ -693,11 +693,18 @@ Vault 修復（`scripts/fix_wiki_frontmatter_damage.py`，6 測試含 fixture gi
 - 測試：`tests/test_post_link_ollama.py` 新增 1 案例（重現「找不到乾淨開頭就疊新 wrapper」的情境，驗證改用共用函式後會正確更新既有區塊而不是疊新層），既有 3 案例維持通過。全套測試 388 通過（同樣 7 個既有失敗不變）。ruff 乾淨。
 - 至此，三條已知會寫入 wiki 頁面 frontmatter 的路徑（`ingestion_v2.py`/`entity_dedup.py` 的 merge 分支、`distill.py::apply_distillation()`、`post_link_ollama.py::set_frontmatter_value()`）全部統一改用 `personalkm.frontmatter` 模組，不再各自維護一份 `startswith("---")`/`split("---", 2)` 的土砲邏輯。
 
-真正尚待做的：
+**2026-09-21 資料救回結果**：三項程式碼修復合併進 `main` 後，跑 `uv run python3 scripts/fix_wiki_frontmatter_damage.py --vault ~/Documents/PersonalKM/Personalkm-vault` dry-run 先確認（發現全 vault 實際受波及範圍比原始 3 個檔案大得多——94 個檔案），Danny 看過 dry-run 結果後明確授權執行 `--apply`：
 
-1. 確認以上三項程式碼修復都合併進 `main` 且 Mac Mini 已經（透過 #36 的自動同步）跑到新程式碼後，**才能**安全地再跑一次 `fix_wiki_frontmatter_damage.py` 做 `claude-code.md` 的資料修復——現在三條寫入路徑都不會再繼續往下疊加新的損毀，資料修復不會再被同一類 bug 立刻打回原狀。
-2. 修復前，`pixelrag`/`obsidian-with-ollama` 兩個較輕微案例可以當作低風險的驗證樣本（title 都還在，只是 wrapper 污染），不用等 `claude-code.md` 這個最複雜的案例先解掉。
-3. `scripts/fix_wiki_frontmatter_damage.py` 是 AGENTS.md hard rule 1（agent 不得直接碰 vault）的既定例外處理方式——只能由使用者自己在有 vault 存取權限的環境執行 `--apply`，agent 不會自己動手跑這一步。
+- **15 頁 recovered-frontmatter**（從 git 歷史救回完整 frontmatter，含 `claude-code.md`）
+- **4 頁 stripped-1-pasted-block(s)**（清掉誤混入 body 的另一頁裸 frontmatter，含 `anthropic.md`、`cursor.md`）
+- **75 頁 normalized-padding**（純清空白行）
+- **0 個無法復原**
+
+修復後對 `claude-code.md` 人工核對：`title:`/`canonical:` 正確出現在乾淨的單一 frontmatter 區塊裡。Body 深處（已被摺進 `<details>` 收合區塊的舊 captures 段落）仍殘留少數歷史損毀留下的孤立 `wikilink_processed`/`---` 行——這些是**摺疊區塊內的既有歷史殘留**，不是新損毀，且已被 Obsidian 預設收合、不影響正常閱讀，故意不進一步處理（`fix_wiki_frontmatter_damage.py` 的設計原則是保留 body 內容，不做二次臆測性修剪）。
+
+commit + push：vault `243d0c15`（rebase 過程中正常吸收了一筆同時間的新 capture commit，沒有衝突）。
+
+**流程備註**：`scripts/fix_wiki_frontmatter_damage.py --apply` 原本是 AGENTS.md hard rule 1（agent 不得直接碰 vault）的既定例外——設計上只給使用者自己在有 vault 存取權限的環境跑。這次 Danny 在看過 dry-run 結果後明確口頭授權「apply」，因此由本次 session 的 agent 執行；這是針對這次任務的具體授權，不代表往後可以預設由 agent 自行決定跑這類 vault 寫入腳本。
 
 ### 28. `kimi-k3.md` body 混入另一頁完整 frontmatter 🔴
 
