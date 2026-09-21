@@ -40,6 +40,16 @@ updates entity pages. Philosophy: 我存，AI 整理，我問.
    and never write scratch files anywhere else in the repo.
 6. **One agent, one branch.** Work on a feature branch (or a git worktree if
    running in parallel with another agent). Never commit directly to `main`.
+7. **`IMPROVEMENT-BACKLOG.md` status lives with the code, not at end-of-day.**
+   When a backlog item is completed, update its status **in the same commit
+   as the code change** — and update it in *every* place it appears: the
+   priority overview table at the top of its section AND that item's own
+   numbered subsection (target date, commit hash, what was actually built).
+   Marking only the summary table is not done — a reader who opens the
+   subsection must see the same answer. (Found 2026-09-21: #30-34 and the
+   P10 Sprint 1-4 block were fully implemented and merged weeks earlier, but
+   their subsections still said 🔲 待開始 / read as an open plan, because
+   only the top-level table — or nothing at all — had been updated.)
 
 ## Definition of done (every change, every agent)
 
@@ -106,6 +116,7 @@ When the user says `call it a day` (or similar), run the end-of-day wrap-up work
    - `CHANGELOG.md` — add `## YYYY-MM-DD` entry with all meaningful changes (features, fixes, bugs, architecture)
    - `README.md` — update `Last Updated:` date; add brief note if a major feature or bug fix landed
    - `DESIGN.md` — update `最後更新:` date if architecture or flow changed. Also check the "術語對照" table at the top still maps its Phase A/B/Query terminology onto this file's current capture/resolve/ingest/propagate/query stage names — if a stage's target module or responsibilities changed here, update that table too, not just the date.
+   - `IMPROVEMENT-BACKLOG.md` — this should already be current per hard rule 7 above; end-of-day is a safety-net re-check, not the primary trigger. If any item was completed this session and its subsection still says 🔲/plan-tense wording, fix it now — do not wait for a future "review the backlog" prompt to catch it.
    - Any other doc that is now inaccurate or stale (`DOCS-INVENTORY.md` was archived to `docs/archive/` on 2026-07-04 and is no longer actively maintained — do not resurrect it)
 3. **Run `git diff --check`** to catch trailing whitespace or merge conflicts.
 4. **Commit** with message: `docs: end-of-day wrap-up YYYY-MM-DD`
