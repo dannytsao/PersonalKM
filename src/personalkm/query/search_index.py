@@ -9,6 +9,26 @@ from typing import Callable, Iterable
 _CJK_RUN_RE = re.compile(r"[\u4e00-\u9fff]+")
 _LATIN_RE = re.compile(r"[a-z0-9][a-z0-9+.#-]*", re.IGNORECASE)
 
+# Groups of interchangeable terms so keyword search isn't purely literal
+# substring matching. A query term belonging to a group is expanded to the
+# whole group before matching against the index, so entries phrased with a
+# synonym (e.g. an entry's highlight says "\u6d77\u7522" while the user searched
+# "\u6d77\u9bae") aren't silently dropped. Add new groups here as they're found \u2014
+# this is a lightweight substitute for real semantic search, not a
+# replacement for one.
+SYNONYM_GROUPS: tuple[frozenset[str], ...] = (
+    frozenset({"\u6d77\u9bae", "\u6d77\u7522", "\u6f01\u7522"}),
+)
+
+
+def _expand_synonyms(terms: set[str]) -> set[str]:
+    expanded = set(terms)
+    for term in terms:
+        for group in SYNONYM_GROUPS:
+            if term in group:
+                expanded.update(group)
+    return expanded
+
 
 @dataclass(frozen=True, slots=True)
 class SearchIndex:
@@ -47,13 +67,14 @@ def query_terms(query: str, *, ignored: Iterable[str] = ()) -> set[str]:
     cleaned = query.lower()
     for ignored_term in sorted(ignored_terms, key=len, reverse=True):
         cleaned = cleaned.replace(ignored_term, " ")
-    return {
+    terms = {
         term
         for term in _terms(cleaned)
         if "的" not in term
         and term not in ignored_terms
         and not any(ignored in term for ignored in ignored_terms)
     }
+    return _expand_synonyms(terms)
 
 
 def search(

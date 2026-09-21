@@ -214,12 +214,14 @@ SUBJECT_ALIASES = {
     "咖啡廳": ("咖啡廳", "咖啡館", "咖啡店", "cafe", "coffee"),
     "餐廳": ("餐廳", "restaurant"),
     "景點": ("景點",),
+    "海鮮": ("海鮮", "海產"),
 }
 BROAD_SUBJECTS = {
     "美食": ("餐廳", "小吃", "早午餐", "咖啡廳", "甜點", "酒吧"),
     "牛肉麵": ("小吃", "餐廳"),
     "拉麵": ("小吃", "餐廳"),
     "眷村菜": ("小吃", "餐廳"),
+    "海鮮": ("小吃", "餐廳"),
 }
 SUBJECT_MATCH_TERMS = {
     "牛肉麵": ("牛肉麵", "牛肉面"),
@@ -231,6 +233,14 @@ SUBJECT_MATCH_TERMS = {
     # category filter, pulling in 蟾蜍山煥民新村 (subject 景點, a preserved
     # military-village historic site) alongside the actual restaurants.
     "眷村菜": ("眷村",),
+    # "海鮮"/"海產" are used interchangeably in registry highlights (e.g.
+    # "現撈活海產" vs "海鮮料理"). Bug found 2026-09-21: "萬里海鮮" matched
+    # only entries containing the literal string "海鮮", silently dropping
+    # 討海人食堂 whose highlight says "現撈活海產" instead. See also the
+    # general SYNONYM_GROUPS expansion in search_index.py, which applies
+    # this same 海鮮/海產 pairing to any keyword search, not just this
+    # subject's exact-match filter.
+    "海鮮": ("海鮮", "海產"),
 }
 QUERY_GENERIC_TERMS = (
     "有什麼", "什麼", "推薦", "好吃", "好吃的", "地區", "附近", "哪裡", "適合", "可以", "想找", "請問",
