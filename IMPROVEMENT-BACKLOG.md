@@ -284,6 +284,25 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 - 向量搜尋方案要決定索引重建的觸發時機（避免 registry 更新後查詢用到過期索引）。
 - LLM 改寫方案要決定失敗時是否 fallback 回純關鍵字搜尋，以及如何避免像 P0#3 那樣的靜默失敗。
 
+### 36. Mac Mini CODE repo 缺乏自動同步機制 🔴
+
+**優先：緊急（在查證 #27 時發現的系統性部署缺口）**
+
+狀態：✅ 已完成並測試，2026-09-21。
+
+背景：Danny 質疑「#27 還沒結案怎麼列入已完成」後，直接核對 vault 現況發現 `claude-code.md` 仍在損毀狀態，逐 commit 二分定位到規壞的 Phase A 執行（vault commit `2f444afc`，2026-07-22 18:49:26）。比對 Mac Mini `phase-a.out.log`，該次執行的時間戳（18:45:53–18:49:30）精確吻合。而 `scripts/run_mac_mini_phase_a.sh`/`_phase_b.sh`/`_phase_c.sh`/`_copilot_ingest.sh` 都只 pull **vault** repo，從未對**CODE** repo（跑這些腳本本身的程式碼）執行過 `git pull`——不像 Render 的兩個 LINE bot 有 `autoDeploy: true`，Mac Mini 這幾支 cron 的程式碼完全要靠人手動 `cd` 進去 pull，沒有任何自動化或提醒機制。這代表 `a63ac62`（P7#27 根因修復，11:28 push 到 GitHub `main`）在 18:49 那次執行時，很可能還沒被人工同步進 Mac Mini checkout，執行的是修復前的舊程式碼——這才是 `claude-code.md` 在「修好」幾小時後又壞掉的最可能原因。且不只 #27：backlog 裡每一個標記「✅ 已完成」的 Mac Mini pipeline 修復（#17/#21/#22/#26 等）理論上都有同樣風險。
+
+完成內容：
+- 新增 `src/personalkm/gitstate.py::sync_code_repo(repo, branch="main")`：對 CODE repo 執行 best-effort `git pull --ff-only`。先呼叫既有的 `ensure_clean_git_state()`（P7#29）修復任何擱淺的 rebase/detached HEAD，再 pull；pull 失敗（離線、衝突、非 fast-forward）一律非致命，只記錄警告，讓 pipeline 繼續跑現有程式碼——絕不能因為同步失敗就整個 cron 掛掉，也絕不能在 pull 中途卡住的狀態下繼續跑。回傳 `{"status": "pulled"|"up_to_date"|"skipped", "detail": ..., "repair_actions": [...]}` 供呼叫端記錄。
+- 新增 `scripts/sync_code_repo.py`：獨立的輕量 CLI 進入點，在 bash 呼叫真正的 Phase A/B/C/copilot-ingest 入口**之前**先執行，避免「pull 發生在 Python process 已經 import 完舊程式碼之後」的問題（同一個 process 內 pull 不會讓已載入的 module 變新版，必須是獨立進程、在真正的入口腳本啟動前跑完）。永遠 exit 0。
+- **刻意用 Python 呼叫 `git`，不是 bash 層的 `git -C`**：`run_mac_mini_phase_a.sh` 裡原本就有一段註解記錄過，bash 層直接呼叫 `git -C` 在 launchd 底下會被 macOS TCC 擋掉（2026-07-15 就因此關掉過 dirty check）；但 vault 現有的 `git pull` 是在 Python subprocess 裡呼叫、且確認一直運作正常（同一個 launchd context），所以新機制照抄這個已驗證可行的模式，不是重新發明。
+- 接進四支腳本（`run_mac_mini_phase_a.sh`/`_phase_b.sh`/`_phase_c.sh`/`_copilot_ingest.sh`），都放在「確認 `$PYTHON_BIN` 可執行」之後、真正呼叫 pipeline 入口之前，並在呼叫外再包一層 `|| true` 雙重保險。`run_mac_mini_worker.sh` 的 `REPO_ROOT` 其實指向 vault repo（跟其他腳本語意不同），不適用，未動。
+- 測試：`tests/test_gitstate.py` 新增 4 案例（已是最新不用 pull／真的有新 commit 時成功 pull／origin 不可達時優雅跳過不拋例外／pull 前先修復 detached HEAD），搭配真實 bare repo + clone 的 fixture 重現 Mac Mini checkout 的實際拓樸。`bash -n` 對四支腳本語法檢查全過，並對真實 repo 手動跑過 `sync_code_repo.py` 驗證「已是最新」情境正確輸出。`pytest tests/contracts`（10 通過）與全套測試（386 通過；既有 7 個失敗跟這次改動無關，前後一致，見 commit 訊息）。
+
+尚未做（刻意留給你）：
+- 這個機制解決的是「以後的修復不會再卡著沒部署」，**不會**回溯修好 `claude-code.md` 現有的損毀——那是 #27 剩下的資料修復問題，需要先排除程式碼本身是否仍有殘留 bug（見 #27 最新的「真正尚待做的」清單）。
+- 沒有加告警——如果 pull 持續失敗（例如 Mac Mini 長期離線），目前只會靜默記錄在 log 裡，不會主動通知。這跟 #29「health check 告警」是同一類尚未做的缺口，可以考慮之後一起處理。
+
 ## P5 — Karpathy LLM-Wiki 差距收斂（第一輪）
 
 背景：對照 SPEC.md 五層 pipeline 與 CHECKLIST.md 29 項驗收，發現「查詢優先度」「entity 合併正確性」「1 source → N pages」「query 結果寫回 wiki」是四個具體、可執行的落差，逐項評估後排入本輪。
@@ -654,11 +673,13 @@ Vault 修復（`scripts/fix_wiki_frontmatter_damage.py`，6 測試含 fixture gi
 
 **2026-07-22 曾經做過的事（供參考，已知不足以解決問題）**：`scripts/fix_wiki_frontmatter_damage.py` 曾對這 3 個檔案做過一次性 git 歷史救回，當下驗證 0 個無法復原、全 vault missing-title 掃描為 0。但這只是**一次性的資料修復**，沒有解決底層還在持續產生新損毀的 pipeline bug——救回後幾小時內 `claude-code.md` 就被同一類 Phase A merge 又弄壞一次，之後兩個月沒人回頭確認，狀態被誤標為已完成。
 
+**2026-09-21 根因判定（見 #36）**：對照 Mac Mini `~/Library/Logs/PersonalKM/phase-a.out.log`，造成 `2f444afc` 損毀的 Phase A 執行時間戳（18:45:53–18:49:30）精確對上該 vault commit（18:49:26）。而 `scripts/run_mac_mini_phase_a.sh` 從未對 CODE repo 執行過 `git pull`——只 pull vault repo——代表當時執行的很可能是修復 commit `a63ac62`（11:28 push 到 GitHub `main`）**還沒被人工 pull 進 Mac Mini checkout之前**的舊版程式碼。這不是「修復本身有漏洞」，而是「修復從未真正部署到跑這段程式碼的機器上」。#36 已補上自動同步機制防止同一件事再發生，但這**不會**回溯修好 `claude-code.md` 現有的損毀——那是分開的資料修復問題。
+
 真正尚待做的：
 
-1. **找出 `2f444afc` 真正呼叫到的合併函式**，確認它是否真的有走新的 `src/personalkm/frontmatter.py::split_frontmatter()`/`join_frontmatter()`，或是繞過了它（例如走了 `a63ac62` 沒有覆蓋到的另一條分支）。
-2. **確認 Distillation Loop（`distill.py::apply_distillation()`）的寫回路徑**是否也用了同一套 round-trip 函式——`claude-code.md` 現有 `distill_count: 3`，這兩個月內至少被 distill 過 3 次，需要排除是這條路徑在破壞 frontmatter。
-3. 找到真正根因並修掉之後，**才能**安全地再跑一次 `fix_wiki_frontmatter_damage.py`（或等效工具）做資料修復——否則就是這次同一件事的重演。
+1. **確認現在（#36 上線後）再跑一次 Phase A 合併 `claude-code.md` 是否還會重現同樣的損毀**——如果現在用最新程式碼手動跑一次能重現，才能證明問題也存在於程式碼本身，不是純粹的部署缺口；如果不會重現，代表 `a63ac62` 的修復其實有效，先前只是沒被部署到。
+2. **確認 Distillation Loop（`distill.py::apply_distillation()`）的寫回路徑**是否也用了同一套 round-trip 函式——`claude-code.md` 現有 `distill_count: 3`，這兩個月內至少被 distill 過 3 次，需要排除是這條路徑在破壞 frontmatter（獨立於 #36 解決的部署缺口）。
+3. 確認以上兩點都排除後，**才能**安全地再跑一次 `fix_wiki_frontmatter_damage.py`（或等效工具）做資料修復——否則就是這次同一件事的重演。
 4. 修復前，`pixelrag`/`obsidian-with-ollama` 兩個較輕微案例可以當作低風險的驗證樣本（title 都還在，只是 wrapper 污染），不用等 `claude-code.md` 這個最複雜的案例先解掉。
 
 ### 28. `kimi-k3.md` body 混入另一頁完整 frontmatter 🔴

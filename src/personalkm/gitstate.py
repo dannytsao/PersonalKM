@@ -88,6 +88,61 @@ def ensure_clean_git_state(repo: Path, branch: str = "main") -> list[str]:
     return actions
 
 
+def sync_code_repo(repo: Path, branch: str = "main") -> dict:
+    """
+    Best-effort `git pull --ff-only` for the CODE repo (not the vault) before
+    a cron pipeline run (IMPROVEMENT-BACKLOG.md #36).
+
+    Root cause this closes: unlike the Render web bots (`autoDeploy: true`),
+    nothing ever synced the Mac Mini's code checkout with `origin/main` — a
+    pipeline bugfix merged on GitHub only took effect on Mac Mini cron runs
+    once a human happened to `cd` in and pull manually. #27's frontmatter
+    fix (`a63ac62`, 2026-07-22 11:28) is the confirmed casualty: the Phase A
+    run that re-corrupted `claude-code.md` (vault commit `2f444afc`, logged
+    at 18:49 the same day per `phase-a.out.log`) most likely ran on a
+    checkout that still predated the fix, because nothing had pulled it in
+    between.
+
+    Deliberately best-effort and non-fatal — a stuck/offline code checkout
+    should degrade to "run last-known-good code", not block the pipeline
+    (the pipeline has no way to roll back a bad pull anyway, and a bad pull
+    changing code mid-run is worse than a stale one). Always leaves the
+    repo on a clean, non-detached `branch` HEAD: repairs stray rebase/
+    detached state first via `ensure_clean_git_state()`, same as the vault
+    guard, since a code checkout stuck on a broken HEAD is just as useless
+    as a stale one.
+
+    Returns a status dict for the caller to log:
+    {"status": "pulled"|"up_to_date"|"skipped", "detail": str,
+     "repair_actions": list[str]}. Never raises.
+    """
+    try:
+        repair_actions = ensure_clean_git_state(repo, branch)
+    except RuntimeError as e:
+        return {
+            "status": "skipped",
+            "detail": f"could not repair git state before pull: {e}",
+            "repair_actions": [],
+        }
+
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    result = _git(repo, "pull", "--ff-only", "origin", branch)
+    if result.returncode != 0:
+        return {
+            "status": "skipped",
+            "detail": f"git pull --ff-only failed (running existing checkout as-is): {result.stderr.strip()}",
+            "repair_actions": repair_actions,
+        }
+    after = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    if before == after:
+        return {"status": "up_to_date", "detail": after[:12], "repair_actions": repair_actions}
+    return {
+        "status": "pulled",
+        "detail": f"{before[:12]} -> {after[:12]}",
+        "repair_actions": repair_actions,
+    }
+
+
 def _rescue_unreachable_head(repo: Path, branch: str) -> str | None:
     """Park HEAD on a timestamped rescue branch if it holds commits not
     reachable from *branch*. Returns the rescue branch name, or None if

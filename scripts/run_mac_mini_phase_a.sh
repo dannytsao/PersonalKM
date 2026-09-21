@@ -72,6 +72,16 @@ if [ ! -x "$PYTHON_BIN" ]; then
     exit 1
 fi
 
+# #36: best-effort sync of the CODE checkout with origin/main before running
+# any pipeline module. Unlike Render's autoDeploy, nothing else kept this
+# Mac Mini checkout current — a pipeline bugfix merged to main only took
+# effect once a human happened to `cd` in and pull manually (confirmed
+# root cause of #27 regressing hours after its fix landed). Runs via
+# Python (same pattern the vault's working `git pull` already uses under
+# launchd) rather than bash `git -C`, to avoid the TCC issue below.
+# Always non-fatal: `|| true` on top of the script's own guaranteed exit 0.
+"$PYTHON_BIN" "$REPO_ROOT/scripts/sync_code_repo.py" --repo "$REPO_ROOT" || true
+
 # Use git -C instead of cd — macOS TCC may block directory access under launchd.
 # NOTE: This check has been disabled (2026-07-15) because macOS TCC blocks
 # access to ~/Documents/ under launchd, causing git -C to always fail.

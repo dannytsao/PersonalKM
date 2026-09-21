@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from personalkm.gitstate import ensure_clean_git_state
+from personalkm.gitstate import ensure_clean_git_state, sync_code_repo
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -119,3 +119,82 @@ def test_detached_head_at_branch_tip_needs_no_rescue_branch(repo: Path):
     assert actions == ["checked_out_branch"]
     assert _git(repo, "branch", "--show-current") == "main"
     assert not [b for b in _git(repo, "branch").splitlines() if "rescue" in b]
+
+
+@pytest.fixture
+def repo_with_origin(tmp_path: Path) -> tuple[Path, Path]:
+    """A repo cloned from a bare 'origin', so `git pull` has something real
+    to talk to — reproduces the Mac Mini code checkout's actual setup."""
+    origin = tmp_path / "origin.git"
+    origin.mkdir()
+    _git(origin, "init", "--bare", "-b", "main")
+
+    seed = tmp_path / "seed"
+    seed.mkdir()
+    _git(seed, "init", "-b", "main")
+    (seed / "a.md").write_text("hello\n", encoding="utf-8")
+    _git(seed, "add", "-A")
+    _git(seed, "commit", "-m", "initial")
+    _git(seed, "remote", "add", "origin", str(origin))
+    _git(seed, "push", "origin", "main")
+
+    clone = tmp_path / "clone"
+    subprocess.run(
+        ["git", "clone", str(origin), str(clone)],
+        text=True, capture_output=True, check=True,
+        env={"HOME": str(tmp_path), "PATH": "/usr/bin:/bin"},
+    )
+    return clone, origin
+
+
+def test_sync_up_to_date_reports_status_without_pulling(repo_with_origin):
+    clone, _origin = repo_with_origin
+    result = sync_code_repo(clone, "main")
+    assert result["status"] == "up_to_date"
+    assert result["repair_actions"] == []
+
+
+def test_sync_pulls_new_commit_from_origin(repo_with_origin):
+    clone, origin = repo_with_origin
+    # Push a new commit to origin from a second clone (simulates a fix
+    # merged on GitHub after the Mac Mini checkout was last synced).
+    second = origin.parent / "second"
+    subprocess.run(
+        ["git", "clone", str(origin), str(second)],
+        text=True, capture_output=True, check=True,
+        env={"HOME": str(origin.parent), "PATH": "/usr/bin:/bin"},
+    )
+    (second / "b.md").write_text("new fix\n", encoding="utf-8")
+    _git(second, "add", "-A")
+    _git(second, "commit", "-m", "fix landed on main")
+    _git(second, "push", "origin", "main")
+
+    before = _git(clone, "rev-parse", "HEAD")
+    result = sync_code_repo(clone, "main")
+    after = _git(clone, "rev-parse", "HEAD")
+
+    assert result["status"] == "pulled"
+    assert before != after
+    assert (clone / "b.md").exists()
+
+
+def test_sync_never_raises_when_origin_unreachable(repo_with_origin):
+    clone, origin = repo_with_origin
+    import shutil
+    shutil.rmtree(origin)  # simulate offline/unreachable remote
+
+    result = sync_code_repo(clone, "main")
+
+    assert result["status"] == "skipped"
+    assert "detail" in result
+
+
+def test_sync_repairs_detached_head_before_pulling(repo_with_origin):
+    clone, _origin = repo_with_origin
+    head = _git(clone, "rev-parse", "HEAD")
+    _git(clone, "checkout", head)  # detach, matching a stranded checkout
+
+    result = sync_code_repo(clone, "main")
+
+    assert "checked_out_branch" in result["repair_actions"]
+    assert _git(clone, "branch", "--show-current") == "main"

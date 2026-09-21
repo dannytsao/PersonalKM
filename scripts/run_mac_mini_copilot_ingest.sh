@@ -39,6 +39,10 @@ if [ ! -x "$PYTHON_BIN" ]; then
     exit 1
 fi
 
+# #36: best-effort sync of the CODE checkout — see run_mac_mini_phase_a.sh
+# for full context.
+"$PYTHON_BIN" "$REPO_ROOT/scripts/sync_code_repo.py" --repo "$REPO_ROOT" || true
+
 log "Starting Copilot conversation ingest (copilot/ -> raw/Tech/)."
 if "$PYTHON_BIN" "$REPO_ROOT/scripts/ingest_copilot_conversations.py" --vault "$VAULT_ROOT" --apply; then
     log "Finished Copilot conversation ingest (success)."

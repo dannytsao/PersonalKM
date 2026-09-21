@@ -56,6 +56,9 @@ if [ ! -x "$PYTHON_BIN" ]; then
     exit 1
 fi
 
+# #36: best-effort sync of the CODE checkout — see Phase A for full context.
+"$PYTHON_BIN" "$REPO_ROOT/scripts/sync_code_repo.py" --repo "$REPO_ROOT" || true
+
 # TCC-safe: use git -C instead of cd. No dirty check (same as Phase A/B).
 log "Phase C: starting Entity Distillation Loop."
 

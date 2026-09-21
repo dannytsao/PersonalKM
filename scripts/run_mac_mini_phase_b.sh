@@ -73,6 +73,9 @@ if [ ! -x "$PYTHON_BIN" ]; then
     exit 1
 fi
 
+# #36: best-effort sync of the CODE checkout — see Phase A for full context.
+"$PYTHON_BIN" "$REPO_ROOT/scripts/sync_code_repo.py" --repo "$REPO_ROOT" || true
+
 # Check Ollama is running before starting Phase B
 if ! curl -s --max-time 3 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
     log "Ollama not reachable at 127.0.0.1:11434 — skipping Phase B."
