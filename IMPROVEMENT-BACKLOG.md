@@ -950,3 +950,34 @@ LINE FB 連結
 尚未做：
 - 反向地理編碼（座標 → 門牌地址）——目前仍然拿不到街道地址，只有店名+座標；這是可行但獨立的下一步，需要決定用哪個免費/付費地理編碼服務，故意不在這輪一起做。
 - 沒有回溯修復 log `202609201706_00001`/`202609211747_00001` 這兩則已經寫入的舊 capture——只影響**之後**新進來的 Google Maps 分享連結。
+
+---
+
+## 🔵 IG 輪播圖片店名辨識（2026-09-21 排入，低優先）
+
+### 38. IG 連結擷取接上 Vision LLM，辨識輪播圖片裡的店名 🔵
+
+**優先：低（使用者要求先放進 backlog，暫不動工）**
+
+狀態：🔲 待開始。
+
+背景：真實 capture（`raw/Food/2026-09-21-202609211758_00001-500輯-on-instagram-...md`，「台北開業超過50年老店18選」）辨識失敗，`店名`/`地址` 全部「未提供」。查證：這篇是典型 IG 輪播「listicle」貼文——18 家老店的**店名是疊印在每張輪播圖片上的文字**，貼文 caption 本身只有籠統介紹（魯肉飯、鯊魚煙、油飯...等食物類別，沒有具體店名）。目前 IG 連結走 Jina Reader 純文字擷取，只看得到 caption，完全不會去看圖片內容裡的文字，所以「未提供」是誠實反映擷取到的素材，**不是抽取邏輯的 bug**。
+
+已確認：專案裡本來就有一套 Vision LLM pipeline（commit `73dc094`，`image_extract` stage + `Provider.complete(images=...)`），但目前**只接在「使用者直接把圖片傳給 LINE」**（例如 Threads「複製為圖片」workaround）這條路，`process_line_image()` 只處理 LINE image message webhook 事件，跟「處理一個 URL 連結」是兩條完全不同的路徑——IG 連結擷取完全沒接到這套 Vision LLM。
+
+可行性初步查證（2026-09-21，未實測，sandbox 連不到 `r.jina.ai`）：
+- 直接連 `instagram.com` 測試確認：不走 Jina Reader 的話，直接抓網頁只會拿到純 JS 殼（無 `og:image`、無任何 meta tag、無可解析內嵌資料），證實現有「非用 Jina 渲染不可」的判斷是對的。
+- 推論（有根據但未直接驗證）：Jina Reader 渲染完 IG 貼文後，回傳的 markdown 慣例上會把頁面圖片轉成 `![說明文字](圖片網址)` 語法，網址通常是 IG CDN（`scontent.cdninstagram.com`）的直連圖檔——`fetch_social_via_jina()` 目前只剝除 markdown 開頭的 `Title:`/`URL Source:` 等 header 行，其餘 markdown body（含圖片語法）原樣保留在 `content.text` 裡，只是從沒被讀取使用過。
+
+計畫（做的話）：
+1. 先實測驗證 Jina Reader 對 IG 輪播貼文的實際回傳內容，確認圖片網址真的在裡面（需要有網路存取權限的環境，或請使用者協助測試一次）。
+2. 從 `content.text` 裡用 regex 抓出 markdown 圖片語法的網址（`!\[.*?\]\((https?://[^\s)]+)\)`）。
+3. 限制張數（例如只處理前 3-5 張，避免一篇 18 張輪播全部跑 Vision LLM 造成成本暴增）。
+4. IG CDN 圖片網址通常是限時簽章連結，需要在同一個請求週期內盡快下載（比照 `download_line_image`的做法），下載後餵進既有的 `image_extract` Vision LLM stage。
+5. 把 Vision LLM 辨識出的店名/地址併回既有的 `extract_food_places()` 結果（可能用類似 #37 新增的 `extract_geo_hint_food_place()` 手法，補一個 vision 來源的抽取規則）。
+6. 只在文字抽取結果全部「未提供」時才觸發 Vision LLM（節省成本，多數 IG 貼文 caption 本身就有足夠資訊，不需要每篇都跑圖片辨識）。
+
+風險/待決事項：
+- 成本：Vision LLM 呼叫比純文字呼叫貴，需要評估觸發頻率與圖片張數上限。
+- IG CDN 簽章網址時效性：如果 Jina 渲染到我們下載圖片之間隔太久，連結可能失效。
+- 範圍：只鎖定「文字抽取完全失敗」的情況才觸發，避免無謂放大呼叫量。
