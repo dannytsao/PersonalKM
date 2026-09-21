@@ -132,3 +132,56 @@ async def test_process_url_facebook_jina_failure_yields_blocked_stub(monkeypatch
     assert note.platform == "facebook"
     assert note.extraction_status == "blocked"
     assert "HTTP 400" not in (note.summary or "")
+
+
+GOOGLE_MAPS_SHARE_URL = "https://maps.app.goo.gl/UPEyo91mh8ztNetp9"
+
+
+@pytest.mark.anyio
+async def test_process_url_google_maps_uses_the_longer_timeout(monkeypatch):
+    # 2026-09-21 regression: a real capture (log 202609201706_00001, sent
+    # after the maps.app.goo.gl fix had already landed) still fell through
+    # to the "couldn't extract" stub — Jina Reader has to fully render a
+    # Google Maps page's client-side JS, which is meaningfully heavier than
+    # a static IG/Threads fetch, so the general-purpose
+    # request_timeout_seconds (12s) plausibly wasn't enough. Google Maps
+    # now gets its own, longer budget (google_maps_timeout_seconds).
+    seen_timeout = None
+
+    async def fake_fetch_social_via_jina(url, timeout_seconds, max_chars, settings=None):
+        nonlocal seen_timeout
+        seen_timeout = timeout_seconds
+        from personalkm.capture.link_processor import ExtractedContent
+
+        return ExtractedContent(
+            title="某家咖啡廳",
+            text="店名：某家咖啡廳\n地址：台北市中山區...",
+            platform="google-maps",
+            extraction_status="ok",
+        )
+
+    monkeypatch.setattr(
+        "personalkm.capture.link_processor.fetch_social_via_jina", fake_fetch_social_via_jina
+    )
+
+    settings = Settings()
+    note = await process_url(settings, GOOGLE_MAPS_SHARE_URL)
+
+    assert seen_timeout == settings.google_maps_timeout_seconds
+    assert seen_timeout > settings.request_timeout_seconds
+    assert note.extraction_status == "ok"
+
+
+@pytest.mark.anyio
+async def test_process_url_google_maps_jina_failure_yields_blocked_stub(monkeypatch):
+    async def fake_fetch_social_via_jina(url, timeout_seconds, max_chars, settings=None):
+        return None  # Jina timed out / failed to render
+
+    monkeypatch.setattr(
+        "personalkm.capture.link_processor.fetch_social_via_jina", fake_fetch_social_via_jina
+    )
+
+    note = await process_url(Settings(), GOOGLE_MAPS_SHARE_URL)
+
+    assert note.platform == "google-maps"
+    assert note.extraction_status == "blocked"

@@ -1640,7 +1640,7 @@ async def process_url(settings: Settings, url: str, context_text: str = "") -> L
     # hours, reviews. When Jina fails, fall back to the pasted caption.
     if is_google_maps_share(url):
         content = await fetch_google_maps_content(
-            url, context_text, settings.request_timeout_seconds, settings.max_page_chars, settings
+            url, context_text, settings.google_maps_timeout_seconds, settings.max_page_chars, settings
         )
         summary, category = await summarize_with_llm(settings, content.title, url, content.text)
         if category == "general":

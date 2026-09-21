@@ -42,6 +42,16 @@ class Settings(BaseSettings):
     request_timeout_seconds: float = Field(default=12.0, alias="REQUEST_TIMEOUT_SECONDS")
     max_page_chars: int = Field(default=8000, alias="MAX_PAGE_CHARS")
 
+    # Google Maps share links (maps.app.goo.gl) route through Jina Reader,
+    # which has to fully render the page's client-side JS before returning
+    # content — meaningfully heavier than a static IG/Threads fetch.
+    # request_timeout_seconds (12s default) was tuned for the latter and is
+    # too tight here; a real capture (log 202609201706_00001, 2026-09-20)
+    # fell through to the "couldn't extract, paste manually" stub even
+    # though the maps.app.goo.gl fix (811eb65) had already landed —
+    # plausibly a Jina render timeout, not a broken fix.
+    google_maps_timeout_seconds: float = Field(default=30.0, alias="GOOGLE_MAPS_TIMEOUT_SECONDS")
+
     @model_validator(mode="after")
     def _strip_url_fields(self) -> "Settings":
         """Strip whitespace/newlines and sanitize URLs from env vars.
