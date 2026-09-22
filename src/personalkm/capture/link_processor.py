@@ -1438,6 +1438,7 @@ async def summarize_with_llm(settings: Settings, title: str, url: str, page_text
             "travel.udn.com",
             "tripmoment.com",
             "bobowin.com",
+            "bobowin.blog",
             "anniekoko.com",
             "annieko.tw",
             "journey.tw",
@@ -1898,7 +1899,19 @@ async def process_url(settings: Settings, url: str, context_text: str = "") -> L
     try:
         content = await fetch_page(url, settings.request_timeout_seconds, settings.max_page_chars)
     except httpx.HTTPStatusError as error:
-        content = http_error_content(url, error)
+        # 403/429 from the origin often means a WAF blocking server IPs
+        # (Render, etc.). Try Jina Reader as a fallback before giving up
+        # with a hollow stub — r.jina.ai fetches from its own infrastructure.
+        if error.response.status_code in (403, 429):
+            jina_content = await fetch_social_via_jina(
+                url, settings.request_timeout_seconds, settings.max_page_chars, settings,
+            )
+            if jina_content is not None:
+                content = jina_content
+            else:
+                content = http_error_content(url, error)
+        else:
+            content = http_error_content(url, error)
     except httpx.HTTPError as error:
         content = generic_http_error_content(url, error)
 

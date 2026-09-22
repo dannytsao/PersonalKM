@@ -12,7 +12,13 @@ async def test_process_url_writes_note_when_fetch_is_forbidden(monkeypatch):
         response = httpx.Response(403, request=request)
         raise httpx.HTTPStatusError("Forbidden", request=request, response=response)
 
+    async def fake_jina_returns_none(url, timeout_seconds, max_chars, settings=None):
+        return None  # Jina also failed → fall back to error stub
+
     monkeypatch.setattr("personalkm.capture.link_processor.fetch_page", fake_fetch_page)
+    monkeypatch.setattr(
+        "personalkm.capture.link_processor.fetch_social_via_jina", fake_jina_returns_none
+    )
 
     note = await process_url(Settings(), "https://openai.com/")
 
@@ -20,6 +26,39 @@ async def test_process_url_writes_note_when_fetch_is_forbidden(monkeypatch):
     assert note.url == "https://openai.com/"
     assert "HTTP 403" in note.summary
     assert note.category == "tech"
+
+
+@pytest.mark.anyio
+async def test_process_url_403_falls_back_to_jina(monkeypatch):
+    """When a generic URL returns 403, the capture bot should try Jina
+    Reader before giving up with a hollow error stub. This is the
+    bobowin.blog case — WAF blocks Render IPs but Jina can fetch it."""
+
+    async def fake_fetch_page(url, timeout_seconds, max_chars):
+        request = httpx.Request("GET", url)
+        response = httpx.Response(403, request=request)
+        raise httpx.HTTPStatusError("Forbidden", request=request, response=response)
+
+    async def fake_jina_success(url, timeout_seconds, max_chars, settings=None):
+        from personalkm.capture.link_processor import ExtractedContent
+
+        return ExtractedContent(
+            title="望古瀑布步道｜Bobowin",
+            text="望古瀑布步道攻略，交通便利度、路線難易度、推薦指數。",
+            platform="web",
+            extraction_status="ok",
+        )
+
+    monkeypatch.setattr("personalkm.capture.link_processor.fetch_page", fake_fetch_page)
+    monkeypatch.setattr(
+        "personalkm.capture.link_processor.fetch_social_via_jina", fake_jina_success
+    )
+
+    note = await process_url(Settings(), "https://bobowin.blog/wanggu-hiking/")
+
+    assert note.extraction_status == "ok"
+    assert "HTTP 403" not in (note.summary or "")
+    assert "望古瀑布" in note.title or "望古瀑布" in (note.summary or "")
 
 
 @pytest.mark.anyio
