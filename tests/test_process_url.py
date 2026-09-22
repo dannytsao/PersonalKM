@@ -138,8 +138,9 @@ GOOGLE_MAPS_SHARE_URL = "https://maps.app.goo.gl/UPEyo91mh8ztNetp9"
 
 
 class _FakeRedirectResponse:
-    def __init__(self, final_url: str):
+    def __init__(self, final_url: str, body: str = ""):
         self.url = final_url
+        self.text = body
 
 
 @pytest.mark.anyio
@@ -215,6 +216,40 @@ async def test_resolve_google_maps_short_link_returns_none_when_shape_unrecogniz
     assert resolution is not None
     assert resolution.name is None
     assert resolution.lat == pytest.approx(25.0)
+
+
+@pytest.mark.anyio
+async def test_resolve_google_maps_short_link_extracts_name_and_coords_from_data_url(monkeypatch):
+    # 2026-09-22: some maps.app.goo.gl share links redirect to
+    # /maps/place/<name>/data=… (no @lat,lng in the URL path). The
+    # coordinates are in the HTML body's embedded JSON array.
+    body = (
+        '[[\\"0x3467f9752b9159b7:0xb410fad71255c407\\",'
+        '\\"232宜蘭縣坪林區頭城鎮北宜公路56.5km處石牌縣界公園\\",'
+        '[[231467.9279044201,121.20916580000001,24.976779399999998],'
+        '[0,0,0],[1024,768],13.1]]'
+    )
+
+    async def fake_get(self, url, *args, **kwargs):
+        return _FakeRedirectResponse(
+            "https://www.google.com/maps/place/232%E5%AE%9C%E8%98%AD%E7%B8%A3%E5%9D%AA%E6%9E%97%E5%8D%80%E9%A0%AD%E5%9F%8E%E9%8E%AE%E5%8C%97%E5%AE%9C%E5%85%AC%E8%B7%AF56.5km%E8%99%95%E7%9F%B3%E7%89%8C%E7%B8%A3%E7%95%8C%E5%85%AC%E5%9C%92"
+            "/data=!4m2!3m1!1s0x3467f9752b9159b7:0xb410fad71255c407",
+            body=body,
+        )
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", fake_get)
+
+    resolution = await resolve_google_maps_short_link(
+        "https://maps.app.goo.gl/f4rzsXd8bKX79iVj9", 30.0
+    )
+
+    assert resolution is not None
+    assert resolution.name == "232宜蘭縣坪林區頭城鎮北宜公路56.5km處石牌縣界公園"
+    assert resolution.lat == pytest.approx(24.976779399999998)
+    assert resolution.lng == pytest.approx(121.20916580000001)
+    assert resolution.maps_url == (
+        "https://www.google.com/maps/search/?api=1&query=24.976779399999998,121.20916580000001"
+    )
 
 
 def _mock_no_resolution(monkeypatch):

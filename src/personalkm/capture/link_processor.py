@@ -1620,8 +1620,15 @@ def is_google_maps_share(url: str) -> bool:
 
 
 GOOGLE_MAPS_PLACE_RE = re.compile(r"/maps/place/([^/]+)/@(-?\d+\.\d+),(-?\d+\.\d+)")
+GOOGLE_MAPS_PLACE_NAME_ONLY_RE = re.compile(r"/maps/place/([^/]+)/data=")
 GOOGLE_MAPS_SEARCH_COORDS_RE = re.compile(r"/maps/search/(-?\d+\.\d+),\+?(-?\d+\.\d+)")
 GOOGLE_MAPS_AT_COORDS_RE = re.compile(r"@(-?\d+\.\d+),(-?\d+\.\d+)")
+# Google Maps HTML body embeds coordinates in a JSON array like
+# [[<span_in_meters>,<lng>,<lat>],[0,0,0],[<width>,<height>],<zoom>] —
+# this pattern captures <lng> and <lat> from the first element.
+GOOGLE_MAPS_BODY_COORDS_RE = re.compile(
+    r"\[\[\d+\.?\d*,(-?\d{2,3}\.\d+),(-?\d{2,3}\.\d+)\],\[0,0,0\]"
+)
 
 
 @dataclass(frozen=True)
@@ -1649,9 +1656,15 @@ async def resolve_google_maps_short_link(
     provides a street address (not present in the redirect URL) — that
     still comes from Jina/the pasted caption when available.
 
+    2026-09-22: some share links redirect to /maps/place/<name>/data=…
+    instead of /maps/place/<name>/@<lat>,<lng> — the coordinates are not
+    in the URL path but ARE in the HTML body's embedded JSON array
+    ([[<span>,<lng>,<lat>],[0,0,0],…]). Added a third layer that extracts
+    the name from the URL path and the coordinates from the response body.
+
     Returns None (never raises) when the redirect doesn't resolve or
-    doesn't match either known shape — callers fall through to the
-    existing Jina-based flow unchanged.
+    doesn't match any known shape — callers fall through to the existing
+    Jina-based flow unchanged.
     """
     try:
         async with httpx.AsyncClient(follow_redirects=True, timeout=timeout_seconds) as client:
@@ -1677,6 +1690,20 @@ async def resolve_google_maps_short_link(
             name=None, lat=lat, lng=lng,
             maps_url=f"https://www.google.com/maps/search/?api=1&query={lat},{lng}",
         )
+
+    # Some share links redirect to /maps/place/<name>/data=… — no
+    # @lat,lng in the URL. Try extracting the name from the URL path and
+    # coordinates from the HTML body's embedded JSON array.
+    name_only_match = GOOGLE_MAPS_PLACE_NAME_ONLY_RE.search(final_url)
+    if name_only_match:
+        name = unquote(name_only_match.group(1)).replace("+", " ").strip()
+        body_coords = GOOGLE_MAPS_BODY_COORDS_RE.search(response.text)
+        if body_coords:
+            lng, lat = float(body_coords.group(1)), float(body_coords.group(2))
+            return GoogleMapsResolution(
+                name=name or None, lat=lat, lng=lng,
+                maps_url=f"https://www.google.com/maps/search/?api=1&query={lat},{lng}",
+            )
 
     return None
 
