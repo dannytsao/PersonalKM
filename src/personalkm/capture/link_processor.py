@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import re
@@ -163,6 +164,50 @@ async def fetch_page(url: str, timeout_seconds: float, max_chars: int) -> Extrac
         platform=platform_from_url(url),
     )
 
+
+async def fetch_page_with_browser_fingerprint(
+    url: str, timeout_seconds: float, max_chars: int
+) -> ExtractedContent:
+    """Fetch a page using curl_cffi to present a real browser TLS fingerprint.
+
+    Some WAFs (Cloudflare, etc.) block httpx's Python TLS fingerprint even
+    with a browser User-Agent. curl_cffi impersonates Chrome's TLS handshake
+    (JA3/JA4), bypassing fingerprint-based bot detection. Used as a fallback
+    when fetch_page() gets a 403/429.
+    """
+    from bs4 import BeautifulSoup
+    try:
+        from curl_cffi import requests as cffi_requests
+    except ImportError:
+        raise ImportError("curl_cffi is required for browser-fingerprint fetch")
+
+    def _sync_fetch() -> ExtractedContent:
+        response = cffi_requests.get(
+            url,
+            impersonate="chrome",
+            timeout=int(timeout_seconds),
+            allow_redirects=True,
+        )
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, "html.parser")
+        for element in soup(["script", "style", "noscript", "svg"]):
+            element.decompose()
+        _remove_noise_elements(soup)
+
+        title = soup.title.string.strip() if soup.title and soup.title.string else url
+        text = " ".join(soup.get_text(" ").split())
+        metadata = extract_page_metadata(soup)
+        content_text = metadata_text(metadata) or text
+        content_text = clean_page_text(content_text)
+
+        return ExtractedContent(
+            title=(metadata.get("title") or title)[:180],
+            text=content_text[:max_chars],
+            platform=platform_from_url(url),
+        )
+
+    return await asyncio.to_thread(_sync_fetch)
 
 async def fetch_social_via_jina(
     url: str,
@@ -1899,16 +1944,29 @@ async def process_url(settings: Settings, url: str, context_text: str = "") -> L
     try:
         content = await fetch_page(url, settings.request_timeout_seconds, settings.max_page_chars)
     except httpx.HTTPStatusError as error:
-        # 403/429 from the origin often means a WAF blocking server IPs
-        # (Render, etc.). Try Jina Reader as a fallback before giving up
-        # with a hollow stub — r.jina.ai fetches from its own infrastructure.
+        # 403/429 from the origin often means a WAF (Cloudflare, etc.)
+        # blocking based on Python's TLS fingerprint (JA3/JA4), not IP.
+        # Layer 1: retry with curl_cffi — impersonates Chrome's TLS
+        # handshake, bypassing fingerprint-based bot detection.
+        # Layer 2: if curl_cffi also fails, try Jina Reader (different IP).
         if error.response.status_code in (403, 429):
-            jina_content = await fetch_social_via_jina(
-                url, settings.request_timeout_seconds, settings.max_page_chars, settings,
-            )
-            if jina_content is not None:
-                content = jina_content
-            else:
+            content = None
+            try:
+                content = await fetch_page_with_browser_fingerprint(
+                    url, settings.request_timeout_seconds, settings.max_page_chars,
+                )
+            except Exception:
+                logger.warning(
+                    "curl_cffi fallback failed for %s, trying Jina Reader", url,
+                )
+            if content is None:
+                jina_content = await fetch_social_via_jina(
+                    url, settings.request_timeout_seconds,
+                    settings.max_page_chars, settings,
+                )
+                if jina_content is not None:
+                    content = jina_content
+            if content is None:
                 content = http_error_content(url, error)
         else:
             content = http_error_content(url, error)
