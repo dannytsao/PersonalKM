@@ -34,7 +34,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from personalkm.frontmatter import join_frontmatter, split_frontmatter
+# Add repo root and src/ to sys.path BEFORE importing personalkm
+# (Mac Mini uses /usr/bin/python3, no editable install)
+for _p in [str(Path(__file__).parent.parent), str(Path(__file__).parent.parent / "src")]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from personalkm.frontmatter import join_frontmatter, split_frontmatter  # noqa: E402
 
 # ─────────────────────────────────────────────────────────────
 # Setup
@@ -455,7 +461,6 @@ def run_phase_b(
         # left the repo mid-rebase or on a detached HEAD, every commit this
         # run makes would be stranded and unpushable. Repair first; if
         # repair fails, skip the cycle entirely.
-        sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
         from personalkm.gitstate import ensure_clean_git_state
 
         try:
@@ -510,7 +515,6 @@ def run_phase_b(
 
     # Step 4: Import and init wikilink analyzer (P6#22: now via llm.router)
     try:
-        sys.path.insert(0, str(Path(__file__).parent.parent))
         from personalkm.propagate.ollama_wikilink import WikilinkAnalyzer
 
         analyzer = WikilinkAnalyzer()
