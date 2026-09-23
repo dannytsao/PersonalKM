@@ -284,6 +284,25 @@ LLM-Wiki v2 (`bot/ingestion_v2.py`) 已完成：
 - 向量搜尋方案要決定索引重建的觸發時機（避免 registry 更新後查詢用到過期索引）。
 - LLM 改寫方案要決定失敗時是否 fallback 回純關鍵字搜尋，以及如何避免像 P0#3 那樣的靜默失敗。
 
+### 39. AskDanny「景點」subject 別名缺口 — 美景/風景/秘境/海景 🔵
+
+**優先：低（同義詞補丁，跟 #35 屬於同一類根本問題，但這次範圍極小可以直接修）**
+
+狀態：✅ 已完成並測試，2026-09-23。
+
+背景：查「宜蘭美景」回答「查無資料」，但查「宜蘭景點」正常。追查發現這不是關鍵字索引沒命中的問題（`_indexed_registry_matches` 對兩個查詢都回傳 0 筆，兩者其實走的是不同路徑）：
+
+- `_query_subject()` 只認得 `SUBJECT_ALIASES["景點"] = ("景點",)`，「宜蘭景點」解析出 `subject="景點"`，「宜蘭美景」解析出 `subject=None`。
+- `subject` 非 `None` 才會進入真正有效的結構化篩選路徑（`_query_location_intent()` + `_registry_matches_for_locations()`，用 LLM 解析地區意圖後直接比對 registry 的「主題」/「縣市」欄位，不依賴店家內文字面比對）。
+- `subject=None` 時完全跳過這條路徑，直接退回效果較弱的通用 LLM 問答 fallback，才會答錯「查無資料」。
+
+跟 #35 同一個根本問題類別（別名/同義詞覆蓋不足），但這次是**別名清單缺口**而非索引演算法問題，範圍小到可以直接補，不用等 #35 的架構討論。
+
+修復內容：
+- `SUBJECT_ALIASES["景點"]` 從 `("景點",)` 擴充為 `("景點", "美景", "風景", "秘境", "海景", "絕景")`。
+- 測試：`tests/test_askdanny_line_bot.py` 新增 `test_query_subject_recognizes_scenic_spot_synonyms`，驗證 6 個同義詞都正確解析成 `景點`。全套測試 398 通過（既有 7 個失敗與此改動無關，前後一致）。ruff 乾淨。
+- 實測驗證：「宜蘭美景」現在正確觸發 `needs_location_confirmation`（正常的地區確認流程），不再誤答查無資料。
+
 ### 36. Mac Mini CODE repo 缺乏自動同步機制 🔴
 
 **優先：緊急（在查證 #27 時發現的系統性部署缺口）**

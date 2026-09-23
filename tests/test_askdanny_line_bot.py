@@ -10,6 +10,16 @@ from personalkm.query import line_bot
 from personalkm.query.google_sheets import GoogleOAuthConfig, google_authorization_url
 
 
+def test_query_subject_recognizes_scenic_spot_synonyms() -> None:
+    # 2026-09-23 regression: "宜蘭美景" resolved to no subject at all (only
+    # "景點" itself was a registered alias), so the query skipped the
+    # structured subject+location filter path entirely and fell through to
+    # a weak LLM fallback that wrongly claimed no data existed — even
+    # though "宜蘭景點" (same intent, different wording) worked fine.
+    for query in ("宜蘭美景", "宜蘭風景", "宜蘭秘境", "宜蘭海景", "宜蘭絕景", "宜蘭景點"):
+        assert line_bot._query_subject(query) == "景點", query
+
+
 def _write_registry(root: Path, entries: list[dict]) -> None:
     registry = root / "wiki" / "_registry"
     registry.mkdir(parents=True)
