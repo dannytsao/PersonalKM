@@ -3,7 +3,7 @@ import json
 import logging
 import time
 from dataclasses import replace
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 from zoneinfo import ZoneInfo
@@ -14,7 +14,7 @@ from personalkm.capture.config import get_settings
 from personalkm.capture.git_store import VaultConfig, _get_vault_config, commit_and_push, ensure_vault
 from personalkm.capture.line import LineImageEvent, LineTextEvent, download_line_image, extract_urls, image_message_events_from_webhook, mark_message_as_read, text_message_events_from_webhook, verify_line_signature
 from personalkm.capture.link_processor import fallback_category, parse_line_message_part, process_line_image, process_line_message_context, process_url, should_capture_line_message_context
-from personalkm.capture.notes import write_note
+from personalkm.capture.notes import LinkNote, write_note
 from personalkm.capture.notification import notify as send_notification
 
 
@@ -485,3 +485,54 @@ async def line_webhook(
     total = len(events) + len(image_events)
     logger.info("Accepted %s LINE message(s) for background processing (%s text, %s image)", total, len(events), len(image_events))
     return {"ok": True, "accepted": total}
+
+
+# ── Direct API capture (bypasses LINE webhook) ──────────────────────────────
+# Allows external tools (e.g. Meta AI artifact) to push pre-formatted content
+# directly into the vault without going through LINE.  Authenticated via
+# CAPTURE_API_KEY env var, checked as a Bearer token in the Authorization header.
+
+@app.post("/api/capture")
+async def api_capture(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    authorization: Optional[str] = Header(default=None),
+) -> dict:
+    settings = get_settings()
+    key = settings.capture_api_key
+    if not key:
+        raise HTTPException(status_code=503, detail="CAPTURE_API_KEY not configured")
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    if authorization.removeprefix("Bearer ").strip() != key:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    body = await request.json()
+    text = (body.get("text") or "").strip()
+    if not text:
+        raise HTTPException(status_code=422, detail="Missing 'text' field")
+
+    category = (body.get("category") or "lifestyle").strip().lower()
+    source_url = (body.get("source_url") or "").strip()
+
+    vault_config = _get_vault_config(settings, category)
+    try:
+        vault_path = await asyncio.to_thread(ensure_vault, settings, vault_config)
+    except Exception:
+        logger.exception("Failed to prepare vault for /api/capture")
+        raise HTTPException(status_code=500, detail="Vault preparation failed")
+
+    log_id = generate_line_log_id(vault_path)
+    note = LinkNote(
+        title=text.split("\n")[0][:80] or "untitled",
+        url=source_url,
+        summary=text,
+        category=category,
+        captured_on=date.today(),
+        platform="api",
+        body_markdown=text,
+        log_id=log_id,
+    )
+    await save_note(settings, vault_path, note, log_id, vault_config)
+    logger.info("✅ Captured via /api/capture (category=%s, log_id=%s)", category, log_id)
+    return {"ok": True, "log_id": log_id, "category": category}

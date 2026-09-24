@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     minimax_api_key: str = Field(default="", alias="MINIMAX_API_KEY")
     minimax_model: str = Field(default="MiniMax-M2.7", alias="MINIMAX_MODEL")
 
+    # API key for direct /api/capture endpoint (bypasses LINE webhook).
+    # Set via Render env var CAPTURE_API_KEY; used by Meta AI artifact push.
+    capture_api_key: str = Field(default="", alias="CAPTURE_API_KEY")
+
     # Jina Reader API key (optional) — anonymous layer rate-limits
     # instagram.com; the key lifts that limit.
     jina_api_key: str = Field(default="", alias="JINA_API_KEY")
@@ -62,7 +66,7 @@ class Settings(BaseSettings):
         url_fields = [
             "vault_repo_url", "lifestyle_vault_repo_url",
             "line_channel_secret", "line_channel_access_token",
-            "openai_api_key", "minimax_api_key",
+            "openai_api_key", "minimax_api_key", "capture_api_key",
         ]
         for field in url_fields:
             value = getattr(self, field, None)
