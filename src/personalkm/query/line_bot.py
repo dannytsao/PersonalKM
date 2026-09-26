@@ -425,6 +425,47 @@ def vault_root(cfg: dict) -> Optional[Path]:
     return None
 
 
+# ── Vault auto-pull (throttled) ────────────────────────────────────────────
+#
+# AskDanny is NOT in render.yaml, so Render does not auto-redeploy when the
+# vault repo gets new commits.  The startup script (start_askdanny_render.sh)
+# pulls the vault exactly once at boot.  Between deploys the vault on Render
+# goes stale, and /status + query answers reflect an outdated snapshot.
+#
+# _maybe_pull_vault() runs a `git pull --ff-only` at most once per
+# _PULL_INTERVAL seconds so that new vault commits are picked up without
+# needing a Render redeploy.  Errors are logged but never raised — a failed
+# pull must not break a user's query.
+
+_PULL_INTERVAL = 600  # seconds — re-pull at most every 10 minutes
+_last_pull_ts: float = 0.0
+
+
+def _maybe_pull_vault(root: Path) -> None:
+    """Throttled git pull --ff-only on the vault repo, best-effort."""
+    global _last_pull_ts
+    now = time.monotonic()
+    if now - _last_pull_ts < _PULL_INTERVAL:
+        return
+    _last_pull_ts = now
+    try:
+        result = subprocess.run(
+            ["git", "pull", "--ff-only", "origin", "main"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode == 0:
+            if result.stdout.strip():
+                logger.info("Vault auto-pull: %s", result.stdout.strip()[:200])
+        else:
+            logger.warning("Vault auto-pull failed (rc=%d): %s",
+                           result.returncode, (result.stderr or "")[:200])
+    except Exception as exc:
+        logger.warning("Vault auto-pull exception: %s", exc)
+
+
 # ── LINE reply API ─────────────────────────────────────────────────────────
 
 async def reply_message(access_token: str, reply_token: str, text: str) -> bool:
@@ -1637,6 +1678,12 @@ async def handle_text_event(cfg: dict, event: AskDannyEvent) -> None:
 
     text = event.text.strip()
     logger.info("AskDanny query from %s: %r", event.user_id[:8] or "?", text[:80])
+
+    # Pull latest vault commits (throttled — at most once per 10 min).
+    # Without this, AskDanny reads a stale snapshot between Render deploys.
+    root = vault_root(cfg)
+    if root:
+        _maybe_pull_vault(root)
 
     if await _handle_location_confirmation_event(cfg, event, text):
         return
