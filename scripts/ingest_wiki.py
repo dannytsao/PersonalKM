@@ -67,6 +67,7 @@ def run_git(args: list[str], cwd: Path) -> str:
 def _commit_and_push_wiki(vault_path: Path) -> None:
     """
     Commit and push any wiki/ changes created by ingest_raw_to_wiki().
+    If push fails (remote moved ahead), fetch + merge + retry.
     """
     wiki_path = vault_path / "wiki"
 
@@ -78,8 +79,17 @@ def _commit_and_push_wiki(vault_path: Path) -> None:
 
     run_git(["add", "--all"], vault_path)
     run_git(["commit", "-m", "🤖 Auto: ingest raw → wiki entities"], vault_path)
-    run_git(["push", "origin", "main"], vault_path)
-    logger.info("Pushed wiki/ changes to GitHub")
+
+    # Push; if rejected (non-fast-forward), fetch + merge + retry once.
+    try:
+        run_git(["push", "origin", "main"], vault_path)
+        logger.info("Pushed wiki/ changes to GitHub")
+    except Exception as e:
+        logger.warning(f"Push failed ({e}), fetching + merging + retrying...")
+        run_git(["fetch", "origin", "main"], vault_path)
+        run_git(["merge", "origin/main", "--no-edit"], vault_path)
+        run_git(["push", "origin", "main"], vault_path)
+        logger.info("Pushed wiki/ changes after merge")
 
 
 def _append_to_log(
@@ -196,10 +206,13 @@ def run_phase_a(vault_path: Path, max_files: Optional[int] = None, dry_run: bool
         logger.error(f"Vault git state is stranded and could not be repaired: {e}")
         return {"status": "error", "message": f"stranded git state: {e}"}
 
-    # Pull latest so we have all raw files that Render/Render cron pushed
+    # Fetch + merge latest so we have all raw files that Render/Render cron pushed.
+    # Using merge (not rebase) because both sides append to wiki/log.md every
+    # run — rebase conflicts on that file every time.
     try:
-        run_git(["pull", "--rebase", "origin", "main"], vault_path)
-        logger.info("Pulled latest from GitHub")
+        run_git(["fetch", "origin", "main"], vault_path)
+        run_git(["merge", "origin/main", "--no-edit"], vault_path)
+        logger.info("Fetched + merged latest from GitHub")
     except Exception as e:
         logger.warning(f"git pull failed (may be up-to-date): {e}")
         # If the pull itself died mid-rebase, abort NOW — otherwise the
