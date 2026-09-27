@@ -1819,6 +1819,9 @@ def _vault_diagnostics(cfg: dict) -> dict:
     root = vault_root(cfg)
     if root is None:
         return {"vault_found": False}
+    # Pull latest before counting so /health reflects the real registry size,
+    # not a stale snapshot from the last deploy.
+    _maybe_pull_vault(root)
     entry_count = len(_load_registry_entries(root))
     commit, commit_date = None, None
     try:
