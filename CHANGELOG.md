@@ -2,6 +2,20 @@
 
 All completed implementation reports, one-time analyses, and delivery summaries are consolidated here. Root-level docs only keep active files that need ongoing maintenance.
 
+## 2026-09-27
+
+### Fixed
+
+- **AskDanny `city-subject-store` registry: 42 city-name variants broke city/subject/store queries** (`src/personalkm/query/line_bot.py`): LLM-built registry entries carried non-canonical city values (`臺北市`/`台北市 ` (trailing space)/`新北市三芝區`/`Taipei`…), so `_load_registry_entries()` grouped/filters mismatched — root cause of 三慈宮 missing from `city-subject-store.md` and 8KM nearby searches. Added `ALL_CITY_NAMES` + `_normalize_city()` at load time: every entry is canonicalized to one of 台北市's 22 districts + 直屬 or the surrounding 5 cities, with a `_CITY_DISTRICT_SUFFIX_RE` peel for `新北市三芝區`-style compound values. 42 variants → canonical across all 1377 entries (rebuilt registry committed at vault `ca27b2c`).
+- **nearby-8KM skipped entries whose GPS lived only in the note body** (`src/personalkm/query/line_bot.py::_nearby_registry_matches()`): manual補資料 entries often carry coordinates only as a `(25.154898, 121.4848579)` string inside the note (st-1365 三慈宮 was the reported case: gps=null → line 930 skip). Added `_NOTE_COORD_RE` fallback: when `gps` frontmatter is null, parse coordinates from the note body and validate they fall inside Taiwan's bounding box (20–27°N / 118–124°E) before using them. e2e verified: 三慈宮 → city=台北市, gps=(25.154898, 121.4848579).
+- **`fetch_coordinates.py` backfilled nothing for note-sourced coordinates** (`scripts/fetch_coordinates.py`, lifestyle vault): added a keyless "step 0" pre-pass that parses coordinates from note bodies (same regex + Taiwan bbox validation) and writes them back with `gps_source: "note"` even when no `GOOGLE_PLACES_API_KEY` is set — previously the script exited at the key gate before writing anything. Also fixed a counter-ordering bug (progress counts reported pre-update numbers) and removed the hard exit when only note-parsable entries remain.
+- **`build_city_subject_store.py` dropped non-CITY_ORDER rows** (lifestyle vault): CITY_ORDER now covers all 22 台北市 districts plus a leftover catch-all so no active entry silently vanishes from the rendered `city-subject-store.md`; invariant check that rendered rows == registry active count (1377).
+
+### Data
+
+- **GPS backfill complete: registry gps=null 327 → 0** (lifestyle vault `ddef9b3`, 19:00 nightly job): 327 resolved entries with address but no GPS were backfilled via Google Places API by the fixed `fetch_coordinates.py`; 5 earlier entries (st-1361..st-1365, incl. 三慈宮) were backfilled the same day from note coordinates. All 1377 active entries now have canonical city + GPS.
+- Known remaining gap (not blocking): 41 resolved entries have no address at all (trailheads/hidden spots); tracked as backlog.
+
 ## 2026-09-21
 
 ### Fixed

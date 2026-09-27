@@ -1,6 +1,6 @@
 # PersonalKM — 知識管理系統設計文檔
 
-> 最後更新：2026-09-21 — 修復一個存在於三條獨立寫入路徑的 frontmatter round-trip bug（此前只修過其中一條），統一改用共用的 `personalkm.frontmatter` 模組，並對 vault 執行一次完整資料修復（94 頁，含 `claude-code.md`）；Mac Mini 的 Phase A/B/C 執行前新增 CODE repo 自動同步步驟（`scripts/sync_code_repo.py`），確保未來的 pipeline 修復不會再卡在沒被拉進實際跑程式碼的機器上才發生。核心 Capture／Resolve／Ingest／Propagate 架構不變，這些都是可靠性層級的補強，不是流程改動。
+> 最後更新：2026-09-27 — AskDanny 查詢層資料品質修復：`city-subject-store` registry 載入時城市正規化（42 種變體 → 台北市 22 行政區 + 周邊 5 城市的全域 canonical，1377 筆全覆蓋）、nearby-8KM 新增 note 座標 fallback（gps frontmatter 為 null 時解析 note 內 `(lat, lng)` 並驗證台灣範圍）、`fetch_coordinates.py` 新增免金鑰 note-parse 第 0 步（夜間 job 以 Places API 補完全部 327 筆 gps=null，registry 現為 0）。核心 Capture／Resolve／Ingest／Propagate 架構不變。
 
 ---
 
