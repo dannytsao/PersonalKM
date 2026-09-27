@@ -565,6 +565,36 @@ def _read_page(wiki_root: Path, rel_path: str) -> Optional[dict]:
     return {"title": title, "slug": slug, "body": body, "rel_path": rel_path}
 
 
+# 台灣全部一級行政區(簡體「台」字形)。registry 的 city 欄位歷史上出現過 40+ 種
+# 變體(「臺北市」繁體、「台北市大安區」區級),查詢端一律正規化後再比對,
+# 避免同名不同形造成 location 匹配漏失(2026-09-27 三慈宮 st-1365 事件)。
+ALL_CITY_NAMES = frozenset({
+    "台北市", "新北市", "桃園市", "台中市", "台南市", "高雄市",
+    "基隆市", "新竹市", "嘉義市",
+    "新竹縣", "苗栗縣", "彰化縣", "南投縣", "雲林縣", "嘉義縣",
+    "屏東縣", "宜蘭縣", "花蓮縣", "台東縣", "澎湖縣", "金門縣", "連江縣",
+    "未標明",
+})
+
+_CITY_DISTRICT_SUFFIX_RE = re.compile(r"^(.+?[市縣]).+?(區|鄉|鎮|市)$")
+
+# note 欄位中的「(lat,lng)」座標模式——建檔流程曾把 Maps 分享座標寫進 note
+_NOTE_COORD_RE = re.compile(r"\((\d{1,3}\.\d+),\s*(\d{1,3}\.\d+)\)")
+
+
+def _normalize_city(city: str) -> str:
+    """臺→台、剝離區/鄉/鎮後綴、空值→未標明;未知城市原樣保留。"""
+    if not city:
+        return "未標明"
+    c = city.replace("臺", "台")
+    if c in ALL_CITY_NAMES:
+        return c
+    m = _CITY_DISTRICT_SUFFIX_RE.match(c)
+    if m and m.group(1) in ALL_CITY_NAMES:
+        return m.group(1)
+    return c
+
+
 def _load_registry_entries(root: Path) -> list[RegistryEntry]:
     registry_path = root / "wiki" / "_registry" / "city-subject-store.json"
     try:
@@ -595,9 +625,23 @@ def _load_registry_entries(root: Path) -> list[RegistryEntry]:
             and all(isinstance(value, (int, float)) and not isinstance(value, bool) for value in gps_raw)
             else None
         )
+        if gps is None:
+            # 兜底:gps 欄位缺值時,嘗試從 note 文字解析座標。歷史上建檔流程
+            # 曾把 Google Maps 分享連結的座標寫進 note 而非 gps 欄位
+            # (2026-09-27 三慈宮 st-1365 事件:人工補了地址、gps 卻是 null,
+            # 附近搜尋直接跳過)。資料層已一次性回填,此為查詢端的防線。
+            note = raw.get("note")
+            if isinstance(note, str):
+                match = _NOTE_COORD_RE.search(note)
+                if match:
+                    try:
+                        lat, lng = float(match.group(1)), float(match.group(2))
+                        gps = (lat, lng) if 20 <= lat <= 27 and 118 <= lng <= 124 else None
+                    except ValueError:
+                        gps = None
         entries.append(
             RegistryEntry(
-                city=str(raw.get("city", "")).strip(),
+                city=_normalize_city(str(raw.get("city", "")).strip()),
                 subject=str(raw.get("subject", "")).strip(),
                 store=str(raw.get("store", "")).strip(),
                 source=str(raw.get("source", "")).strip(),
