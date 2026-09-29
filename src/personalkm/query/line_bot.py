@@ -425,29 +425,78 @@ def vault_root(cfg: dict) -> Optional[Path]:
     return None
 
 
-# ── Vault auto-pull (throttled) ────────────────────────────────────────────
+# ── Vault auto-pull (throttled, sparse) ────────────────────────────────────
 #
 # AskDanny is NOT in render.yaml, so Render does not auto-redeploy when the
 # vault repo gets new commits.  The startup script (start_askdanny_render.sh)
 # pulls the vault exactly once at boot.  Between deploys the vault on Render
 # goes stale, and /status + query answers reflect an outdated snapshot.
 #
+# The vault contains many LINE-generated filenames longer than 255 bytes
+# (macOS APFS allows 255 chars; Linux ext4 caps filenames at 255 BYTES), so a
+# full `git pull` on Render fails checkout whenever any long-named file is in
+# the incoming range — the fast-forward aborts and HEAD silently stays days
+# behind.  AskDanny only reads wiki/_registry/ + the two ALLOWED_PAGES files,
+# so we self-heal into a sparse checkout limited to those paths: only short,
+# safe names ever need to be written to disk.
+#
 # _maybe_pull_vault() runs a `git pull --ff-only` at most once per
 # _PULL_INTERVAL seconds so that new vault commits are picked up without
 # needing a Render redeploy.  Errors are logged but never raised — a failed
-# pull must not break a user's query.
+# pull must not break a user's query — but the failure IS surfaced in
+# /health output (see _vault_diagnostics) instead of being invisible.
 
 _PULL_INTERVAL = 600  # seconds — re-pull at most every 10 minutes
 _last_pull_ts: float = 0.0
+_last_pull_error: str = ""
+
+_SPARSE_PATHS = ["/wiki/_registry/**"] + [f"/{p}" for p in ALLOWED_PAGES]
+
+
+def _ensure_sparse_checkout(root: Path) -> bool:
+    """Best-effort: point the vault clone's sparse-checkout at the paths
+    AskDanny actually reads.  Returns True when a (re)initialization was
+    performed — callers should retry the pull once after a True."""
+    global _last_pull_error
+    try:
+        proc = subprocess.run(
+            ["git", "config", "core.sparseCheckout"], cwd=str(root),
+            capture_output=True, text=True, timeout=10,
+        )
+        already_sparse = proc.returncode == 0 and proc.stdout.strip() == "true"
+        proc = subprocess.run(
+            ["git", "sparse-checkout", "list"], cwd=str(root),
+            capture_output=True, text=True, timeout=10,
+        )
+        same_set = set(proc.stdout.split()) == set(_SPARSE_PATHS)
+        if already_sparse and same_set:
+            return False
+        subprocess.run(
+            ["git", "sparse-checkout", "set", "--no-cone", *_SPARSE_PATHS],
+            cwd=str(root), capture_output=True, text=True, timeout=60,
+        )
+        # Force re-materialization of the paths we care about even if earlier
+        # full checkouts left long-named files behind or half-written state.
+        subprocess.run(
+            ["git", "checkout", "-f", "HEAD", "--", "wiki/_registry"],
+            cwd=str(root), capture_output=True, text=True, timeout=60,
+        )
+        return True
+    except Exception as exc:
+        _last_pull_error = f"sparse-init exception: {exc}"
+        logger.warning("Sparse checkout init exception: %s", exc)
+        return False
 
 
 def _maybe_pull_vault(root: Path) -> None:
     """Throttled git pull --ff-only on the vault repo, best-effort."""
-    global _last_pull_ts
+    global _last_pull_ts, _last_pull_error
     now = time.monotonic()
     if now - _last_pull_ts < _PULL_INTERVAL:
         return
     _last_pull_ts = now
+    _last_pull_error = ""
+    _ensure_sparse_checkout(root)
     try:
         result = subprocess.run(
             ["git", "pull", "--ff-only", "origin", "main"],
@@ -460,9 +509,30 @@ def _maybe_pull_vault(root: Path) -> None:
             if result.stdout.strip():
                 logger.info("Vault auto-pull: %s", result.stdout.strip()[:200])
         else:
-            logger.warning("Vault auto-pull failed (rc=%d): %s",
-                           result.returncode, (result.stderr or "")[:200])
+            _last_pull_error = (
+                f"git pull rc={result.returncode}: "
+                f"{(result.stderr or result.stdout or '')[:200]}"
+            )
+            logger.warning("Vault auto-pull failed (%s)", _last_pull_error)
+            # Sparse-init may have just changed the checkout config — retry
+            # once so a mere config fix is picked up in the same request.
+            if _ensure_sparse_checkout(root):
+                retry = subprocess.run(
+                    ["git", "pull", "--ff-only", "origin", "main"],
+                    cwd=str(root), capture_output=True, text=True, timeout=30,
+                )
+                if retry.returncode == 0:
+                    _last_pull_error = ""
+                    logger.info(
+                        "Vault auto-pull succeeded after sparse re-init")
+                else:
+                    _last_pull_error = (
+                        f"git pull rc={retry.returncode} after sparse re-init: "
+                        f"{(retry.stderr or retry.stdout or '')[:200]}")
+                    logger.warning("Vault auto-pull failed after sparse "
+                                   "re-init (%s)", _last_pull_error)
     except Exception as exc:
+        _last_pull_error = f"pull exception: {exc}"
         logger.warning("Vault auto-pull exception: %s", exc)
 
 
@@ -1885,6 +1955,7 @@ def _vault_diagnostics(cfg: dict) -> dict:
         "registry_entry_count": entry_count,
         "vault_git_commit": commit,
         "vault_git_commit_date": commit_date,
+        "vault_sync_error": _last_pull_error or None,
     }
 
 
@@ -1899,9 +1970,13 @@ def _vault_status_text(cfg: dict) -> str:
         return "⚠️ 知識庫目前沒有載入，請通知 Danny。"
     commit = diag.get("vault_git_commit") or "未知"
     commit_date = diag.get("vault_git_commit_date") or "未知"
-    return (
+    sync_err = diag.get("vault_sync_error")
+    text = (
         "📊 AskDanny 知識庫狀態\n"
         f"筆數：{diag.get('registry_entry_count')} 筆\n"
         f"版本：{commit}\n"
         f"更新時間：{commit_date}"
     )
+    if sync_err:
+        text += f"\n⚠️ 同步失敗：{sync_err[:120]}"
+    return text
