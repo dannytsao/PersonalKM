@@ -21,21 +21,29 @@ LIFESTYLE_REPO="${LIFESTYLE_VAULT_REPO_URL:?}"
 
 mkdir -p "$VAULT_DIR"
 
+# Sparse paths: the ONLY files line_bot.py reads.  The vault contains 70+
+# LINE-generated filenames longer than 255 BYTES (fine on macOS APFS, illegal
+# on Linux ext4) — any full checkout/pull that includes them fails wholesale,
+# which is how the deployed vault silently froze at a 2-day-old commit
+# (2026-09-29 incident).  A sparse checkout never materializes those names,
+# so clone AND later pulls stay healthy.
+SPARSE_PATHS="'/wiki/_registry/**' '/wiki/concepts/city-subject-store.md' '/wiki/concepts/tianmu-food.md'"
+
 if [[ -d "$LIFESTYLE_DIR/.git" ]]; then
   echo "⏩ Vault exists at $LIFESTYLE_DIR — pulling latest"
   cd "$LIFESTYLE_DIR"
-  git pull --ff-only origin main 2>/dev/null || true
+  # Self-heal: ensure sparse config even if an older full checkout created this clone
+  git config core.sparseCheckout true
+  eval "git sparse-checkout set --no-cone $SPARSE_PATHS"
+  git pull --ff-only origin main || echo "❌ vault pull failed at boot (runtime auto-pull will retry)"
 else
-  echo "📦 Cloning lifestyle vault..."
-  # Clone metadata only first, then checkout what we can.
-  # Some files have filenames > 255 chars (OK on macOS ext4, not on Linux).
-  # Those few files are skipped — the bot still works with all others.
-  git clone --depth 1 "$LIFESTYLE_REPO" "$LIFESTYLE_DIR" 2>&1 || true
-  if [[ -d "$LIFESTYLE_DIR/.git" ]]; then
-    cd "$LIFESTYLE_DIR"
-    echo "⚠️  Partial clone — checking out available files..."
-    git checkout HEAD -- . 2>&1 | grep -v "File name too long" || true
-  fi
+  echo "📦 Cloning lifestyle vault (sparse)..."
+  git clone --depth 1 --no-checkout "$LIFESTYLE_REPO" "$LIFESTYLE_DIR"
+  cd "$LIFESTYLE_DIR"
+  eval "git sparse-checkout set --no-cone $SPARSE_PATHS"
+  # NOTE: must be `git checkout main` (no `-- .`) — the pathspec form ignores
+  # sparse rules and materializes every file, reintroducing the long-name crash.
+  git checkout main
 fi
 
 # Verify the wiki directory is accessible
