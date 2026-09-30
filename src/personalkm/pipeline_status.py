@@ -160,10 +160,26 @@ def _analyze_vault(vault_root: Path | None = None) -> dict[str, Any]:
         # page ([[Archive/raw/...]]). Orphans = silently lost knowledge (page
         # deleted/migrated without the archive copy, or the file was swept in
         # by a non-pipeline writer before Phase A ingested it).
-        from personalkm.ingest.archive_integrity import find_archive_orphans
+        from personalkm.ingest.archive_integrity import (
+            _wiki_corpus,
+            find_archive_orphans,
+        )
 
         try:
-            orphans = find_archive_orphans(vault_root)
+            # Cross-vault migrations (2026-09 df0dfae relocated 7 pages) leave
+            # pages citing this vault's archive from the SIBLING vault's wiki.
+            # find_archive_orphans(extra_texts=...) exists exactly for this;
+            # without it those files are false-positive "lost knowledge".
+            extra_texts = None
+            for sibling_name in (
+                "Personalkm-vault",
+                "Personalkm-lifestyle-vault",
+            ):
+                sibling = vault_root.parent / sibling_name
+                if sibling != vault_root and (sibling / "wiki").exists():
+                    extra_texts = [_wiki_corpus(sibling)]
+                    break
+            orphans = find_archive_orphans(vault_root, extra_texts=extra_texts)
         except Exception:  # never let monitoring break status reporting
             orphans = []
         state["archive_orphans"] = len(orphans)
