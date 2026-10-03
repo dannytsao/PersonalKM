@@ -1674,18 +1674,36 @@ async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, 
 GOOGLE_MAPS_SHARE_HOSTS = {
     "maps.app.goo.gl",
     "www.maps.app.goo.gl",
+    # 2026-10-04: also match www.google.com/maps/ URLs — these are the
+    # full Maps search/place URLs that produce the same empty HTML shell
+    # ("Find local businesses...") when fetched directly. Without this,
+    # 151 orphaned google-maps files landed in tech vault because the
+    # generic fetch path has no Maps-aware category override.
+    "www.google.com",
+    "google.com",
 }
 
 
 def is_google_maps_share(url: str) -> bool:
-    """True for Google Maps short links (maps.app.goo.gl/...).
+    """True for Google Maps short links (maps.app.goo.gl/...) AND full
+    Google Maps URLs (www.google.com/maps/...).
 
-    These are JS-rendered share links that redirect to a full Google Maps
-    place page. fetch_page() gets an empty HTML shell from them — the
-    actual content (place name, address, reviews) is loaded by JavaScript.
+    Both are JS-rendered — fetch_page() gets an empty HTML shell with
+    only "Find local businesses, view maps and get driving directions"
+    — no place name, no address, no food/scenic keywords. The LLM
+    sees only that stub text and returns ``general``, routing the note
+    to the tech vault. By matching these URLs here, process_url
+    forces the category to ``food`` (the existing Google Maps override).
     """
     parsed = urlparse(url)
-    return parsed.netloc.lower() in GOOGLE_MAPS_SHARE_HOSTS
+    host = parsed.netloc.lower()
+    if host in GOOGLE_MAPS_SHARE_HOSTS:
+        # For www.google.com, only treat it as Maps if the path starts
+        # with /maps/ — other google.com URLs (news, docs, etc.) are not.
+        if host in ("www.google.com", "google.com"):
+            return parsed.path.lower().startswith("/maps/")
+        return True
+    return False
 
 
 GOOGLE_MAPS_PLACE_RE = re.compile(r"/maps/place/([^/]+)/@(-?\d+\.\d+),(-?\d+\.\d+)")
