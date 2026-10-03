@@ -992,6 +992,10 @@ def fallback_category(title: str, page_text: str) -> str:
         # 2026-08-28: travel, resorts, hotels, leisure (from general -> lifestyle)
         "飯店", "民宿", "旅館", "渡假", "住宿", "香客大樓", "運河", "泳池", "水簾洞", "溫泉",
         "爵士", "blue-note", "玩轉盤", "抽獎", "樂園", "展覽", "市集",
+        # 2026-10-04: broader scenic/travel (orphaned General → lifestyle)
+        "植物園", "部落", "燈塔", "天文", "地標",
+        "夕陽", "觀光", "遊憩", "環島", "離島", "漁港",
+        "教會", "教堂", "廟宇", "宮廟", "老街",
     ]):
         return "photography"
 
@@ -1052,6 +1056,11 @@ def fallback_category(title: str, page_text: str) -> str:
         "annieko.tw",
         "journey.tw",
         "foodmap.tw",
+        # 2026-10-04: lifestyle platforms that 403 on fetch
+        "inline.app",
+        "patreon.com",
+        "www.facebook.com",
+        "medium.com",
     ]):
         return "photography"
 
@@ -1088,6 +1097,11 @@ def upgrade_general_category(title: str, page_text: str, llm_category: str) -> s
         # 2026-08-28: travel, resorts, hotels, leisure (from general -> lifestyle)
         "飯店", "民宿", "旅館", "渡假", "住宿", "香客大樓", "運河", "泳池", "水簾洞", "溫泉",
         "爵士", "blue-note", "玩轉盤", "抽獎", "樂園", "展覽", "市集",
+        # 2026-10-04: broader scenic/travel keywords (orphaned General → lifestyle)
+        "植物園", "部落", "燈塔", "古道", "天文", "地標",
+        "夕陽", "秘境", "龍貓", "公車站", "觀光", "遊憩",
+        "自行車道", "環島", "離島", "漁港", "燈塔",
+        "教會", "教堂", "廟宇", "宮廟", "老街",
     ]):
         return "photography"
 
@@ -1096,6 +1110,9 @@ def upgrade_general_category(title: str, page_text: str, llm_category: str) -> s
         "美食", "餐廳", "小吃", "料理",
         "必吃", "包子", "便當", "銅板價", "伴手禮",
         "排隊", "名店", "老店",
+        # 2026-10-04: broader food keywords for fetch-failure stubs
+        "火鍋", "和牛", "燒肉", "咖啡", "甜點",
+        "預約", "訂位", "候位",
     ]):
         return "food"
 
@@ -1488,6 +1505,12 @@ async def summarize_with_llm(settings: Settings, title: str, url: str, page_text
             "annieko.tw",
             "journey.tw",
             "foodmap.tw",
+            # 2026-10-04: lifestyle platforms that frequently 403 on fetch
+            # — inline.app (餐廳訂位), patreon (創作者), facebook, medium
+            "inline.app",
+            "patreon.com",
+            "www.facebook.com",
+            "medium.com",
         ]):
             category = "photography"
 
