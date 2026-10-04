@@ -59,6 +59,12 @@ services:
         value: main
       - key: VAULT_PATH
         value: /tmp/personal-km-vault
+      - key: LIFESTYLE_VAULT_REPO_URL
+        sync: false
+      - key: LIFESTYLE_VAULT_BRANCH
+        value: main
+      - key: LIFESTYLE_VAULT_PATH
+        value: /tmp/personal-km-lifestyle-vault
       - key: INBOX_DIR
         value: Inbox
       - key: GIT_AUTHOR_NAME
