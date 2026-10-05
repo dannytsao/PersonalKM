@@ -15,20 +15,46 @@ class VaultConfig:
     path: Path = Path("/tmp/personal-km-vault")
 
 
+def _inject_pat(base_url: str, pat: str) -> str:
+    """Inject a PAT into a git HTTPS URL as x-access-token credentials.
+
+    If *pat* is empty, return *base_url* unchanged (backward compatible with
+    URLs that already embed credentials or are used via credential helper).
+    Strips any existing credentials from *base_url* before injecting so the
+    PAT always wins.
+    """
+    if not pat:
+        return base_url
+    from urllib.parse import urlparse, urlunparse
+    parsed = urlparse(base_url)
+    # If not HTTPS, leave it alone (SSH, local path, etc.)
+    if parsed.scheme != "https":
+        return base_url
+    # Strip existing user:password, inject x-access-token:pat
+    credentialed = parsed._replace(
+        netloc=f"x-access-token:{pat}@{parsed.hostname}"
+        + (f":{parsed.port}" if parsed.port else "")
+    )
+    return urlunparse(credentialed)
+
+
 def _get_vault_config(settings: Settings, category: str = "tech") -> VaultConfig:
     """Return the vault config for a given category.
 
     Falls back to tech vault if lifestyle vault is not configured.
+    Injects the PAT (from VAULT_PAT / LIFESTYLE_VAULT_PAT) into the URL at
+    runtime so the base URL can live in render.yaml as a plain value (never
+    lost on redeploy) while the short PAT string lives in a sync:false var.
     """
     is_lifestyle = category in ("food", "photography") and settings.lifestyle_vault_repo_url
     if is_lifestyle:
         return VaultConfig(
-            repo_url=settings.lifestyle_vault_repo_url,
+            repo_url=_inject_pat(settings.lifestyle_vault_repo_url, settings.lifestyle_vault_pat),
             branch=settings.lifestyle_vault_branch,
             path=settings.lifestyle_vault_path,
         )
     return VaultConfig(
-        repo_url=settings.vault_repo_url,
+        repo_url=_inject_pat(settings.vault_repo_url, settings.vault_pat),
         branch=settings.vault_branch,
         path=settings.vault_path,
     )
@@ -133,7 +159,7 @@ def ensure_vault(settings: Settings, vault_config: Optional[VaultConfig] = None)
     Returns the vault path.
     """
     vc = vault_config or VaultConfig(
-        repo_url=settings.vault_repo_url,
+        repo_url=_inject_pat(settings.vault_repo_url, settings.vault_pat),
         branch=settings.vault_branch,
         path=settings.vault_path,
     )
@@ -188,7 +214,7 @@ def commit_and_push(settings: Settings, note_path: Path, vault_config: Optional[
     changes (e.g. phantom deletions from sparse checkout index state).
     """
     vc = vault_config or VaultConfig(
-        repo_url=settings.vault_repo_url,
+        repo_url=_inject_pat(settings.vault_repo_url, settings.vault_pat),
         branch=settings.vault_branch,
         path=settings.vault_path,
     )

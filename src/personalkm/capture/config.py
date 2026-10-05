@@ -2,7 +2,6 @@ import re
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -32,11 +31,15 @@ class Settings(BaseSettings):
     vault_repo_url: str = Field(default="https://github.com/dannytsao/PersonalKM.git", alias="VAULT_REPO_URL")
     vault_branch: str = Field(default="main", alias="VAULT_BRANCH")
     vault_path: Path = Field(default=Path("/tmp/personal-km-vault"), alias="VAULT_PATH")
+    # PAT injected at runtime — keep base URL in render.yaml (never lost),
+    # PAT in a separate sync:false var (short string, harder to truncate).
+    vault_pat: str = Field(default="", alias="VAULT_PAT")
 
     # Lifestyle vault (P8#32 — food, travel, photography)
     lifestyle_vault_repo_url: str = Field(default="", alias="LIFESTYLE_VAULT_REPO_URL")
     lifestyle_vault_branch: str = Field(default="main", alias="LIFESTYLE_VAULT_BRANCH")
     lifestyle_vault_path: Path = Field(default=Path("/tmp/personal-km-lifestyle-vault"), alias="LIFESTYLE_VAULT_PATH")
+    lifestyle_vault_pat: str = Field(default="", alias="LIFESTYLE_VAULT_PAT")
 
     inbox_dir: str = Field(default="Inbox", alias="INBOX_DIR")
 

@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 
 from personalkm.capture.config import Settings
-from personalkm.capture.git_store import commit_and_push, ensure_vault
+from personalkm.capture.git_store import _inject_pat, _get_vault_config, commit_and_push, ensure_vault
 
 
 def git(repo: Path, *args: str) -> str:
@@ -108,3 +108,63 @@ def test_ensure_vault_advances_head_before_capture_commit(tmp_path):
     assert "Remote capture" in history
     assert "Add LINE link note: new" in history
     assert git(vault, "rev-parse", "HEAD") == git(vault, "rev-parse", "origin/main")
+
+
+# --------------------------------------------------------------------------- #
+# _inject_pat — PAT injected at runtime, base URL safe in render.yaml
+# --------------------------------------------------------------------------- #
+
+class TestInjectPat:
+    """Contract: _inject_pat keeps base URL intact, injects PAT as x-access-token."""
+
+    def test_injects_pat_into_bare_url(self):
+        url = "https://github.com/dannytsao/Personalkm-lifestyle-vault.git"
+        pat = "github_pat_ABC123"
+        result = _inject_pat(url, pat)
+        assert result == "https://x-access-token:github_pat_ABC123@github.com/dannytsao/Personalkm-lifestyle-vault.git"
+
+    def test_empty_pat_returns_url_unchanged(self):
+        url = "https://github.com/dannytsao/Personalkm-lifestyle-vault.git"
+        assert _inject_pat(url, "") == url
+
+    def test_replaces_existing_credentials(self):
+        url = "https://olduser:oldpass@github.com/dannytsao/repo.git"
+        pat = "github_pat_NEW"
+        result = _inject_pat(url, pat)
+        assert "olduser" not in result
+        assert "oldpass" not in result
+        assert "x-access-token:github_pat_NEW@" in result
+
+    def test_non_https_left_alone(self):
+        url = "git@github.com:dannytsao/repo.git"
+        pat = "github_pat_ABC"
+        assert _inject_pat(url, pat) == url
+
+
+class TestGetVaultConfigPatInjection:
+    """Contract: _get_vault_config injects PAT from settings into the URL at runtime."""
+
+    def test_lifestyle_config_injects_pat(self):
+        settings = Settings(
+            LIFESTYLE_VAULT_REPO_URL="https://github.com/dannytsao/Personalkm-lifestyle-vault.git",
+            LIFESTYLE_VAULT_PAT="github_pat_TEST",
+        )
+        vc = _get_vault_config(settings, "food")
+        assert "x-access-token:github_pat_TEST@" in vc.repo_url
+        assert vc.branch == "main"
+
+    def test_tech_config_injects_pat(self):
+        settings = Settings(
+            VAULT_REPO_URL="https://github.com/dannytsao/PersonalKM.git",
+            VAULT_PAT="github_pat_TECH",
+        )
+        vc = _get_vault_config(settings, "tech")
+        assert "x-access-token:github_pat_TECH@" in vc.repo_url
+
+    def test_no_pat_falls_back_gracefully(self):
+        """When PAT is empty, URL is used as-is (backward compatible)."""
+        settings = Settings(
+            VAULT_REPO_URL="https://github.com/dannytsao/PersonalKM.git",
+        )
+        vc = _get_vault_config(settings, "tech")
+        assert vc.repo_url == "https://github.com/dannytsao/PersonalKM.git"

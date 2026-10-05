@@ -12,6 +12,8 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: LIFESTYLE_VAULT_REPO_URL
+        value: https://github.com/dannytsao/Personalkm-lifestyle-vault.git
+      - key: LIFESTYLE_VAULT_PAT
         sync: false
       - key: ASKDANNY_CHANNEL_SECRET
         sync: false
@@ -54,12 +56,16 @@ services:
       - key: OPENAI_MODEL
         value: gpt-4.1-mini
       - key: VAULT_REPO_URL
+        value: https://github.com/dannytsao/PersonalKM.git
+      - key: VAULT_PAT
         sync: false
       - key: VAULT_BRANCH
         value: main
       - key: VAULT_PATH
         value: /tmp/personal-km-vault
       - key: LIFESTYLE_VAULT_REPO_URL
+        value: https://github.com/dannytsao/Personalkm-lifestyle-vault.git
+      - key: LIFESTYLE_VAULT_PAT
         sync: false
       - key: LIFESTYLE_VAULT_BRANCH
         value: main
@@ -84,6 +90,8 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: VAULT_REPO_URL
+        value: https://github.com/dannytsao/PersonalKM.git
+      - key: VAULT_PAT
         sync: false
       - key: VAULT_BRANCH
         value: main
@@ -119,6 +127,8 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: VAULT_REPO_URL
+        value: https://github.com/dannytsao/PersonalKM.git
+      - key: VAULT_PAT
         sync: false
       - key: VAULT_BRANCH
         value: main
