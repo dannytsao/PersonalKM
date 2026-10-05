@@ -9,15 +9,26 @@
 #   bash scripts/start_askdanny_render.sh
 #
 # Required env vars on Render:
-#   LIFESTYLE_VAULT_REPO_URL   Full clone URL with embedded PAT:
-#                              https://x-access-token:PAT@github.com/dannytsao/Personalkm-lifestyle-vault.git
+#   LIFESTYLE_VAULT_REPO_URL   Base clone URL (no PAT):
+#                              https://github.com/dannytsao/Personalkm-lifestyle-vault.git
+#   LIFESTYLE_VAULT_PAT        GitHub fine-grained PAT with write access to the vault repo
 #   ASKDANNY_CHANNEL_SECRET    LINE Channel Secret
 #   ASKDANNY_CHANNEL_ACCESS_TOKEN LINE Channel Access Token
 set -euo pipefail
 
 VAULT_DIR="/opt/render/project/.vaults"
 LIFESTYLE_DIR="$VAULT_DIR/Personalkm-lifestyle-vault"
-LIFESTYLE_REPO="${LIFESTYLE_VAULT_REPO_URL:?}"
+LIFESTYLE_BASE_URL="${LIFESTYLE_VAULT_REPO_URL:?}"
+
+# Inject PAT into the base URL at runtime so the PAT lives in its own
+# sync:false secret (survives redeploys) instead of being embedded in the
+# URL env var (which Render's sync:false clears on every redeploy).
+if [[ -n "${LIFESTYLE_VAULT_PAT:-}" ]]; then
+  LIFESTYLE_REPO="${LIFESTYLE_BASE_URL#https://}"
+  LIFESTYLE_REPO="https://x-access-token:${LIFESTYLE_VAULT_PAT}@${LIFESTYLE_REPO}"
+else
+  LIFESTYLE_REPO="$LIFESTYLE_BASE_URL"
+fi
 
 mkdir -p "$VAULT_DIR"
 
