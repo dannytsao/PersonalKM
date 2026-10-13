@@ -163,7 +163,7 @@ TOPIC_OPTIONS = [
 # Title Extraction
 # ─────────────────────────────────────────────────────────────
 
-def extract_title(raw_path: Path, content: str, max_len: int = 120) -> str:
+def extract_title(raw_path: Path, content: str, max_len: int = 60) -> str:
     """Extract a clean human-readable title from a raw capture.
 
     Priority:

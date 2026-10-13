@@ -343,6 +343,10 @@ def normalize_entity_name(name: str) -> str:
     # Strip leading/trailing hyphens
     name = name.strip('-')
 
+    # Hard length cap — prevents 200+ char filenames from long social posts
+    if len(name) > 60:
+        name = name[:60].rstrip('-')
+
     return name
 
 
