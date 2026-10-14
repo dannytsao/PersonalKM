@@ -1797,7 +1797,9 @@ async def handle_text_event(cfg: dict, event: AskDannyEvent) -> None:
     # Without this, AskDanny reads a stale snapshot between Render deploys.
     root = vault_root(cfg)
     if root:
-        _maybe_pull_vault(root)
+        # Run in a worker thread: git pull is a blocking subprocess (up to
+        # minutes on a bad network) and must not freeze the event loop.
+        await asyncio.to_thread(_maybe_pull_vault, root)
 
     if await _handle_location_confirmation_event(cfg, event, text):
         return
@@ -1813,7 +1815,8 @@ async def handle_text_event(cfg: dict, event: AskDannyEvent) -> None:
         return
 
     if text.lower() in ("/health", "/status"):
-        await reply_message(cfg["access_token"], event.reply_token, _vault_status_text(cfg))
+        status_text = await asyncio.to_thread(_vault_status_text, cfg)
+        await reply_message(cfg["access_token"], event.reply_token, status_text)
         return
 
     root = vault_root(cfg)
@@ -1905,6 +1908,7 @@ async def line_webhook(
         raise HTTPException(status_code=500, detail="AskDanny not configured")
 
     body = await request.body()
+    logger.info("AskDanny webhook received (%d bytes)", len(body))
     if not verify_line_signature(body, cfg["channel_secret"], x_line_signature):
         logger.warning("Rejected AskDanny webhook with invalid signature")
         raise HTTPException(status_code=401, detail="Invalid LINE signature")
@@ -1961,7 +1965,16 @@ def _vault_diagnostics(cfg: dict) -> dict:
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "bot": "askdanny", **_vault_diagnostics(askdanny_settings())}
+    # Render's health probe hits this every few seconds — keep it cheap and
+    # non-blocking. Vault diagnostics (git pull + registry scan) live on
+    # /health/vault so they can never stall LINE webhook handling.
+    return {"status": "ok", "bot": "askdanny"}
+
+
+@app.get("/health/vault")
+async def health_vault() -> dict:
+    diag = await asyncio.to_thread(_vault_diagnostics, askdanny_settings())
+    return {"status": "ok", "bot": "askdanny", **diag}
 
 
 def _vault_status_text(cfg: dict) -> str:

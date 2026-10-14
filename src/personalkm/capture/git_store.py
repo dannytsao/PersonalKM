@@ -251,7 +251,7 @@ def commit_and_push(settings: Settings, note_path: Path, vault_config: Optional[
         )
 
     run_git(["commit", "--only", str(relative_path),
-             "-m", f"Add LINE link note: {note_path.stem}"], vault_path, settings)
+             "-m", f"Add LINE link note: {note_path.stem} [skip render]"], vault_path, settings)
     _push_with_rebase(vault_path, settings, vc)
 
     import logging
