@@ -55,6 +55,14 @@ services:
         sync: false
       - key: OPENAI_MODEL
         value: gpt-4.1-mini
+      - key: MINIMAX_API_KEY
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: JINA_API_KEY
+        sync: false
+      - key: CAPTURE_API_KEY
+        sync: false
       - key: VAULT_REPO_URL
         value: https://github.com/dannytsao/PersonalKM.git
       - key: VAULT_PAT
