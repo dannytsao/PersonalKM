@@ -68,12 +68,15 @@ class OpenAICompatProvider(Provider):
             if system:
                 messages.append({"role": "system", "content": system})
             messages.append({"role": "user", "content": prompt})
-        resp = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            max_tokens=max_output_tokens,
-            timeout=timeout_s,
-        )
+        kwargs: dict = {
+            "model": model,
+            "messages": messages,
+            "max_tokens": max_output_tokens,
+            "timeout": timeout_s,
+        }
+        if json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
+        resp = client.chat.completions.create(**kwargs)
         usage = resp.usage
         return Completion(
             text=resp.choices[0].message.content or "",

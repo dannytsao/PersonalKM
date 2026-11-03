@@ -52,14 +52,14 @@ stages:
   # matters more than the negligible cost difference at this volume.
   ingest_synthesis:
     primary:  deepseek/deepseek-v4-flash
-    fallback: [minimax/MiniMax-M2.7-highspeed, ollama/qwen3.5:9b]
+    fallback: [minimax/MiniMax-M2.7-highspeed, "ollama/qwen3.5:9b"]
     # deepseek-v4-flash's internal reasoning pass counts against
     # max_output_tokens (see entity_distillation below) — sized the same way.
     max_output_tokens: 4000
 
   # Cheap structured extraction: entities, tags, classification
   entity_extraction:
-    primary:  ollama/qwen3.5:9b
+    primary:  "ollama/qwen3.5:9b"
     fallback: [minimax/MiniMax-M2.7-highspeed]
     max_output_tokens: 800
     json_only: true
@@ -69,25 +69,25 @@ stages:
   # blocks. NOT json_only — small local models (qwen3.5:9b) handle XML-tag
   # plain text more reliably than structured JSON at 9B scale.
   wikilink_analysis:
-    primary:  ollama/qwen3.5:9b
+    primary:  "ollama/qwen3.5:9b"
     fallback: [minimax/MiniMax-M2.7-highspeed]
     max_output_tokens: 1200
 
   # Phase B / Phase 6: wikilink + entity page updates
   propagation_distill:
-    primary:  ollama/qwen3.5:9b
+    primary:  "ollama/qwen3.5:9b"
     fallback: [minimax/MiniMax-M2.7-highspeed]
     max_output_tokens: 1200
 
   # Query engine answers (LINE 我問)
   query_answer:
     primary:  minimax/MiniMax-M2.7-highspeed
-    fallback: [deepseek/deepseek-v4-flash, ollama/qwen3.5:9b]
+    fallback: [deepseek/deepseek-v4-flash, "ollama/qwen3.5:9b"]
     max_output_tokens: 1500
 
   # Pre-ingestion raw note quality check (cheap — classification only)
   raw_quality_check:
-    primary:  ollama/qwen3.5:9b
+    primary:  "ollama/qwen3.5:9b"
     fallback: [minimax/MiniMax-M2.7-highspeed]
     max_output_tokens: 600
     json_only: true
@@ -109,12 +109,30 @@ stages:
   # above — quality matters more than the cents/month cost difference.
   entity_distillation:
     primary:  deepseek/deepseek-v4-flash
-    fallback: [minimax/MiniMax-M2.7-highspeed, ollama/qwen3.5:9b]
+    fallback: [minimax/MiniMax-M2.7-highspeed, "ollama/qwen3.5:9b"]
     # deepseek-v4-flash emits an internal reasoning_content pass before the
     # actual JSON reply, and both count against max_output_tokens — 1500 was
     # too tight and the reasoning ate the whole budget, returning an empty
     # or truncated response (2026-07-19 real-vault dry-run). Raised to give
     # headroom for reasoning + a full Traditional-Chinese JSON summary.
+    max_output_tokens: 4000
+    json_only: true
+
+  # Capture bot: URL → summary + category JSON. Replaces the direct
+  # AsyncOpenAI call in capture/link_processor.py:summarize_with_llm.
+  # DeepSeek primary (cheapest, best Chinese), MiniMax fallback, OpenAI
+  # last resort (may be out of credits — router handles gracefully).
+  capture_summary:
+    primary:  deepseek/deepseek-v4-flash
+    fallback: [minimax/MiniMax-M2.7-highspeed, openai/gpt-4.1-mini]
+    max_output_tokens: 1000
+    json_only: true
+
+  # Capture bot: YouTube transcript → deep note with body_markdown.
+  # Higher token budget for the structured Markdown body.
+  capture_youtube_deep_note:
+    primary:  deepseek/deepseek-v4-flash
+    fallback: [minimax/MiniMax-M2.7-highspeed, openai/gpt-4.1-mini]
     max_output_tokens: 4000
     json_only: true
 
