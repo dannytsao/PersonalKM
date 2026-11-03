@@ -11,8 +11,6 @@ from zoneinfo import ZoneInfo
 
 import httpx
 from bs4 import BeautifulSoup
-from openai import AsyncOpenAI
-
 from personalkm.capture.config import Settings
 from personalkm.capture.notes import LinkNote
 
@@ -1444,40 +1442,34 @@ async def process_line_message_context(settings: Settings, text: str, urls: list
 
 
 async def summarize_with_llm(settings: Settings, title: str, url: str, page_text: str) -> tuple[str, str]:
-    if not settings.openai_api_key:
-        category = fallback_category(title, page_text)
-        summary = fallback_summary(title, page_text)
-        return ensure_food_summary_details(title, page_text, summary, category), category
+    from personalkm.llm.router import route
+    from personalkm.llm.base import LLMError
 
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
-    prompt = {
+    prompt = json.dumps({
         "title": title,
         "url": url,
         "content": page_text,
         "allowed_categories": sorted(CATEGORY_VALUES),
-    }
-    response = await client.chat.completions.create(
-        model=settings.openai_model,
-        temperature=0.2,
-        response_format={"type": "json_object"},
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "你是個人知識管理助理。請用繁體中文輸出 JSON，欄位為 "
-                    "summary 與 category。summary 為 2-3 句摘要；category 只能是 "
-                    "photography, food, tech, general。若 category 是 food，summary 必須列出可辨識的"
-                    "店家資訊；若內容包含多間店，請逐一列出所有可辨識店家，格式為"
-                    "「店家資訊：1. 店名：...，地址：...；2. 店名：...，地址：...」。"
-                    "若只有一間店，summary 必須明確包含「店名：...」與「地址：...」。"
-                    "資料中沒有店名或地址時填「未提供」，不要編造。"
-                ),
-            },
-            {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
-        ],
+    }, ensure_ascii=False)
+    system = (
+        "你是個人知識管理助理。請用繁體中文輸出 JSON，欄位為 "
+        "summary 與 category。summary 為 2-3 句摘要；category 只能是 "
+        "photography, food, tech, general。若 category 是 food，summary 必須列出可辨識的"
+        "店家資訊；若內容包含多間店，請逐一列出所有可辨識店家，格式為"
+        "「店家資訊：1. 店名：...，地址：...；2. 店名：...，地址：...」。"
+        "若只有一間店，summary 必須明確包含「店名：...」與「地址：...」。"
+        "資料中沒有店名或地址時填「未提供」，不要編造。"
     )
-    content = response.choices[0].message.content or "{}"
-    data = json.loads(content)
+
+    try:
+        data = await asyncio.to_thread(
+            route, "capture_summary", prompt, system=system, expect_json=True
+        )
+    except LLMError as e:
+        logger.warning("All LLM providers exhausted for capture_summary: %s", e)
+        category = fallback_category(title, page_text)
+        summary = fallback_summary(title, page_text)
+        return ensure_food_summary_details(title, page_text, summary, category), category
     summary = str(data.get("summary") or fallback_summary(title, page_text)).strip()
     category = str(data.get("category") or "general").strip()
     if category not in CATEGORY_VALUES:
@@ -1606,11 +1598,10 @@ def normalize_concept_slug(value: str, max_length: int = 60) -> str:
 
 
 async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, transcript_text: str) -> tuple[str, str, str]:
-    if not settings.openai_api_key:
-        return fallback_youtube_deep_note(title, url, transcript_text)
+    from personalkm.llm.router import route
+    from personalkm.llm.base import LLMError
 
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
-    prompt = {
+    prompt = json.dumps({
         "title": title,
         "url": url,
         "transcript": transcript_text,
@@ -1627,39 +1618,35 @@ async def summarize_youtube_deep_note(settings: Settings, title: str, url: str, 
             "值得追問的問題",
             "原文連結",
         ],
-    }
-    response = await client.chat.completions.create(
-        model=settings.openai_model,
-        temperature=0.2,
-        response_format={"type": "json_object"},
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "你是資深知識管理助理。請根據 YouTube 逐字稿產生繁體中文深度筆記。"
-                    "輸出 JSON，欄位為 summary, category, body_markdown。summary 是 1-2 句。"
-                    "category 只能是 photography, food, tech, general。body_markdown 必須是 Markdown，"
-                    "包含指定章節；重點條列需 5-10 點。\n\n"
-                    "【時間戳重點 — 精確對齊規則】\n"
-                    "逐字稿頂部可能包含一個 ## Chapters 段落（時間 + 標題列表），"
-                    "這是影片的原生章節，必須作為時間軸的絕對基準。\n"
-                    "逐字稿中也散布著 [MM:SS] 或 [HH:MM:SS] 標記（約每 90 秒一個），"
-                    "這些是真實時間錨點，來自原始的 VTT 字幕時間戳。\n"
-                    "在「時間戳重點」章節中，你**只能引用**這些既有的 [MM:SS] 錨點與 ## Chapters 標題。"
-                    "嚴禁編造逐字稿中沒有出現的時間數字。"
-                    "如果逐字稿中完全沒有 [MM:SS] 錨點，則整段「時間戳重點」章節**必須省略**，不可虛構。\n\n"
-                    "可行動項目與適合建立的概念節點都要具體。不要編造逐字稿沒有的事實。若 category 是 food，summary 必須列出可辨識的"
-                    "店家資訊；若內容包含多間店，請逐一列出所有可辨識店家，格式為"
-                    "「店家資訊：1. 店名：...，地址：...；2. 店名：...，地址：...」。"
-                    "若只有一間店，summary 必須明確包含「店名：...」與「地址：...」。"
-                    "逐字稿沒有店名或地址時填「未提供」。"
-                ),
-            },
-            {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
-        ],
+    }, ensure_ascii=False)
+    system = (
+        "你是資深知識管理助理。請根據 YouTube 逐字稿產生繁體中文深度筆記。"
+        "輸出 JSON，欄位為 summary, category, body_markdown。summary 是 1-2 句。"
+        "category 只能是 photography, food, tech, general。body_markdown 必須是 Markdown，"
+        "包含指定章節；重點條列需 5-10 點。\n\n"
+        "【時間戳重點 — 精確對齊規則】\n"
+        "逐字稿頂部可能包含一個 ## Chapters 段落（時間 + 標題列表），"
+        "這是影片的原生章節，必須作為時間軸的絕對基準。\n"
+        "逐字稿中也散布著 [MM:SS] 或 [HH:MM:SS] 標記（約每 90 秒一個），"
+        "這些是真實時間錨點，來自原始的 VTT 字幕時間戳。\n"
+        "在「時間戳重點」章節中，你**只能引用**這些既有的 [MM:SS] 錨點與 ## Chapters 標題。"
+        "嚴禁編造逐字稿中沒有出現的時間數字。"
+        "如果逐字稿中完全沒有 [MM:SS] 錨點，則整段「時間戳重點」章節**必須省略**，不可虛構。\n\n"
+        "可行動項目與適合建立的概念節點都要具體。不要編造逐字稿沒有的事實。若 category 是 food，summary 必須列出可辨識的"
+        "店家資訊；若內容包含多間店，請逐一列出所有可辨識店家，格式為"
+        "「店家資訊：1. 店名：...，地址：...；2. 店名：...，地址：...」。"
+        "若只有一間店，summary 必須明確包含「店名：...」與「地址：...」。"
+        "逐字稿沒有店名或地址時填「未提供」。"
     )
-    content = response.choices[0].message.content or "{}"
-    data = json.loads(content)
+
+    try:
+        data = await asyncio.to_thread(
+            route, "capture_youtube_deep_note", prompt, system=system, expect_json=True
+        )
+    except LLMError as e:
+        logger.warning("All LLM providers exhausted for capture_youtube_deep_note: %s", e)
+        return fallback_youtube_deep_note(title, url, transcript_text)
+
     summary = str(data.get("summary") or fallback_summary(title, transcript_text)).strip()
     category = str(data.get("category") or "general").strip()
     if category not in CATEGORY_VALUES:
