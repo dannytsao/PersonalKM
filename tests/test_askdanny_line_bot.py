@@ -604,10 +604,11 @@ def test_registry_query_expands_food_alias_across_subjects_without_llm(tmp_path:
     assert "台北餐廳" not in result["answer"]
 
 
-def _wanli_registry(tmp_path: Path) -> None:
+def _wanli_registry(tmp_path: Path, extra: list[dict] | None = None) -> None:
     _write_registry(
         tmp_path,
         [
+            *(extra or []),
             {
                 "city": "新北市",
                 "subject": "美食",
@@ -675,6 +676,33 @@ def test_seafood_query_includes_food_subject_entries_mentioning_seafood(
     assert result["error"] is None
     stores = {entry.store for entry in result["registry_entries"]}
     assert stores == {"蟹滿客", "討海人食堂"}
+
+
+def test_restaurant_query_includes_catch_all_food_subject_but_not_cafes(
+    tmp_path: Path, monkeypatch
+) -> None:
+    # 2026-11-09: "萬里區美食" returned 26 but "萬里區餐廳" only 6, because
+    # most of 萬里's seafood restaurants are tagged with the catch-all "美食".
+    _wanli_registry(
+        tmp_path,
+        extra=[
+            {
+                "city": "新北市",
+                "subject": "咖啡廳",
+                "store": "萬里咖啡",
+                "address": "207新北市萬里區玉田路25號",
+                "rating": 4.8,
+                "status": "resolved",
+            }
+        ],
+    )
+    monkeypatch.setattr(line_bot, "route", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError()))
+
+    result = line_bot._query_all("萬里區餐廳", tmp_path)
+
+    assert result["error"] is None
+    stores = {entry.store for entry in result["registry_entries"]}
+    assert stores == {"蟹滿客", "討海人食堂", "萬里餐酒館"}
 
 
 def test_llm_query_only_includes_relevant_allowed_page(tmp_path: Path, monkeypatch) -> None:

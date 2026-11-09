@@ -224,8 +224,16 @@ SUBJECT_ALIASES = {
 # dropped the same way.
 FOOD_SUBJECTS = ("美食", "餐廳", "小吃", "早午餐", "咖啡廳", "甜點", "酒吧", "餐酒館")
 # Sub-topics narrow by SUBJECT_MATCH_TERMS, so they may scan every food subject.
+# "餐廳" also scans "美食": the registry's catch-all "美食" subject holds many
+# sit-down restaurants (蟹滿客, 阿杰萬里蟹, ...). Bug found 2026-11-09:
+# "萬里區美食" returned 26 but "萬里區餐廳" only 6, because 12 of 萬里's
+# restaurants are tagged "美食". Trade-off accepted: some 美食 entries are
+# really desserts/snacks and will show up under 餐廳 until the data is
+# reclassified into specific subjects.
+RESTAURANT_SUBJECTS = ("餐廳", "美食", "餐酒館")
 BROAD_SUBJECTS = {
     "美食": FOOD_SUBJECTS,
+    "餐廳": RESTAURANT_SUBJECTS,
     "牛肉麵": FOOD_SUBJECTS,
     "拉麵": FOOD_SUBJECTS,
     "眷村菜": FOOD_SUBJECTS,
