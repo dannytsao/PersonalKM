@@ -216,12 +216,20 @@ SUBJECT_ALIASES = {
     "景點": ("景點", "美景", "風景", "秘境", "海景", "絕景"),
     "海鮮": ("海鮮", "海產"),
 }
+# Registry subjects that count as food. "美食" itself must be listed: the
+# ingest pipeline writes it as a subject verbatim (789 entries as of
+# 2026-11-09). Bug found 2026-11-09: "萬里區美食" silently dropped 蟹滿客 and
+# 17 other 萬里 stores whose subject was "美食", while "萬里區蟹滿客" (no
+# subject in the query → no subject filter) found it fine. "餐酒館" was
+# dropped the same way.
+FOOD_SUBJECTS = ("美食", "餐廳", "小吃", "早午餐", "咖啡廳", "甜點", "酒吧", "餐酒館")
+# Sub-topics narrow by SUBJECT_MATCH_TERMS, so they may scan every food subject.
 BROAD_SUBJECTS = {
-    "美食": ("餐廳", "小吃", "早午餐", "咖啡廳", "甜點", "酒吧"),
-    "牛肉麵": ("小吃", "餐廳"),
-    "拉麵": ("小吃", "餐廳"),
-    "眷村菜": ("小吃", "餐廳"),
-    "海鮮": ("小吃", "餐廳"),
+    "美食": FOOD_SUBJECTS,
+    "牛肉麵": FOOD_SUBJECTS,
+    "拉麵": FOOD_SUBJECTS,
+    "眷村菜": FOOD_SUBJECTS,
+    "海鮮": FOOD_SUBJECTS,
 }
 SUBJECT_MATCH_TERMS = {
     "牛肉麵": ("牛肉麵", "牛肉面"),
