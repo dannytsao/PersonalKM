@@ -232,6 +232,10 @@ FOOD_SUBJECTS = ("美食", "餐廳", "小吃", "早午餐", "咖啡廳", "甜點
 # really desserts/snacks and will show up under 餐廳 until the data is
 # reclassified into specific subjects.
 RESTAURANT_SUBJECTS = ("餐廳", "美食", "餐酒館")
+# Bars scan every food subject except ones that explicitly say "not a bar":
+# a store reclassified as 咖啡廳 (e.g. INFINITY .Yes Lounge, 2026-11-10) must
+# not come back under 酒吧 just because its name contains "Lounge".
+BAR_SUBJECTS = ("酒吧", "餐酒館", "美食", "餐廳", "小吃")
 BROAD_SUBJECTS = {
     "美食": FOOD_SUBJECTS,
     "餐廳": RESTAURANT_SUBJECTS,
@@ -239,7 +243,7 @@ BROAD_SUBJECTS = {
     "拉麵": FOOD_SUBJECTS,
     "眷村菜": FOOD_SUBJECTS,
     "海鮮": FOOD_SUBJECTS,
-    "酒吧": FOOD_SUBJECTS,
+    "酒吧": BAR_SUBJECTS,
 }
 SUBJECT_MATCH_TERMS = {
     "牛肉麵": ("牛肉麵", "牛肉面"),

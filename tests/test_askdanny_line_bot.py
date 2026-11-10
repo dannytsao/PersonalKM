@@ -752,6 +752,15 @@ def test_bar_query_finds_bars_described_without_the_word_bar(
             },
             {
                 "city": "台北市",
+                "subject": "咖啡廳",
+                "store": "INFINITY .Yes Lounge",
+                "address": "111臺北市士林區天山里中山北路七段48號2樓",
+                "highlights": ["自家直火烘焙咖啡與自然酒"],
+                "rating": 4.8,
+                "status": "resolved",
+            },
+            {
+                "city": "台北市",
                 "subject": "美食",
                 "store": "Bar Between",
                 "address": "106臺北市大安區復興南路1號",
