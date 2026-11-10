@@ -1711,3 +1711,84 @@ def test_unauthorized_user_audio_is_not_downloaded_or_transcribed(monkeypatch) -
     )
 
     assert sent == [line_bot.GENERIC_DENY_TEXT]
+
+
+# ── 2026-11-10 search-quality fixes found by evals/askdanny/golden.yaml ──────
+
+
+def _eval_registry(tmp_path: Path) -> None:
+    _write_registry(
+        tmp_path,
+        [
+            {"city": "新北市", "subject": "美食", "store": "阿嬌萬里蟹",
+             "address": "207新北市萬里區港東路1號", "highlights": ["活跳萬里蟹"], "status": "resolved"},
+            {"city": "新北市", "subject": "餐廳", "store": "巧晏漁坊",
+             "address": "207新北市萬里區漁澳路2號", "highlights": ["現撈漁獲與螃蟹"], "status": "resolved"},
+            {"city": "新北市", "subject": "餐廳", "store": "安安土雞城",
+             "address": "207新北市萬里區山路3號", "highlights": ["土雞"], "status": "resolved"},
+            {"city": "新北市", "subject": "美食", "store": "靠北過日子",
+             "address": "No. 174號, Haixing Rd, 萬壽里金山區新北市208", "status": "resolved"},
+            {"city": "新北市", "subject": "美食", "store": "金山小館",
+             "address": "208新北市金山區中山路1號", "status": "resolved"},
+            {"city": "苗栗縣", "subject": "景點", "store": "功維敘隧道",
+             "address": "360苗栗縣苗栗市大同里三湖道76-5號", "status": "resolved"},
+            {"city": "苗栗縣", "subject": "步道", "store": "南庄步道",
+             "address": "353苗栗縣南庄鄉東村1號", "status": "resolved"},
+            {"city": "台北市", "subject": "住宿", "store": "台北旅店",
+             "address": "100臺北市中正區忠孝西路1號", "status": "resolved"},
+            {"city": "基隆市", "subject": "住宿", "store": "基隆大飯店",
+             "address": "202基隆市中正區義一路7號", "status": "resolved"},
+            {"city": "台北市", "subject": "美食", "store": "三六食府（原36美食）",
+             "address": "106臺北市大安區師大路1號", "status": "resolved"},
+            {"city": "台北市", "subject": "美食", "store": "三六小館",
+             "address": "106臺北市大安區師大路2號", "highlights": ["食府級合菜"], "status": "resolved"},
+        ],
+    )
+
+
+def _stores(query: str, tmp_path: Path) -> set[str]:
+    return {entry.store for entry in line_bot._query_all(query, tmp_path).get("registry_entries") or ()}
+
+
+def test_location_word_inside_a_store_word_is_kept(tmp_path: Path, monkeypatch) -> None:
+    # "萬里區萬里蟹" used to strip "萬里" out of "萬里蟹" too → 0 results.
+    _eval_registry(tmp_path)
+    monkeypatch.setattr(line_bot, "route", lambda *_a, **_k: (_ for _ in ()).throw(AssertionError()))
+    assert _stores("萬里區萬里蟹", tmp_path) == {"阿嬌萬里蟹", "巧晏漁坊"}
+
+
+def test_compound_subject_narrows_restaurants_to_seafood(tmp_path: Path, monkeypatch) -> None:
+    # "海鮮餐廳" used to keep only 餐廳 and return every restaurant.
+    _eval_registry(tmp_path)
+    monkeypatch.setattr(line_bot, "route", lambda *_a, **_k: (_ for _ in ()).throw(AssertionError()))
+    assert line_bot._query_subject("萬里區海鮮餐廳") == "餐廳+海鮮"
+    assert _stores("萬里區海鮮餐廳", tmp_path) == {"阿嬌萬里蟹", "巧晏漁坊"}
+
+
+def test_reversed_google_address_still_has_a_district(tmp_path: Path, monkeypatch) -> None:
+    _eval_registry(tmp_path)
+    monkeypatch.setattr(line_bot, "route", lambda *_a, **_k: (_ for _ in ()).throw(AssertionError()))
+    assert _stores("金山區美食", tmp_path) == {"靠北過日子", "金山小館"}
+    assert line_bot._address_districts("338桃园市芦竹区Alley 55", frozenset()) == ("蘆竹區",)
+    assert line_bot._address_districts("苗栗縣苑裡鎮石鎮里1號", frozenset()) == ("苑裡鎮",)
+
+
+def test_county_query_covers_county_cities_and_trails(tmp_path: Path, monkeypatch) -> None:
+    _eval_registry(tmp_path)
+    monkeypatch.setattr(line_bot, "route", lambda *_a, **_k: (_ for _ in ()).throw(AssertionError()))
+    assert _stores("苗栗景點", tmp_path) == {"功維敘隧道", "南庄步道"}
+
+
+def test_tai_variant_and_same_named_district_in_another_city(tmp_path: Path, monkeypatch) -> None:
+    _eval_registry(tmp_path)
+    monkeypatch.setattr(line_bot, "route", lambda *_a, **_k: (_ for _ in ()).throw(AssertionError()))
+    assert _stores("臺北住宿", tmp_path) == {"台北旅店"}
+    entries = line_bot._load_registry_entries(tmp_path)
+    matches = line_bot._registry_matches_for_locations("住宿", ("中正區",), entries, "臺北住宿")
+    assert {entry.store for entry in matches} == {"台北旅店"}
+
+
+def test_store_name_query_returns_only_that_store(tmp_path: Path, monkeypatch) -> None:
+    _eval_registry(tmp_path)
+    monkeypatch.setattr(line_bot, "route", lambda *_a, **_k: (_ for _ in ()).throw(AssertionError()))
+    assert _stores("台北市三六食府", tmp_path) == {"三六食府（原36美食）"}

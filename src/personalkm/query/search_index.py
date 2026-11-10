@@ -28,7 +28,23 @@ BAR_TERMS: tuple[str, ...] = (
 SYNONYM_GROUPS: tuple[frozenset[str], ...] = (
     frozenset({"\u6d77\u9bae", "\u6d77\u7522", "\u6f01\u7522"}),
     frozenset(BAR_TERMS),
+    frozenset({"溫泉", "泡湯", "湯屋"}),
 )
+
+
+# 臺→台 plus the simplified characters that actually occur in registry
+# addresses copied from Google Maps (e.g. "桃园市芦竹区", "宜兰县员山乡").
+# Applied to both the index and the query so either spelling matches.
+_PLACE_CHAR_MAP = str.maketrans({
+    "臺": "台", "区": "區", "县": "縣", "乡": "鄉", "镇": "鎮", "园": "園",
+    "芦": "蘆", "兰": "蘭", "员": "員", "坜": "壢", "东": "東", "义": "義",
+    "丰": "豐", "凤": "鳳", "华": "華", "门": "門", "罗": "羅", "莲": "蓮",
+    "宁": "寧", "龙": "龍", "湾": "灣",
+})
+
+
+def normalize_place_text(text: str) -> str:
+    return text.translate(_PLACE_CHAR_MAP)
 
 
 def _expand_synonyms(terms: set[str]) -> set[str]:
@@ -47,6 +63,7 @@ class SearchIndex:
 
 
 def _terms(text: str) -> set[str]:
+    text = normalize_place_text(text)
     terms = {match.group(0).lower() for match in _LATIN_RE.finditer(text)}
     for run in _CJK_RUN_RE.findall(text):
         if len(run) >= 2:

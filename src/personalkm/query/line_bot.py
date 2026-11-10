@@ -59,7 +59,13 @@ from personalkm.query.google_sheets import (
     google_authorization_url,
     google_oauth_config_from_env,
 )
-from personalkm.query.search_index import BAR_TERMS, build_search_index, query_terms, search
+from personalkm.query.search_index import (
+    BAR_TERMS,
+    build_search_index,
+    normalize_place_text,
+    query_terms,
+    search,
+)
 
 app = FastAPI(title="AskDanny — PersonalKM LINE Query Bot")
 logger = logging.getLogger(__name__)
@@ -216,6 +222,9 @@ SUBJECT_ALIASES = {
     "景點": ("景點", "美景", "風景", "秘境", "海景", "絕景"),
     "海鮮": ("海鮮", "海產"),
     "酒吧": ("酒吧", "bar", "pub", "lounge", "調酒", "cocktail", "小酌"),
+    "步道": ("步道", "古道", "登山", "健行"),
+    "溫泉": ("溫泉", "泡湯", "湯屋"),
+    "螃蟹": ("螃蟹", "萬里蟹", "花蟹", "蟹"),
 }
 # Registry subjects that count as food. "美食" itself must be listed: the
 # ingest pipeline writes it as a subject verbatim (789 entries as of
@@ -244,6 +253,13 @@ BROAD_SUBJECTS = {
     "眷村菜": FOOD_SUBJECTS,
     "海鮮": FOOD_SUBJECTS,
     "酒吧": BAR_SUBJECTS,
+    # 2026-11-10 eval: "淡水景點" missed 樹梅坑步道 (subject 步道) and
+    # 巫登益美術館 (subject 展覽) — trails/exhibitions/hot springs are places
+    # to visit too.
+    "景點": ("景點", "步道", "展覽", "溫泉"),
+    "步道": ("步道", "景點"),
+    "溫泉": ("溫泉", "景點", "住宿"),
+    "螃蟹": FOOD_SUBJECTS,
 }
 SUBJECT_MATCH_TERMS = {
     "牛肉麵": ("牛肉麵", "牛肉面"),
@@ -262,10 +278,15 @@ SUBJECT_MATCH_TERMS = {
     # general SYNONYM_GROUPS expansion in search_index.py, which applies
     # this same 海鮮/海產 pairing to any keyword search, not just this
     # subject's exact-match filter.
-    "海鮮": ("海鮮", "海產"),
+    # 2026-11-10 eval: crab/fish restaurants ("阿嬌萬里蟹", "巧晏漁坊") never
+    # say 海鮮 literally, so "萬里區海鮮餐廳" dropped them.
+    "海鮮": ("海鮮", "海產", "活海", "漁港", "漁夫", "漁獲", "螃蟹", "萬里蟹", "蟹", "蝦", "小卷", "魚"),
     # Most bars are tagged with the catch-all "美食" subject and described as
     # "Cocktail Bar"/"Lounge"/"調酒" rather than "酒吧"; see BAR_TERMS.
     "酒吧": BAR_TERMS,
+    "步道": ("步道", "古道", "登山", "健行"),
+    "溫泉": ("溫泉", "泡湯", "湯屋", "泉質"),
+    "螃蟹": ("蟹",),
 }
 QUERY_GENERIC_TERMS = (
     "有什麼", "什麼", "推薦", "好吃", "好吃的", "地區", "附近", "哪裡", "適合", "可以", "想找", "請問",
@@ -332,6 +353,10 @@ class RegistryEntry:
     # Only ever set transiently by nearby-search matching, never loaded from
     # the registry — distance from the user's last shared location.
     distance_km: float | None = None
+    # 區/鄉/鎮/縣轄市 names parsed from `address` at load time (see
+    # _address_districts). Empty for entries built by hand (tests), in which
+    # case the plain address regex is used.
+    districts: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -681,7 +706,7 @@ def _normalize_city(city: str) -> str:
     """臺→台、剝離區/鄉/鎮後綴、空值→未標明;未知城市原樣保留。"""
     if not city:
         return "未標明"
-    c = city.replace("臺", "台")
+    c = normalize_place_text(city)
     if c in ALL_CITY_NAMES:
         return c
     m = _CITY_DISTRICT_SUFFIX_RE.match(c)
@@ -759,36 +784,97 @@ def _load_registry_entries(root: Path) -> list[RegistryEntry]:
                 ),
             )
         )
-    return entries
+    known = frozenset(d for entry in entries for d in _standard_districts(entry.address))
+    return [
+        replace(entry, districts=_address_districts(entry.address, known))
+        for entry in entries
+    ]
 
 
 def _query_subject(query: str) -> str | None:
+    """Return the query's subject. Several subjects combine with "+":
+    "淡水區海鮮餐廳" → "餐廳+海鮮" (restaurants that serve seafood). Bug found
+    2026-11-10 by the eval set: only the first subject (餐廳) was kept, so
+    "淡水區海鮮餐廳" returned all 48 restaurants instead of the 8 seafood ones."""
     query_lower = query.lower()
-    for subject, aliases in SUBJECT_ALIASES.items():
-        if any(alias.lower() in query_lower for alias in aliases):
-            return subject
-    return None
+    found = [
+        subject
+        for subject, aliases in SUBJECT_ALIASES.items()
+        if any(alias.lower() in query_lower for alias in aliases)
+    ]
+    return SUBJECT_SEPARATOR.join(found) if found else None
+
+
+SUBJECT_SEPARATOR = "+"
+
+
+def _subject_parts(subject: str) -> list[str]:
+    return subject.split(SUBJECT_SEPARATOR)
+
+
+def _allowed_subjects(subject: str) -> tuple[str, ...]:
+    """Registry subjects a (possibly compound) query subject may return:
+    the intersection of each part's BROAD_SUBJECTS."""
+    parts = _subject_parts(subject)
+    allowed = list(BROAD_SUBJECTS.get(parts[0], (parts[0],)))
+    for part in parts[1:]:
+        scope = BROAD_SUBJECTS.get(part, (part,))
+        narrowed = [s for s in allowed if s in scope]
+        allowed = narrowed or list(scope)
+    return tuple(allowed)
+
+
+_STANDARD_DISTRICT_RE = re.compile(r"(?:市|縣)([\u4e00-\u9fff]{2,4}?)(區|鄉|鎮)")
+# County-administered cities: 苗栗縣苗栗市, 新竹縣竹北市, 彰化縣員林市 ...
+_COUNTY_CITY_RE = re.compile(r"縣([\u4e00-\u9fff]{2,3})(市)")
+
+
+def _standard_districts(address: str) -> list[str]:
+    text = normalize_place_text(address)
+    return [
+        f"{name}{suffix}"
+        for regex in (_STANDARD_DISTRICT_RE, _COUNTY_CITY_RE)
+        for name, suffix in regex.findall(text)
+    ]
+
+
+def _address_districts(address: str, known: frozenset[str]) -> tuple[str, ...]:
+    """Districts in an address, in any of the formats the registry holds.
+
+    Standard "新北市金山區..." is parsed directly. Everything else — Google's
+    reversed/English form "No. 174號, Haixing Rd, 萬壽里金山區新北市208",
+    simplified characters, missing city prefix — is matched against the
+    districts already seen in standard addresses (`known`). Bug found
+    2026-11-10: 330 of 2997 entries had no district at all, so district
+    queries ("金山區美食") could never return them.
+    """
+    found = _standard_districts(address)
+    if not found:
+        text = normalize_place_text(address)
+        found = [d for d in sorted(known, key=len, reverse=True) if d in text][:1]
+    return tuple(dict.fromkeys(found))
+
+
+def _entry_districts(entry: RegistryEntry) -> tuple[str, ...]:
+    return entry.districts or tuple(_standard_districts(entry.address))
 
 
 def _entry_matches_location(query: str, entry: RegistryEntry) -> bool:
-    query_lower = query.lower()
+    query_lower = normalize_place_text(query).lower()
     city = entry.city.lower()
-    if city and (city in query_lower or city.removesuffix("市") in query_lower):
+    if city and (city in query_lower or city[:-1] in query_lower):
+        # city[:-1]: "苗栗縣" must match "苗栗景點" too, not only "…市" cities.
         return True
-    districts = re.findall(r"(?:市|縣)([\u4e00-\u9fff]{2,4})(區|鄉|鎮)", entry.address)
-    for district, suffix in districts:
-        full_name = f"{district}{suffix}".lower()
-        if full_name in query_lower or district.lower() in query_lower:
+    for full_name in _entry_districts(entry):
+        district = full_name[:-1].lower()
+        if full_name.lower() in query_lower or (len(district) >= 2 and district in query_lower):
             return True
     return False
 
 
 def _entry_location_labels(entry: RegistryEntry) -> set[str]:
     labels = {entry.city} if entry.city else set()
-    labels.update(
-        f"{district}{suffix}"
-        for district, suffix in re.findall(r"(?:市|縣)([\u4e00-\u9fff]{2,4})(區|鄉|鎮)", entry.address)
-    )
+    labels.update(_entry_districts(entry))
     return labels
 
 
@@ -824,8 +910,9 @@ def _conservative_location_intent(
         if neighborhood in query and district in labels:
             candidates.append(district)
     query_term = query
-    for alias in SUBJECT_ALIASES.get(subject, ()):
-        query_term = query_term.replace(alias, "")
+    for part in _subject_parts(subject):
+        for alias in SUBJECT_ALIASES.get(part, ()):
+            query_term = query_term.replace(alias, "")
     query_term = re.sub(r"[\s，。？！?！、]+", "", query_term)
     if len(query_term) >= 2:
         for entry in entries:
@@ -845,18 +932,33 @@ def _conservative_location_intent(
     )
 
 
+def _query_cities(query: str) -> set[str]:
+    """Cities the query names explicitly ("臺北住宿" → {"台北市"})."""
+    normalized = normalize_place_text(query)
+    return {
+        city
+        for city in ALL_CITY_NAMES
+        if city != "未標明" and (city in normalized or city[:-1] in normalized)
+    }
+
+
 def _registry_matches_for_locations(
     subject: str,
     locations: tuple[str, ...],
     entries: list[RegistryEntry],
+    query: str = "",
 ) -> list[RegistryEntry]:
-    allowed_subjects = BROAD_SUBJECTS.get(subject, (subject,))
+    allowed_subjects = _allowed_subjects(subject)
+    # District names repeat across cities (台北/基隆 中正區, 台北/台中 中山區...).
+    # Bug found 2026-11-10: "臺北住宿" returned a Keelung hotel via 中正區.
+    cities = _query_cities(query)
     matches = [
         entry
         for entry in entries
         if entry.subject in allowed_subjects
         and _entry_matches_subject(subject, entry)
         and _entry_location_labels(entry).intersection(locations)
+        and (not cities or entry.city in cities)
     ]
     return sorted(matches, key=lambda entry: (-(entry.rating or 0), entry.store))
 
@@ -869,21 +971,53 @@ def _indexed_registry_matches(
     subject = _query_subject(query)
     all_aliases = [alias for aliases in SUBJECT_ALIASES.values() for alias in aliases]
     ignored = [*QUERY_GENERIC_TERMS, *all_aliases]
-    if subject in SUBJECT_MATCH_TERMS:
-        ignored = [term for term in ignored if term not in SUBJECT_MATCH_TERMS[subject]]
+    for part in _subject_parts(subject) if subject else ():
+        if part in SUBJECT_MATCH_TERMS:
+            ignored = [term for term in ignored if term not in SUBJECT_MATCH_TERMS[part]]
     labels = _registry_location_labels(entries)
-    ignored.extend(labels)
-    ignored.extend(
-        label.removesuffix(suffix)
-        for label in labels
-        for suffix in ("市", "縣", "區", "鄉", "鎮")
-        if len(label.removesuffix(suffix)) >= 2
+    # Remove the place the user named, once, as a whole word — not every
+    # occurrence of its bare name. Bug found 2026-11-10: "萬里區萬里蟹"
+    # stripped "萬里" out of "萬里蟹" too, leaving nothing to search for.
+    location_words = sorted(
+        {*labels, *(
+            label.removesuffix(suffix)
+            for label in labels
+            for suffix in ("市", "縣", "區", "鄉", "鎮")
+            if len(label.removesuffix(suffix)) >= 2
+        )},
+        key=len,
+        reverse=True,
     )
-    terms = query_terms(query, ignored=ignored)
+    remaining = normalize_place_text(query)
+    for word in location_words:
+        if remaining.startswith(word):
+            remaining = remaining[len(word):]
+            break
+    else:
+        for word in location_words:
+            if word in remaining:
+                remaining = remaining.replace(word, " ", 1)
+                break
+    # Only subject words left ("海鮮餐廳", "萬里蟹")? Then the subject filter
+    # (SUBJECT_MATCH_TERMS, all food subjects) is the better search — a
+    # literal keyword hit on "海鮮" would short-circuit it and drop seafood
+    # places that say 漁港/活海/蟹 instead (2026-11-10 eval).
+    if subject is not None:
+        residual = remaining.lower()
+        for part in _subject_parts(subject):
+            for word in sorted(
+                (*SUBJECT_ALIASES.get(part, ()), *SUBJECT_MATCH_TERMS.get(part, ())),
+                key=len,
+                reverse=True,
+            ):
+                residual = residual.replace(word.lower(), " ")
+        if not query_terms(residual, ignored=ignored):
+            return []
+    terms = query_terms(remaining, ignored=ignored) - set(location_words)
     if not terms:
         return []
-    allowed_subjects = BROAD_SUBJECTS.get(subject, (subject,)) if subject else None
-    return search(
+    allowed_subjects = _allowed_subjects(subject) if subject else None
+    results = search(
         index,
         terms,
         predicate=lambda entry: (
@@ -892,10 +1026,25 @@ def _indexed_registry_matches(
             and (subject is None or _entry_matches_subject(subject, entry))
         ),
     )
+    # A query that is a store's name returns that store only. Bug found
+    # 2026-11-10: "台北市三六食府" also returned 3 stores that merely shared
+    # the n-grams "三六"/"食府".
+    name = re.sub(r"\s+", "", remaining).lower()
+    if len(name) >= 2:
+        exact = [e for e in results if normalize_place_text(e.store).lower().startswith(name)]
+        if exact:
+            return exact
+    return results
 
 
 def _tianmu_food_matches(query: str, root: Path, entries: list[RegistryEntry]) -> list[RegistryEntry] | None:
-    if "天母" not in query or _query_subject(query) != "美食":
+    subject = _query_subject(query)
+    if "天母" not in query or subject is None:
+        return None
+    allowed_subjects = _allowed_subjects(subject)
+    # 2026-11-10 eval: "天母餐廳" widened to all of 士林區+北投區 (175 results)
+    # because only "美食" used the curated 天母 list.
+    if not set(allowed_subjects) <= set(FOOD_SUBJECTS):
         return None
     page_path = root / "wiki" / "concepts" / "tianmu-food.md"
     try:
@@ -914,17 +1063,21 @@ def _tianmu_food_matches(query: str, root: Path, entries: list[RegistryEntry]) -
         entry
         for entry in entries
         if entry.store.removesuffix(" 👤") in stores
-        and entry.subject in BROAD_SUBJECTS["美食"]
+        and entry.subject in allowed_subjects
+        and _entry_matches_subject(subject, entry)
     ]
     return sorted(matches, key=lambda entry: (-(entry.rating or 0), entry.store)) if matches else None
 
 
 def _entry_matches_subject(subject: str, entry: RegistryEntry) -> bool:
-    terms = SUBJECT_MATCH_TERMS.get(subject)
-    if terms is None:
-        return True
     haystack = " ".join((entry.store, *entry.highlights)).lower()
-    return any(term.lower() in haystack for term in terms)
+    for part in _subject_parts(subject):
+        terms = SUBJECT_MATCH_TERMS.get(part)
+        if terms is None or entry.subject == part:
+            continue
+        if not any(term.lower() in haystack for term in terms):
+            return False
+    return True
 
 
 def _query_location_intent(
@@ -998,7 +1151,7 @@ def _registry_matches(query: str, entries: list[RegistryEntry]) -> list[Registry
     matches = [
         entry
         for entry in entries
-        if entry.subject in BROAD_SUBJECTS.get(subject, (subject,))
+        if entry.subject in _allowed_subjects(subject)
         and _entry_matches_subject(subject, entry)
         and _entry_matches_location(query, entry)
     ]
@@ -1057,7 +1210,7 @@ def _nearby_registry_matches(
     radius_km: float,
     entries: list[RegistryEntry],
 ) -> list[RegistryEntry]:
-    allowed_subjects = BROAD_SUBJECTS.get(subject, (subject,)) if subject else None
+    allowed_subjects = _allowed_subjects(subject) if subject else None
     matches: list[RegistryEntry] = []
     for entry in entries:
         if entry.gps is None:
@@ -1346,7 +1499,7 @@ async def _handle_location_confirmation_event(
             return True
         entries = _load_registry_entries(root)
         matches = _registry_matches_for_locations(
-            pending.intent.subject, pending.intent.locations, entries
+            pending.intent.subject, pending.intent.locations, entries, pending.query
         )
         if not matches:
             await reply_message(
@@ -1680,6 +1833,8 @@ def _build_context(pages: list[dict], max_chars: int = 16000) -> str:
 
 def _query_all(query: str, root: Path) -> dict:
     """Search allowed pages, run ONE LLM synthesis. Returns {answer, sources, error}."""
+    # 臺/台 and simplified characters: "臺北住宿" must equal "台北住宿".
+    query = normalize_place_text(query)
     registry_entries = _load_registry_entries(root)
     neighborhood_matches = _tianmu_food_matches(query, root, registry_entries)
     if neighborhood_matches:
@@ -1726,7 +1881,7 @@ def _query_all(query: str, root: Path) -> dict:
                     "location_intent": intent,
                 }
             normalized_matches = _registry_matches_for_locations(
-                subject, intent.locations, registry_entries
+                subject, intent.locations, registry_entries, query
             )
             if not normalized_matches:
                 return {"answer": None, "sources": [], "error": "no_match"}
