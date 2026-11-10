@@ -705,6 +705,71 @@ def test_restaurant_query_includes_catch_all_food_subject_but_not_cafes(
     assert stores == {"蟹滿客", "討海人食堂", "萬里餐酒館"}
 
 
+def test_bar_query_finds_bars_described_without_the_word_bar(
+    tmp_path: Path, monkeypatch
+) -> None:
+    # 2026-11-10 regression: "酒吧" was not a known subject, so "士林酒吧" fell
+    # through to a literal keyword search for "酒吧" and returned only the one
+    # entry whose subject was literally "酒吧". Real bars are mostly tagged
+    # "美食" and described as "Cocktail Bar" / "Lounge" / "調酒".
+    _write_registry(
+        tmp_path,
+        [
+            {
+                "city": "台北市",
+                "subject": "美食",
+                "store": "Hangout Cocktail Bar",
+                "address": "111臺北市士林區蘭雅里中山北路六段338號",
+                "highlights": ["精釀啤酒", "運動賽事轉播"],
+                "rating": 4.6,
+                "status": "resolved",
+            },
+            {
+                "city": "台北市",
+                "subject": "美食",
+                "store": "醺Two",
+                "address": "111臺北市士林區天福里天母東路50巷20之8號",
+                "highlights": ["主打無酒單的全客製調酒服務"],
+                "rating": 4.7,
+                "status": "resolved",
+            },
+            {
+                "city": "台北市",
+                "subject": "酒吧",
+                "store": "士林酒吧",
+                "address": "111臺北市士林區中山北路七段1號",
+                "rating": 4.2,
+                "status": "resolved",
+            },
+            {
+                "city": "台北市",
+                "subject": "美食",
+                "store": "士林牛排館",
+                "address": "111臺北市士林區文林路1號",
+                "highlights": ["炭烤牛排"],
+                "rating": 4.9,
+                "status": "resolved",
+            },
+            {
+                "city": "台北市",
+                "subject": "美食",
+                "store": "Bar Between",
+                "address": "106臺北市大安區復興南路1號",
+                "rating": 4.8,
+                "status": "resolved",
+            },
+        ],
+    )
+    monkeypatch.setattr(line_bot, "route", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError()))
+
+    for query in ("士林酒吧", "士林區酒吧", "士林調酒", "士林 bar"):
+        assert line_bot._query_subject(query) == "酒吧", query
+        result = line_bot._query_all(query, tmp_path)
+        assert result["error"] is None, query
+        stores = {entry.store for entry in result["registry_entries"]}
+        assert stores == {"Hangout Cocktail Bar", "醺Two", "士林酒吧"}, query
+
+
 def test_llm_query_only_includes_relevant_allowed_page(tmp_path: Path, monkeypatch) -> None:
     concepts = tmp_path / "wiki" / "concepts"
     concepts.mkdir(parents=True)

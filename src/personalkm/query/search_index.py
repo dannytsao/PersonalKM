@@ -16,8 +16,18 @@ _LATIN_RE = re.compile(r"[a-z0-9][a-z0-9+.#-]*", re.IGNORECASE)
 # "\u6d77\u9bae") aren't silently dropped. Add new groups here as they're found \u2014
 # this is a lightweight substitute for real semantic search, not a
 # replacement for one.
+# Bars are rarely described with the literal word "酒吧": registry entries say
+# "Cocktail Bar", "Lounge", "調酒", "精釀啤酒" instead. Bug found 2026-11-10:
+# "士林酒吧" returned only the one store whose subject was literally "酒吧"
+# (itself a café misfiled as a bar), missing Hangout Cocktail Bar,
+# 醺Two British Bar, RedHut Lounge Bar, ... which are all tagged "美食".
+BAR_TERMS: tuple[str, ...] = (
+    "酒吧", "bar", "pub", "lounge", "cocktail", "調酒", "威士忌", "whisky", "精釀", "生啤",
+)
+
 SYNONYM_GROUPS: tuple[frozenset[str], ...] = (
     frozenset({"\u6d77\u9bae", "\u6d77\u7522", "\u6f01\u7522"}),
+    frozenset(BAR_TERMS),
 )
 
 

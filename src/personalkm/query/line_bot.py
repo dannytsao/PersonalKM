@@ -59,7 +59,7 @@ from personalkm.query.google_sheets import (
     google_authorization_url,
     google_oauth_config_from_env,
 )
-from personalkm.query.search_index import build_search_index, query_terms, search
+from personalkm.query.search_index import BAR_TERMS, build_search_index, query_terms, search
 
 app = FastAPI(title="AskDanny — PersonalKM LINE Query Bot")
 logger = logging.getLogger(__name__)
@@ -215,6 +215,7 @@ SUBJECT_ALIASES = {
     "餐廳": ("餐廳", "restaurant"),
     "景點": ("景點", "美景", "風景", "秘境", "海景", "絕景"),
     "海鮮": ("海鮮", "海產"),
+    "酒吧": ("酒吧", "bar", "pub", "lounge", "調酒", "cocktail", "小酌"),
 }
 # Registry subjects that count as food. "美食" itself must be listed: the
 # ingest pipeline writes it as a subject verbatim (789 entries as of
@@ -238,6 +239,7 @@ BROAD_SUBJECTS = {
     "拉麵": FOOD_SUBJECTS,
     "眷村菜": FOOD_SUBJECTS,
     "海鮮": FOOD_SUBJECTS,
+    "酒吧": FOOD_SUBJECTS,
 }
 SUBJECT_MATCH_TERMS = {
     "牛肉麵": ("牛肉麵", "牛肉面"),
@@ -257,6 +259,9 @@ SUBJECT_MATCH_TERMS = {
     # this same 海鮮/海產 pairing to any keyword search, not just this
     # subject's exact-match filter.
     "海鮮": ("海鮮", "海產"),
+    # Most bars are tagged with the catch-all "美食" subject and described as
+    # "Cocktail Bar"/"Lounge"/"調酒" rather than "酒吧"; see BAR_TERMS.
+    "酒吧": BAR_TERMS,
 }
 QUERY_GENERIC_TERMS = (
     "有什麼", "什麼", "推薦", "好吃", "好吃的", "地區", "附近", "哪裡", "適合", "可以", "想找", "請問",
