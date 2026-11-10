@@ -1,0 +1,55 @@
+# AskDanny search test set ("考卷").
+#
+# Questions are real AskDanny queries taken from the Render logs
+# (2026-11-04 .. 2026-11-10). Run:  python scripts/eval_askdanny.py --vault <lifestyle-vault>
+#
+# How the expected answer is built for each question:
+#   where:     address/city must contain one of these
+#   kind:      one of the kinds defined under `kinds:` below
+#   any:       store name or highlights must also contain one of these words
+#   include:   stores that must be returned even if the rule misses them
+#   exclude:   stores that must NOT be returned even if the rule picks them
+#   optional:  fine either way (not counted as missed or as extra)
+# Edit include/exclude/optional freely — this file is the source of truth.
+
+kinds:
+  food:        {subjects: [美食, 餐廳, 小吃, 早午餐, 咖啡廳, 甜點, 酒吧, 餐酒館]}
+  restaurant:  {subjects: [餐廳, 餐酒館, 美食],
+                not_in_name: [咖啡, cafe, café, coffee, 冰, 蛋糕, 泡芙, 甜點, 茶業, 茶莊, 茶屋, 蔥油餅, 油飯, 蘿蔔糕, 魚舖, 麵包, 米粉, 豆花]}
+  snack:       {subjects: [小吃, 美食], snack_words: [小吃, 蔥油餅, 油飯, 蘿蔔糕, 米粉, 麵線, 滷肉飯, 豆花, 包子, 蚵仔, 肉圓, 粿, 仙草, 冰]}
+  attraction:  {subjects: [景點, 步道, 展覽, 溫泉]}
+  lodging:     {subjects: [住宿]}
+  bar:         {subjects: [酒吧, 餐酒館, 美食, 餐廳],
+                any: [酒吧, bar, pub, lounge, 調酒, cocktail, 威士忌, whisky, 精釀, 生啤, 餐酒館, 居酒屋]}
+  lookup:      {subjects: []}   # single-store question: expected = include list only
+
+queries:
+  - {q: 萬里區美食,        where: [萬里區], kind: food}
+  - {q: 萬里區餐廳,        where: [萬里區], kind: restaurant,
+     include: [阿嬌海鮮館], exclude: [漁人廚房]}
+  - {q: 萬里餐廳,          where: [萬里區], kind: restaurant,
+     include: [阿嬌海鮮館], exclude: [漁人廚房]}
+  - {q: 萬里區海鮮餐廳,    where: [萬里區], kind: restaurant, any: [海鮮, 海產, 蟹, 魚, 蝦, 漁, 小卷],
+     include: [阿嬌海鮮館]}
+  - {q: 萬里區萬里蟹,      where: [萬里區], kind: food, any: [萬里蟹, 蟹], exclude: [三味煎蛋蔥油餅]}
+  - {q: 萬里區小吃,        where: [萬里區], kind: snack,
+     include: [漁聞樂小卷米粉, 三味煎蛋蔥油餅, 阿滿姨油飯蘿蔔糕（大鵬店）], exclude: [新富生鮮魚舖], optional: [仙草龍仙草冰]}
+  - {q: 萬里區蟹滿客,      kind: lookup, include: [蟹滿客]}
+  - {q: 金山區美食,        where: [金山區], kind: food}
+  - {q: 士林酒吧,          where: [士林區], kind: bar,
+     optional: [唯山 Coffee & Lounge, 角。藍色Cafe, Saca House 深夜食堂餐酒館, ESV Bistro, 柒息地串燒居酒屋士林店,
+                三根居酒屋, 大村武串燒居酒屋 士林店, PASŪTA和風義大利麵餐酒館, AROSA Dining]}
+  - {q: 阿里山餐廳,        where: [阿里山], kind: restaurant}
+  - {q: 阿里山景點,        where: [阿里山], kind: attraction}
+  - {q: 苗栗景點,          where: [苗栗縣], kind: attraction}
+  - {q: 苗栗住宿,          where: [苗栗縣], kind: lodging}
+  - {q: 臺北住宿,          where: [台北市], kind: lodging}
+  - {q: 淡水景點,          where: [淡水區], kind: attraction}
+  - {q: 淡水區海鮮餐廳,    where: [淡水區], kind: restaurant, any: [海鮮, 海產, 蟹, 魚, 蝦, 漁, 小卷]}
+  - {q: 天母餐廳,          where: [天母], kind: restaurant, tianmu: true}
+  - {q: 台北市三六食府,    kind: lookup, include: [三六食府（原36美食）]}
+  - {q: 台中市美食,        where: [台中市], kind: food}
+
+# Location-based questions from the log. They need a shared location, so they
+# are listed here for reference but not scored yet:
+#   附近美食 / 附近 5 公里住宿 / 附近 3 公里酒吧
