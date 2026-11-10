@@ -251,7 +251,10 @@ def scan_for_candidates(wiki_path: Path, call_llm: bool = True) -> list[Distilla
         if not dir_path.exists():
             continue
         for fpath in sorted(dir_path.glob("*.md")):
-            preview = preview_distillation(fpath, call_llm=call_llm)
+            try:
+                preview = preview_distillation(fpath, call_llm=call_llm)
+            except FileNotFoundError:
+                continue
             if preview.triggered:
                 previews.append(preview)
     return previews
