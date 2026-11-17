@@ -51,10 +51,15 @@ def expected_stores(spec: dict, kinds: dict, entries: list[lb.RegistryEntry], ro
         where = spec.get("where", [])
         tianmu = _tianmu_stores(root) if spec.get("tianmu") else None
         for e in entries:
+            near = spec.get("near")
             if tianmu is not None:
                 if e.store.removesuffix(" 👤") not in tianmu:
                     continue
-            elif not any(w in e.address or w == e.city for w in where):
+            elif near:
+                lat, lon, km = near
+                if e.gps is None or lb._haversine_km(lat, lon, *e.gps) > km:
+                    continue
+            elif where and not any(w in e.address or w == e.city for w in where):
                 continue
             if e.subject not in kind["subjects"]:
                 continue

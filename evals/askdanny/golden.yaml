@@ -5,6 +5,8 @@
 #
 # How the expected answer is built for each question:
 #   where:     address/city must contain one of these
+#   near:      [lat, lon, km] — GPS circle, for place names that are not in
+#              addresses (陽明山, 西門町, 石牌, 日月潭 ...). Approximate; edit freely.
 #   kind:      one of the kinds defined under `kinds:` below
 #   any:       store name or highlights must also contain one of these words
 #   include:   stores that must be returned even if the rule misses them
@@ -21,6 +23,10 @@ kinds:
   lodging:     {subjects: [住宿]}
   bar:         {subjects: [酒吧, 餐酒館, 美食, 餐廳],
                 any: [酒吧, bar, pub, lounge, 調酒, cocktail, 威士忌, whisky, 精釀, 生啤, 餐酒館, 居酒屋]}
+  cafe:        {subjects: [咖啡廳, 美食, 早午餐, 甜點], any: [咖啡, coffee, cafe, café]}
+  dessert:     {subjects: [甜點, 小吃, 美食, 咖啡廳]}
+  hotpot:      {subjects: [餐廳, 美食, 小吃], any: [火鍋, 鍋物, 涮涮鍋, 麻辣鍋, 薑母鴨, 羊肉爐]}
+  bread:       {subjects: [美食, 甜點, 早午餐, 咖啡廳, 小吃], any: [麵包, 烘焙, bakery, 吐司, 可頌, 貝果, bagel]}
   lookup:      {subjects: []}   # single-store question: expected = include list only
 
 queries:
@@ -49,6 +55,72 @@ queries:
   - {q: 天母餐廳,          where: [天母], kind: restaurant, tianmu: true}
   - {q: 台北市三六食府,    kind: lookup, include: [三六食府（原36美食）]}
   - {q: 台中市美食,        where: [台中市], kind: food}
+
+  # ── Week 2 (2026-11-10 .. 2026-11-17) ──────────────────────────────────
+  # Districts / towns that ARE in addresses
+  - {q: 蘆竹區美食,        where: [蘆竹區], kind: food}
+  - {q: 苗栗市美食,        where: [苗栗市], kind: food}
+  - {q: 番路鄉美食,        where: [番路鄉], kind: food}
+  - {q: 瑞芳美食,          where: [瑞芳區], kind: food}
+  - {q: 瑞芳餐廳,          where: [瑞芳區], kind: restaurant}
+  - {q: 林口餐廳,          where: [林口區], kind: restaurant}
+  - {q: 松山區美食,        where: [松山區], kind: food}
+  - {q: 松山區餐廳,        where: [松山區], kind: restaurant}
+  - {q: 新竹市美食,        where: [新竹市], kind: food}
+  - {q: 彰化住宿,          where: [彰化縣], kind: lodging}
+  - {q: 彰化縣旅館,        where: [彰化縣], kind: lodging}
+  - {q: 大溪餐廳,          where: [大溪區], kind: restaurant}
+  - {q: 大園區美食,        where: [大園區], kind: food}
+  - {q: 大園區餐廳,        where: [大園區], kind: restaurant}
+  - {q: 埔里美食,          where: [埔里鎮], kind: food}
+  - {q: 埔里餐廳,          where: [埔里鎮], kind: restaurant}
+  - {q: 南庄美食,          where: [南庄鄉], kind: food}
+  - {q: 南庄餐廳,          where: [南庄鄉], kind: restaurant}
+  - {q: 南庄住宿,          where: [南庄鄉], kind: lodging}
+  - {q: 南庄旅館,          where: [南庄鄉], kind: lodging}
+  - {q: 關西鎮美食,        where: [關西鎮], kind: food}
+  - {q: 關西鎮餐廳,        where: [關西鎮], kind: restaurant}
+  - {q: 關西鎮小吃,        where: [關西鎮], kind: snack}
+  - {q: 八里美食,          where: [八里區], kind: food}
+  - {q: 北投美食,          where: [北投區], kind: food}
+  - {q: 北投火鍋,          where: [北投區], kind: hotpot}
+  - {q: 北投豆花,          where: [北投區], kind: dessert, any: [豆花]}
+  - {q: 北投麵包,          where: [北投區], kind: bread}
+  - {q: 請幫我找在北投的咖啡店, where: [北投區], kind: cafe}
+  - {q: 士林火鍋,          where: [士林區], kind: hotpot}
+  - {q: 士林豆花,          where: [士林區], kind: dessert, any: [豆花]}
+  - {q: 萬里海鮮美食,      where: [萬里區], kind: food, any: [海鮮, 海產, 蟹, 魚, 蝦, 漁, 小卷]}
+  - {q: 阿里山美食,        where: [阿里山], kind: food}
+  - {q: 阿里山住宿,        where: [阿里山], kind: lodging}
+  # Store names
+  - {q: 石牌皇池,          kind: lookup, include: [皇池御膳館], optional: [皇池溫泉御膳館一館]}
+  - {q: 石牌皇池餐廳,      kind: lookup, include: [皇池御膳館], optional: [皇池溫泉御膳館一館]}
+  - {q: 士林區松竹園,      kind: lookup, include: [松竹園]}
+  - {q: 松山區施家,        kind: lookup, include: [施家麻油腰花]}   # on 松山路, but address is 信義區
+  - {q: 中正區小魏川菜,    kind: lookup, include: []}   # not in the vault: correct answer is "none"
+  # Place names that are NOT in addresses (GPS circle = expected answer)
+  - {q: 陽明山餐廳,        near: [25.1650, 121.5600, 4.0], kind: restaurant}
+  - {q: 關渡美食,          near: [25.1220, 121.4650, 1.5], kind: food}
+  - {q: 西門町美食,        near: [25.0420, 121.5070, 0.8], kind: food}
+  - {q: 石牌餐廳,          near: [25.1145, 121.5150, 1.0], kind: restaurant}
+  - {q: 石牌火鍋,          near: [25.1145, 121.5150, 1.0], kind: hotpot}
+  - {q: 社子豆花,          near: [25.0880, 121.5050, 1.5], kind: dessert, any: [豆花]}
+  - {q: 日月潭美食,        near: [23.8560, 120.9150, 6.0], kind: food}
+  - {q: 日月潭餐廳,        near: [23.8560, 120.9150, 6.0], kind: restaurant}
+  - {q: 日月潭住宿,        near: [23.8560, 120.9150, 6.0], kind: lodging}
+  - {q: 清境住宿,          near: [24.0600, 121.1600, 5.0], kind: lodging}
+  - {q: 九份住宿,          near: [25.1090, 121.8440, 1.5], kind: lodging}
+  - {q: 金崙住宿,          near: [22.5300, 120.9700, 4.0], kind: lodging}
+  - {q: 台北東區美食,      near: [25.0415, 121.5510, 1.0], kind: food}
+  - {q: 台北市東區餐廳,    near: [25.0415, 121.5510, 1.0], kind: restaurant}
+  - {q: 南崁美食,          near: [25.0530, 121.2900, 2.0], kind: food}
+  - {q: 樂野村美食,        near: [23.4700, 120.7100, 2.0], kind: food}
+  - {q: 巴里美食,          where: [八里區], kind: food}   # likely voice/typo for 八里
+
+# Not scored: need a shared location or have no place —
+#   附近有什麼美食 / 附近美食 / 附近 2 公里美食 / 開車30分鐘之內有什麼美食？ /
+#   告訴我，這附近有什麼好吃的 / 請告訴我在北投捷運站走15分鐘路有什麼美食？ /
+#   想要喝好喝的咖啡 / 餐廳 / 蘆竹區
 
 # Location-based questions from the log. They need a shared location, so they
 # are listed here for reference but not scored yet:
