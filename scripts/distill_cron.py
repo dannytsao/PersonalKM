@@ -182,7 +182,19 @@ def run_distill(
                      f"(fold-preserve, {errors} errors)"],
                     vault_root,
                 )
-                run_git(["push", "origin", "main"], vault_root)
+                try:
+                    run_git(["push", "origin", "main"], vault_root)
+                except Exception:
+                    # Remote moved ahead during the (possibly hours-long)
+                    # distillation run, so the push is rejected as
+                    # non-fast-forward. Rebase our fresh commit on top and
+                    # retry once — same recovery the monitor runbook uses
+                    # (pull --rebase, then push).
+                    logger.warning(
+                        "Push rejected — rebasing on origin/main and retrying once."
+                    )
+                    run_git(["pull", "--rebase", "origin", "main"], vault_root)
+                    run_git(["push", "origin", "main"], vault_root)
                 logger.info("✅ Phase C changes pushed to GitHub")
             else:
                 logger.info("No changes to commit")
