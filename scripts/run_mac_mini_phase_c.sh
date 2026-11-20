@@ -14,7 +14,7 @@ fi
 REPO_ROOT="${PERSONALKM_REPO_ROOT:-$HOME/Documents/GitHub/DannyTsao/PersonalKM}"
 LOG_DIR="${PERSONALKM_WORKER_LOG_DIR:-$HOME/Library/Logs/PersonalKM}"
 LOCK_DIR="${PERSONALKM_LOCK_DIR:-$HOME/Library/Application Support/PersonalKM/phase-c.lock}"
-PYTHON_BIN="/Users/dannytsao/.hermes/hermes-agent/venv/bin/python3"
+PYTHON_BIN="$REPO_ROOT/.venv/bin/python3"
 VAULT_ROOT="${PERSONALKM_VAULT_ROOT:-$HOME/Documents/PersonalKM/Personalkm-vault}"
 
 # Source pipeline status reporter (quality feedback loop)
@@ -34,6 +34,17 @@ log() {
 # loss or kill -9, so a crash mid-run can leave the lock directory behind
 # forever, silently skipping every future launch with no recovery.
 # Distillation is slow (LLM per page), so generous margin.
+# Wait for upstream Phase A / GPS / B locks (prevents boot-time RunAtLoad collision)
+LOCK_BASE="$HOME/Library/Application Support/PersonalKM"
+sleep 6
+waited=0
+while [ -d "$LOCK_BASE/phase-a.lock" ] || [ -d "$LOCK_BASE/phase-a-lifestyle.lock" ] || [ -d "$LOCK_BASE/phase-gps-lifestyle.lock" ] || [ -d "$LOCK_BASE/phase-b.lock" ] || [ -d "$LOCK_BASE/phase-b-lifestyle.lock" ]; do
+    [ "$waited" -eq 0 ] && log "Waiting for upstream Phase A / GPS / B to finish..."
+    sleep 5
+    waited=$((waited + 5))
+    [ "$waited" -ge 7200 ] && { log "Timeout waiting for upstream locks; proceeding."; break; }
+done
+
 STALE_LOCK_MAX_AGE_SECONDS=10800
 if [ -d "$LOCK_DIR" ]; then
     lock_age=$(( $(date +%s) - $(stat -f %m "$LOCK_DIR" 2>/dev/null || echo 0) ))
@@ -56,9 +67,6 @@ if [ ! -x "$PYTHON_BIN" ]; then
     exit 1
 fi
 
-# #36: best-effort sync of the CODE checkout — see Phase A for full context.
-"$PYTHON_BIN" "$REPO_ROOT/scripts/sync_code_repo.py" --repo "$REPO_ROOT" || true
-
 # TCC-safe: use git -C instead of cd. No dirty check (same as Phase A/B).
 log "Phase C: starting Entity Distillation Loop."
 
@@ -70,4 +78,11 @@ else
     log "Phase C Python script failed with exit code $ec."
     write_phase_status "C" "$ec" "failed" "Python runner failed with exit $ec" 2>/dev/null || true
     exit "$ec"
+fi
+
+log "Chain-starting PersonalKM Phase C (lifestyle)..."
+if "$HOME/Library/Application Support/PersonalKM/run_mac_mini_phase_c_lifestyle.sh" >> "$LOG_DIR/phase-c-lifestyle.out.log" 2>> "$LOG_DIR/phase-c-lifestyle.err.log"; then
+    log "Finished chained PersonalKM Phase C (lifestyle) (success)."
+else
+    log "Warning: Chained Lifestyle Phase C exited with non-zero status."
 fi

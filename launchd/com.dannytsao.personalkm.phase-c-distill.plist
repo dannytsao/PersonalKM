@@ -11,15 +11,21 @@
     <string>/Users/dannytsao/Library/Application Support/PersonalKM/run_mac_mini_phase_c.sh</string>
   </array>
 
+  <key>WorkingDirectory</key>
+  <string>/Users/dannytsao/Documents/GitHub/DannyTsao/PersonalKM</string>
+
   <key>RunAtLoad</key>
   <true/>
 
-  <!-- Daily: distillation is low-frequency (trigger = 5+ captures or 30+ days).
-       Running hourly would repeatedly distill pages that already met the
-       threshold on the same day. Daily at ~1 hour after boot/load gives
-       Phase A/B time to run first on the same cycle. -->
-  <key>StartInterval</key>
-  <integer>86400</integer>
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Hour</key>
+      <integer>5</integer>
+      <key>Minute</key>
+      <integer>0</integer>
+    </dict>
+  </array>
 
   <key>StandardOutPath</key>
   <string>/Users/dannytsao/Library/Logs/PersonalKM/phase-c.out.log</string>
@@ -35,6 +41,8 @@
     <string>/Users/dannytsao/Documents/GitHub/DannyTsao/PersonalKM</string>
     <key>PERSONALKM_VAULT_ROOT</key>
     <string>/Users/dannytsao/Documents/PersonalKM/Personalkm-vault</string>
+    <key>PERSONALKM_PYTHON</key>
+    <string>/Users/dannytsao/.hermes/hermes-agent/venv/bin/python3</string>
   </dict>
 </dict>
 </plist>

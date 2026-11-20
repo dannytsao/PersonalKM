@@ -1,12 +1,11 @@
-# PersonalKM cron jobs — managed by scripts/manage_cron.py
+# PersonalKM launchd jobs — managed by scripts/manage_cron.py
 #
-# To change a schedule, edit the `schedule` field, then run:
-#   python scripts/manage_cron.py deploy --job <name>
-#   python scripts/manage_cron.py deploy          # deploy all
-#
-# Schedule formats:
-#   times: ["06:00", "18:00"]   → StartCalendarInterval (clock-based, GMT+8)
-#   interval: 86400              → StartInterval (seconds, every N secs)
+# Consolidated 02:00 – 07:00 once-daily schedule (GMT+8 / Asia/Taipei).
+# Each Phase A / B / C main script sequentially chains Tech Vault → Lifestyle Vault
+# to prevent git lock collisions and Ollama contention.
+# All 4 jobs set run_at_load: true with upstream lock waiting so booting the
+# Mac Mini in the morning after an overnight shutdown catches up in order:
+#   Phase A (Tech→Lifestyle) → Phase GPS → Phase B (Tech→Lifestyle) → Phase C (Tech→Lifestyle)
 
 defaults:
   repo_root: ~/Documents/GitHub/DannyTsao/PersonalKM
@@ -20,51 +19,40 @@ vaults:
     path: ~/Documents/PersonalKM/Personalkm-lifestyle-vault
 
 jobs:
-  phase-a-tech:
+  phase-a-ingest:
     script: run_mac_mini_phase_a.sh
+    companion_scripts:
+      - run_mac_mini_phase_a_lifestyle.sh
     vault: tech
+    run_at_load: true
     schedule:
-      times: ["10:00", "18:00"]
+      times: ["02:10"]
     log_name: phase-a
+
+  phase-gps-lifestyle:
+    script: run_mac_mini_phase_gps_lifestyle.sh
+    vault: lifestyle
+    run_at_load: true
+    schedule:
+      times: ["03:00"]
+    log_name: phase-gps-lifestyle
 
   phase-b-tech:
     script: run_mac_mini_phase_b.sh
+    companion_scripts:
+      - run_mac_mini_phase_b_lifestyle.sh
     vault: tech
+    run_at_load: true
     schedule:
-      times: ["08:00", "20:00"]
+      times: ["03:30"]
     log_name: phase-b
 
-  phase-a-lifestyle:
-    script: run_mac_mini_phase_a_lifestyle.sh
-    vault: lifestyle
-    schedule:
-      times: ["10:00", "18:00"]
-    log_name: phase-a-lifestyle
-
-  phase-b-lifestyle:
-    script: run_mac_mini_phase_b_lifestyle.sh
-    vault: lifestyle
-    schedule:
-      times: ["08:00", "20:00"]
-    log_name: phase-b-lifestyle
-
-  phase-c-tech:
+  phase-c-distill:
     script: run_mac_mini_phase_c.sh
+    companion_scripts:
+      - run_mac_mini_phase_c_lifestyle.sh
     vault: tech
+    run_at_load: true
     schedule:
-      interval: 86400
+      times: ["05:00"]
     log_name: phase-c
-
-  phase-c-lifestyle:
-    script: run_mac_mini_phase_c_lifestyle.sh
-    vault: lifestyle
-    schedule:
-      interval: 86400
-    log_name: phase-c-lifestyle
-
-  copilot-ingest:
-    script: run_mac_mini_copilot_ingest.sh
-    vault: tech
-    schedule:
-      times: ["03:00"]
-    log_name: copilot
