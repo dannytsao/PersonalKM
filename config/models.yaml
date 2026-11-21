@@ -34,7 +34,7 @@ budgets:
   minimax:  { daily_tokens: 500000 }
   openai:   { daily_tokens: 200000 }
   claude:   { daily_tokens: 300000 }
-  deepseek: { daily_tokens: 1000000 }  # safety cap only — pricing is cheap enough this shouldn't bind
+  deepseek: { daily_tokens: 5000000 }  # safety cap only — pricing is cheap enough this shouldn't bind (raised 2026-11-21 for 482-note orphan restore batch)
   ollama:   { daily_tokens: unlimited }
 
 defaults:
