@@ -109,14 +109,16 @@ def test_registry_query_filters_location_and_subject_without_llm(tmp_path: Path,
     assert "- 店名：COFFEE FIRST" in result["answer"]
     assert (
         "- 店名：COFFEE FIRST（Google 地圖："
-        "https://www.google.com/maps/search/?api=1&query=25.1375317,121.4943154）"
+        "https://www.google.com/maps/search/?api=1&query=COFFEE+FIRST）"
     ) in result["answer"]
     assert "- 地址：臺北市北投區中央北路二段68之5號" in result["answer"]
     assert "- 電話：02-2897-1234" in result["answer"]
     assert "- 預約連結：https://example.test/coffee-first/reserve" in result["answer"]
     assert "- Google 星等：⭐ 4.9（72 則）" in result["answer"]
     assert "- 特色說明：澳式早午餐店；高蛋白巧克力軟餅乾" in result["answer"]
-    assert "- GPS：https://www.google.com/maps/search/?api=1&query=25.1375317,121.4943154" in result["answer"]
+    # Maps links are store-name based; the standalone GPS line was removed
+    # when the store-name format landed (see _registry_entry_maps_url).
+    assert "Google 地圖：" in result["answer"]
     assert "<think>" not in result["answer"]
 
 
@@ -357,11 +359,11 @@ def test_registry_query_excludes_removed_entries_and_supports_lodging(tmp_path: 
     assert "預約連結：" not in result["answer"]
     assert (
         "- 店名：北投溫泉旅館（Google 地圖："
-        "https://www.google.com/maps/search/?api=1&query=%E8%87%BA%E5%8C%97%E5%B8%82%E5%8C%97%E6%8A%95%E5%8D%80%E4%B8%AD%E5%B1%B1%E8%B7%AF1%E8%99%9F）"
+        "https://www.google.com/maps/search/?api=1&query=%E5%8C%97%E6%8A%95%E6%BA%AB%E6%B3%89%E6%97%85%E9%A4%A8）"
     ) in result["answer"]
 
 
-def test_registry_store_name_uses_explicit_google_maps_url() -> None:
+def test_registry_store_name_preferred_over_explicit_google_maps_url() -> None:
     entry = _entry(
         "固定地圖店家",
         google_maps_url="https://maps.app.goo.gl/VniCUnrMFfqDtpCc7",
@@ -369,11 +371,12 @@ def test_registry_store_name_uses_explicit_google_maps_url() -> None:
 
     lines = line_bot._render_registry_entry_lines(entry)
 
+    # Store-name search wins over the raw short link — it opens the actual
+    # business listing instead of whatever the short link happens to point at.
     assert (
         "- 店名：固定地圖店家（Google 地圖："
-        "https://maps.app.goo.gl/VniCUnrMFfqDtpCc7）"
+        "https://www.google.com/maps/search/?api=1&query=%E5%9B%BA%E5%AE%9A%E5%9C%B0%E5%9C%96%E5%BA%97%E5%AE%B6）"
     ) in lines
-    assert "- GPS：https://maps.app.goo.gl/VniCUnrMFfqDtpCc7" in lines
 
 
 def test_registry_query_returns_no_match_for_known_location_without_subject(tmp_path: Path, monkeypatch) -> None:
@@ -851,7 +854,7 @@ def test_query_options_and_sheet_rows_use_the_explicit_export_contract() -> None
             "https://example.test/reserve",
             "⭐ 4.5（10 則）",
             "特色",
-            "https://www.google.com/maps/search/?api=1&query=25,121",
+            "https://www.google.com/maps/search/?api=1&query=%E6%B8%AC%E8%A9%A6%E9%A4%90%E5%BB%B3",
         ],
     ]
 

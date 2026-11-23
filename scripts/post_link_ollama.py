@@ -425,6 +425,61 @@ def process_page(
     }
 
 
+def _append_to_log(
+    vault_path: Path,
+    status: str,
+    pages_processed: int = 0,
+    forward_added: int = 0,
+    backlinks_added: int = 0,
+    errors: int = 0,
+    duration: float = 0.0,
+    message: str = "",
+) -> None:
+    """Append a Phase B run summary to vault/wiki/log.md.
+
+    Written from inside the Python script (not the shell wrapper) so it
+    survives launchd/TCC restrictions that block the shell's vault_log.
+    Mirrors ingest_wiki.py's _append_to_log pattern for Phase A.
+    """
+    log_path = vault_path / "wiki" / "log.md"
+    now = datetime.now(timezone.utc).astimezone()
+    date_str = now.strftime("%Y-%m-%d")
+    time_str = now.strftime("%H:%M:%S")
+
+    parts = [
+        f"\n## [{date_str} {time_str}] phase-b | Wikilink post-link run",
+        f"- Pages processed: {pages_processed}",
+        f"- Forward links added: {forward_added}",
+        f"- Backlinks added: {backlinks_added}",
+        f"- Errors: {errors}",
+        f"- Duration: {duration:.1f}s",
+        f"- Status: {status}",
+    ]
+    if message:
+        parts.append(f"- Detail: {message}")
+
+    entry = "\n".join(parts) + "\n"
+
+    try:
+        if not log_path.exists():
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            log_path.write_text(
+                "# Wiki Log\n\n"
+                "> Chronological record of all wiki actions. Append-only.\n"
+                "> Format: `## [YYYY-MM-DD] action | subject`\n"
+                "> Actions: ingest, update, query, lint, create, archive, delete\n"
+                "> When this file exceeds 500 entries, rotate: rename to log-YYYY.md, start fresh.\n"
+                f"{entry}",
+                encoding="utf-8",
+            )
+        else:
+            with log_path.open("a", encoding="utf-8") as f:
+                f.write(entry)
+        logger.info("Appended run summary to wiki/log.md")
+    except Exception as e:
+        logger.warning(f"Could not write to wiki/log.md: {e}")
+
+
 def run_phase_b(
     wiki_root: Path,
     dry_run: bool = False,
@@ -479,6 +534,7 @@ def run_phase_b(
     wiki_dir = wiki_root / "wiki"
     if not wiki_dir.exists():
         logger.error(f"wiki/ not found at {wiki_dir}")
+        _append_to_log(vault_root, status="error", message="wiki/ not found")
         return {"status": "error", "pages_processed": 0, "message": "wiki/ not found"}
 
     all_pages = []
@@ -497,6 +553,7 @@ def run_phase_b(
 
     if not all_pages:
         logger.info("Nothing to process — all caught up!")
+        _append_to_log(vault_root, status="success", pages_processed=0)
         return {"status": "success", "pages_processed": 0}
 
     # Apply limit
@@ -522,6 +579,7 @@ def run_phase_b(
         logger.info("Wikilink analyzer initialized (stage: %s)", analyzer.stage)
     except Exception as e:
         logger.exception(f"Failed to initialize wikilink analyzer: {e}")
+        _append_to_log(vault_root, status="error", message=f"Analyzer init failed: {e}")
         return {
             "status": "error",
             "pages_processed": 0,
@@ -544,8 +602,36 @@ def run_phase_b(
             stats["forward_added"] += result.get("forward_added", 0)
             stats["backlinks_added"] += result.get("backlinks_added", 0)
 
+    duration = time.time() - start_time
+
+    logger.info("=" * 70)
+    logger.info("PHASE B RESULTS")
+    logger.info(f"  Pages processed: {stats['pages']}")
+    logger.info(f"  Forward links added: {stats['forward_added']}")
+    logger.info(f"  Backlinks added: {stats['backlinks_added']}")
+    logger.info(f"  Errors: {stats['errors']}")
+    logger.info(f"  Duration: {duration:.1f}s")
+    logger.info("=" * 70)
+
+    # Append the run summary BEFORE the git commit step, so the log entry is
+    # included in this run's commit. Appending after the commit (the old
+    # order) left wiki/log.md permanently dirty — pipeline_status then
+    # reported "Vault DIRTY" and warned that phases would skip.
+    _append_to_log(
+        vault_root,
+        status="success",
+        pages_processed=stats["pages"],
+        forward_added=stats["forward_added"],
+        backlinks_added=stats["backlinks_added"],
+        errors=stats["errors"],
+        duration=duration,
+    )
+
     # Step 6: Git commit + push
-    if not dry_run and (stats["forward_added"] > 0 or stats["backlinks_added"] > 0):
+    # Runs whenever there is anything to commit (inner porcelain check
+    # no-ops cleanly) — not only when links were added, so log.md entries
+    # are always swept up instead of lingering as an uncommitted change.
+    if not dry_run:
         try:
             logger.info("Committing Phase B changes...")
             run_git(["add", "-A"], vault_root)
@@ -558,17 +644,6 @@ def run_phase_b(
                 logger.info("No changes to commit")
         except Exception as e:
             logger.warning(f"Git commit/push failed (non-critical): {e}")
-
-    duration = time.time() - start_time
-
-    logger.info("=" * 70)
-    logger.info("PHASE B RESULTS")
-    logger.info(f"  Pages processed: {stats['pages']}")
-    logger.info(f"  Forward links added: {stats['forward_added']}")
-    logger.info(f"  Backlinks added: {stats['backlinks_added']}")
-    logger.info(f"  Errors: {stats['errors']}")
-    logger.info(f"  Duration: {duration:.1f}s")
-    logger.info("=" * 70)
 
     return {
         "status": "success",
